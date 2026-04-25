@@ -21,7 +21,8 @@
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.23.1",
     "recharts": "^2.12.7",
-    "react-d3-tree": "^3.6.2"
+    "react-d3-tree": "^3.6.2",
+    "react-hook-form": "^7.51.5"
   },
   "devDependencies": {
     "@types/react": "^18.3.3",

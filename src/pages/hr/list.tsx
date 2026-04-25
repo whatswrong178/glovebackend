@@ -13,6 +13,7 @@
 
 import React, { useState, useCallback } from "react";
 import { useList, useUpdate, useGetIdentity, useNavigation } from "@refinedev/core";
+import type { CrudFilters } from "@refinedev/core";
 import type { Staff, StaffRole, StaffStatus } from "../../types/staff";
 import { ROLE_META, STATUS_META } from "../../types/staff";
 
@@ -44,7 +45,7 @@ export function HRListPage() {
   const [currentPage,   setCurrentPage]   = useState(1);
   const [offboardingId, setOffboardingId] = useState<string | null>(null);
 
-  const filters: Record<string, unknown>[] = [];
+  const filters: CrudFilters = [];
   if (roleFilter)   filters.push({ field: "role",   operator: "eq", value: roleFilter });
   if (statusFilter) filters.push({ field: "status", operator: "eq", value: statusFilter });
 

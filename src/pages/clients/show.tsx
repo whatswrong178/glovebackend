@@ -12,7 +12,7 @@ import React, { useState } from "react";
 import {
   useOne, useList, useUpdate, useGetIdentity, useNavigation
 } from "@refinedev/core";
-import { useSupabaseClient } from "@refinedev/supabase";
+import { supabaseClient } from "../../supabaseClient";
 import { useParams } from "react-router-dom";
 import type { Client, EditRequest } from "../../types/client";
 import {
@@ -174,7 +174,7 @@ function EditRequestRow({
 export function ClientShowPage() {
   const { id }   = useParams<{ id: string }>();
   const { edit, list } = useNavigation();
-  const supabase = useSupabaseClient();
+  const supabase = supabaseClient;
   const { data: identity } = useGetIdentity<{ id: string; name: string; role: StaffRole }>();
   const isAdmin = identity?.role === "Admin";
   const isHR    = identity?.role === "HR";

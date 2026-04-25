@@ -13,7 +13,8 @@
 
 import React, { useState } from "react";
 import { useList, useDelete, useGetIdentity, useNavigation } from "@refinedev/core";
-import { useSupabaseClient } from "@refinedev/supabase";
+import type { CrudFilters } from "@refinedev/core";
+import { supabaseClient } from "../../supabaseClient";
 import type { Client } from "../../types/client";
 import { NEGLECT_COLOR, NEGLECT_LABEL } from "../../types/client";
 import type { StaffRole } from "../../types/staff";
@@ -30,7 +31,7 @@ function NeglectBadge({ index }: { index: number }) {
 
 export function ClientListPage() {
   const { push } = useNavigation();
-  const supabase = useSupabaseClient();
+  const supabase = supabaseClient;
   const { data: identity } = useGetIdentity<{ id: string; name: string; role: StaffRole }>();
 
   const isAdmin     = identity?.role === "Admin";
@@ -47,7 +48,7 @@ export function ClientListPage() {
   const { mutate: deleteClient } = useDelete();
 
   // ── My Clients / All Active ──────────────────────────────────────────────
-  const myFilters: Parameters<typeof useList>[0]["filters"] = [
+  const myFilters: CrudFilters = [
     { field: "is_orphan", operator: "eq", value: false },
   ];
   if (!canSeeAll && identity?.id) {
@@ -76,7 +77,7 @@ export function ClientListPage() {
   });
 
   // ── Public Pool ──────────────────────────────────────────────────────────
-  const poolFilters: Parameters<typeof useList>[0]["filters"] = [
+  const poolFilters: CrudFilters = [
     { field: "is_orphan", operator: "eq", value: true },
   ];
   if (search.trim()) {

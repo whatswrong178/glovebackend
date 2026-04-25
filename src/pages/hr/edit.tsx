@@ -85,8 +85,7 @@ export function HREditPage() {
       commission_rate_override: staff.commission_rate_override
         ? (staff.commission_rate_override * 100).toFixed(2)
         : "",
-      // @ts-expect-error extended field
-      auth_user_id:             staff.auth_user_id ?? "",
+      auth_user_id:             (staff as unknown as Record<string, string>).auth_user_id ?? "",
     });
   }, [staff, reset]);
 
@@ -125,7 +124,6 @@ export function HREditPage() {
           hire_date:                values.hire_date || null,
           base_salary:              values.base_salary ? parseFloat(values.base_salary) : null,
           commission_rate_override: isAdmin ? commissionDecimal : undefined,
-          // @ts-expect-error extended field
           auth_user_id:             values.auth_user_id?.trim() || null,
         },
       },

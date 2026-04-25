@@ -11,6 +11,7 @@
 
 import React, { useState } from "react";
 import { useList, useUpdate, useDelete, useGetIdentity, useNavigation } from "@refinedev/core";
+import type { CrudFilters } from "@refinedev/core";
 import type { Invoice, InvoiceStatus } from "../../types/invoice";
 import type { StaffRole } from "../../types/staff";
 
@@ -47,7 +48,7 @@ export function InvoiceListPage() {
   const { mutate: deleteInvoice } = useDelete();
   const { mutate: updateInvoice } = useUpdate();
 
-  const baseFilters: Parameters<typeof useList>[0]["filters"] = [];
+  const baseFilters: CrudFilters = [];
 
   if (tab === "active") {
     baseFilters.push({ field: "status", operator: "eq", value: "Active" });

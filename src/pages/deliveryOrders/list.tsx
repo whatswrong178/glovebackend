@@ -9,8 +9,9 @@
 // ══════════════════════════════════════════════════════════════════════════════
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
+import type { CrudFilters } from "@refinedev/core";
 import { useList, useUpdate, useGetIdentity } from "@refinedev/core";
-import { useSupabaseClient } from "@refinedev/supabase";
+import { supabaseClient } from "../../supabaseClient";
 import type { StaffRole } from "../../types/staff";
 
 type DOType   = "Invoice" | "Sample";
@@ -172,7 +173,7 @@ function EPODModal({
   onClose:   () => void;
   onSuccess: () => void;
 }) {
-  const supabase = useSupabaseClient();
+  const supabase = supabaseClient;
 
   const [signatureBase64, setSignatureBase64] = useState<string | null>(null);
   const [photoDataUrl,    setPhotoDataUrl]    = useState<string | null>(null);
@@ -361,7 +362,7 @@ export function DOListPage() {
 
   const { mutate: updateDO } = useUpdate();
 
-  const baseFilters: Parameters<typeof useList>[0]["filters"] = [
+  const baseFilters: CrudFilters = [
     { field: "type", operator: "eq", value: tab },
   ];
   if (statusFilter) {

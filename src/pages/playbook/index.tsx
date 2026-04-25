@@ -17,7 +17,7 @@ import React, { useState, useCallback, useRef, useMemo } from "react";
 import {
   useList, useCreate, useUpdate, useDelete, useGetIdentity,
 } from "@refinedev/core";
-import { useSupabaseClient } from "@refinedev/supabase";
+import { supabaseClient } from "../../supabaseClient";
 import type { StaffRole } from "../../types/staff";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -56,7 +56,7 @@ interface UploadModalProps {
   onClose:    () => void;
   onSuccess:  () => void;
   categories: string[];
-  supabase:   ReturnType<typeof useSupabaseClient>;
+  supabase:   typeof supabaseClient;
 }
 
 function UploadModal({ onClose, onSuccess, categories, supabase }: UploadModalProps) {

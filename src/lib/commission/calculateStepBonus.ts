@@ -54,9 +54,9 @@ const DEFAULT_A_RATIO_THRESHOLD = 0.70;
 
 export function calculateStepBonus(params: StepBonusParams): StepBonusResult {
   const { totalNetRevenue, revenueA } = params;
-  const p      = params.params ?? {};
-  const ladder = p.ladder ?? DEFAULT_LADDER;
-  const threshold = p.aRatioThreshold ?? DEFAULT_A_RATIO_THRESHOLD;
+
+  const ladder    = params.params?.ladder ?? DEFAULT_LADDER;
+  const threshold = params.params?.aRatioThreshold ?? DEFAULT_A_RATIO_THRESHOLD;
 
   // Sort ladder descending by minRevenue for binary search
   const sorted = [...ladder].sort((a, b) => b.minRevenue - a.minRevenue);

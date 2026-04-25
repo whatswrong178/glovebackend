@@ -14,7 +14,7 @@
 
 import React, { useState, useMemo } from "react";
 import { useList, useGetIdentity, useNavigation } from "@refinedev/core";
-import { useSupabaseClient } from "@refinedev/supabase";
+import { supabaseClient } from "../../supabaseClient";
 import type { InvoiceLineItem, CreateInvoiceResult } from "../../types/invoice";
 import type { Client } from "../../types/client";
 import type { StaffRole, Staff } from "../../types/staff";
@@ -29,7 +29,7 @@ interface ProductOption {
 
 export function InvoiceCreatePage() {
   const { list, push } = useNavigation();
-  const supabase = useSupabaseClient();
+  const supabase = supabaseClient;
   const { data: identity } = useGetIdentity<{ id: string; name: string; role: StaffRole }>();
   const isHR    = identity?.role === "HR" || identity?.role === "Admin";
 
@@ -48,7 +48,7 @@ export function InvoiceCreatePage() {
   const [serverError,    setServerError]    = useState("");
 
   // ── Data fetches ─────────────────────────────────────────────────────────────
-  const clientFilters: Parameters<typeof useList>[0]["filters"] = [
+  const clientFilters: CrudFilters = [
     { field: "is_orphan", operator: "in", value: [true, false] }, // all clients
   ];
   if (clientSearch.trim()) {
