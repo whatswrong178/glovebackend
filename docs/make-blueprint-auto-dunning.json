@@ -1,0 +1,235 @@
+{
+  "name": "MediGlove_Auto_Dunning_Engine",
+  "flow": [
+    {
+      "id": 1,
+      "module": "http:ActionSendData",
+      "version": 3,
+      "parameters": { "handleErrors": false, "useNewZLibDeCompress": true },
+      "mapper": {
+        "url": "https://SUPABASE_PROJECT_REF.supabase.co/rest/v1/invoices",
+        "serializeUrl": false,
+        "method": "get",
+        "headers": [
+          { "name": "apikey",        "value": "SUPABASE_SERVICE_ROLE_KEY" },
+          { "name": "Authorization", "value": "Bearer SUPABASE_SERVICE_ROLE_KEY" },
+          { "name": "Accept",        "value": "application/json" }
+        ],
+        "qs": [
+          { "name": "select", "value": "id,invoice_no,created_at,total_amount,client:clients!client_id(name,credit_terms,contact_email)" },
+          { "name": "status", "value": "eq.Active" }
+        ],
+        "bodyType": "raw",
+        "parseResponse": true,
+        "timeout": 30,
+        "shareCookies": false,
+        "rejectUnauthorized": true,
+        "followRedirect": true,
+        "useQuerystring": false,
+        "gzip": true,
+        "useMtls": false
+      },
+      "metadata": { "designer": { "x": 0, "y": 0 } }
+    },
+    {
+      "id": 2,
+      "module": "flow:Iterator",
+      "version": 1,
+      "parameters": {
+        "array": "{{1.data}}"
+      },
+      "mapper": {},
+      "metadata": { "designer": { "x": 300, "y": 0 } }
+    },
+    {
+      "id": 3,
+      "module": "util:SetVariables",
+      "version": 1,
+      "parameters": {
+        "variables": [
+          {
+            "name": "credit_days",
+            "value": "{{switch(2.client.credit_terms; \"Cash Term\"; 0; \"30 Days\"; 30; \"60 Days\"; 60; \"90 Days\"; 90; 0)}}"
+          },
+          {
+            "name": "due_date",
+            "value": "{{addDays(parseDate(2.created_at; \"YYYY-MM-DD\"); credit_days)}}"
+          },
+          {
+            "name": "overdue_days",
+            "value": "{{dateDifference(now; due_date; \"days\")}}"
+          },
+          {
+            "name": "due_date_fmt",
+            "value": "{{formatDate(due_date; \"D MMM YYYY\")}}"
+          }
+        ]
+      },
+      "mapper": {},
+      "metadata": { "designer": { "x": 600, "y": 0 } }
+    },
+    {
+      "id": 4,
+      "module": "flow:Router",
+      "version": 1,
+      "parameters": {},
+      "mapper": {},
+      "metadata": { "designer": { "x": 900, "y": 0 } },
+      "routes": [
+        {
+          "flow": [
+            {
+              "id": 5,
+              "module": "http:ActionSendData",
+              "version": 3,
+              "parameters": { "handleErrors": false, "useNewZLibDeCompress": true },
+              "filter": {
+                "name": "T-7 Friendly Reminder",
+                "conditions": [
+                  [{ "a": "{{3.overdue_days}}", "b": "-7", "o": "number:equal" }]
+                ]
+              },
+              "mapper": {
+                "url": "https://api.resend.com/emails",
+                "method": "post",
+                "headers": [
+                  { "name": "Authorization", "value": "Bearer RESEND_API_KEY" },
+                  { "name": "Content-Type",  "value": "application/json" }
+                ],
+                "qs": [],
+                "bodyType": "raw",
+                "contentType": "json",
+                "body": "{\"from\":\"finance@mediglove.com\",\"to\":\"{{2.client.contact_email}}\",\"subject\":\"Friendly Reminder: Invoice {{2.invoice_no}} Due in 7 Days\",\"html\":\"<p>Dear {{2.client.name}},</p><p>Invoice <strong>{{2.invoice_no}}</strong> for RM {{2.total_amount}} is due on <strong>{{3.due_date_fmt}}</strong>.</p><p>Please arrange payment at your earliest convenience.</p><p>MediGlove Finance Team</p>\"}",
+                "parseResponse": true,
+                "timeout": 30,
+                "rejectUnauthorized": true,
+                "followRedirect": true,
+                "gzip": true
+              },
+              "metadata": { "designer": { "x": 1200, "y": -300 } }
+            }
+          ]
+        },
+        {
+          "flow": [
+            {
+              "id": 6,
+              "module": "http:ActionSendData",
+              "version": 3,
+              "parameters": { "handleErrors": false, "useNewZLibDeCompress": true },
+              "filter": {
+                "name": "T+0 Due Today",
+                "conditions": [
+                  [{ "a": "{{3.overdue_days}}", "b": "0", "o": "number:equal" }]
+                ]
+              },
+              "mapper": {
+                "url": "https://api.resend.com/emails",
+                "method": "post",
+                "headers": [
+                  { "name": "Authorization", "value": "Bearer RESEND_API_KEY" },
+                  { "name": "Content-Type",  "value": "application/json" }
+                ],
+                "qs": [],
+                "bodyType": "raw",
+                "contentType": "json",
+                "body": "{\"from\":\"finance@mediglove.com\",\"to\":\"{{2.client.contact_email}}\",\"subject\":\"Payment Due Today: Invoice {{2.invoice_no}}\",\"html\":\"<p>Dear {{2.client.name}},</p><p>Invoice <strong>{{2.invoice_no}}</strong> for RM {{2.total_amount}} is due <strong>today ({{3.due_date_fmt}})</strong>.</p><p>Please process payment immediately.</p><p>MediGlove Finance Team</p>\"}",
+                "parseResponse": true,
+                "timeout": 30,
+                "rejectUnauthorized": true,
+                "followRedirect": true,
+                "gzip": true
+              },
+              "metadata": { "designer": { "x": 1200, "y": -100 } }
+            }
+          ]
+        },
+        {
+          "flow": [
+            {
+              "id": 7,
+              "module": "http:ActionSendData",
+              "version": 3,
+              "parameters": { "handleErrors": false, "useNewZLibDeCompress": true },
+              "filter": {
+                "name": "T+3 Overdue Warning",
+                "conditions": [
+                  [{ "a": "{{3.overdue_days}}", "b": "3", "o": "number:equal" }]
+                ]
+              },
+              "mapper": {
+                "url": "https://api.resend.com/emails",
+                "method": "post",
+                "headers": [
+                  { "name": "Authorization", "value": "Bearer RESEND_API_KEY" },
+                  { "name": "Content-Type",  "value": "application/json" }
+                ],
+                "qs": [],
+                "bodyType": "raw",
+                "contentType": "json",
+                "body": "{\"from\":\"finance@mediglove.com\",\"to\":\"{{2.client.contact_email}}\",\"subject\":\"⚠️ Overdue: Invoice {{2.invoice_no}} — 3 Days Past Due\",\"html\":\"<p>Dear {{2.client.name}},</p><p>Invoice <strong>{{2.invoice_no}}</strong> for RM {{2.total_amount}} is now <strong>3 days overdue</strong> (due: {{3.due_date_fmt}}).</p><p>Please settle immediately to avoid service disruption.</p><p>MediGlove Finance Team</p>\"}",
+                "parseResponse": true,
+                "timeout": 30,
+                "rejectUnauthorized": true,
+                "followRedirect": true,
+                "gzip": true
+              },
+              "metadata": { "designer": { "x": 1200, "y": 100 } }
+            }
+          ]
+        },
+        {
+          "flow": [
+            {
+              "id": 8,
+              "module": "http:ActionSendData",
+              "version": 3,
+              "parameters": { "handleErrors": false, "useNewZLibDeCompress": true },
+              "filter": {
+                "name": "T+7 Final Notice",
+                "conditions": [
+                  [{ "a": "{{3.overdue_days}}", "b": "7", "o": "number:equal" }]
+                ]
+              },
+              "mapper": {
+                "url": "https://api.resend.com/emails",
+                "method": "post",
+                "headers": [
+                  { "name": "Authorization", "value": "Bearer RESEND_API_KEY" },
+                  { "name": "Content-Type",  "value": "application/json" }
+                ],
+                "qs": [],
+                "bodyType": "raw",
+                "contentType": "json",
+                "body": "{\"from\":\"finance@mediglove.com\",\"to\":\"{{2.client.contact_email}}\",\"cc\":\"sales@mediglove.com\",\"subject\":\"🔴 FINAL NOTICE: Invoice {{2.invoice_no}} — 7 Days Overdue\",\"html\":\"<p>Dear {{2.client.name}},</p><p>This is a FINAL NOTICE. Invoice <strong>{{2.invoice_no}}</strong> for RM {{2.total_amount}} remains unpaid <strong>7 days</strong> after due date ({{3.due_date_fmt}}).</p><p>Please contact finance@mediglove.com immediately.</p><p>MediGlove Finance Team</p>\"}",
+                "parseResponse": true,
+                "timeout": 30,
+                "rejectUnauthorized": true,
+                "followRedirect": true,
+                "gzip": true
+              },
+              "metadata": { "designer": { "x": 1200, "y": 300 } }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "instant": false,
+    "version": 1,
+    "scenario": {
+      "roundtrips": 1,
+      "maxErrors": 3,
+      "autoCommit": true,
+      "autoCommitTriggerLast": true,
+      "sequential": false,
+      "confidential": false,
+      "dataloss": false,
+      "dlq": false,
+      "freshVariables": false
+    },
+    "designer": { "orphans": [] },
+    "zone": "eu1.make.com"
+  }
+}

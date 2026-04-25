@@ -1,0 +1,80 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── Global base overrides ──────────────────────────────── */
+@layer base {
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-surface text-gray-900 text-sm;
+  }
+}
+
+/* ─── Print Engine (T-01.3) ──────────────────────────────── */
+/* All non-print elements hide on print; .print-area renders at A4 */
+@media print {
+  body * { visibility: hidden; }
+
+  .print-area,
+  .print-area * { visibility: visible; }
+
+  .print-area {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    padding: 24px;
+    width: 210mm;
+    min-height: 297mm;
+    font-size: 11pt;
+    line-height: 1.4;
+    color: #000;
+    background: #fff;
+  }
+
+  @page {
+    size: A4;
+    margin: 0;
+  }
+}
+
+/* ─── Security Watermark (T-01.2) ───────────────────────── */
+.watermark-overlay {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  opacity: 0.06;
+  overflow: hidden;
+}
+
+/* ─── Global blur shield (T-01.2) ───────────────────────── */
+.blur-shield {
+  filter: blur(20px) brightness(0.4);
+  transition: filter 0.15s ease;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* ─── Utility: debounce button disabled state ────────────── */
+button:disabled {
+  @apply opacity-50 cursor-not-allowed;
+}
+
+/* ─── Skeleton pulse animation ───────────────────────────── */
+@keyframes pulse-skeleton {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+.skeleton {
+  @apply bg-gray-200 rounded;
+  animation: pulse-skeleton 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}

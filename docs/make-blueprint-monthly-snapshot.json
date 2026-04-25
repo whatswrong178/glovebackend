@@ -1,0 +1,185 @@
+{
+  "name": "MediGlove_Monthly_Payout_Snapshot",
+  "flow": [
+    {
+      "id": 1,
+      "module": "util:SetVariables",
+      "version": 1,
+      "parameters": {
+        "variables": [
+          {
+            "name": "last_month_year",
+            "value": "{{formatDate(addMonths(now; -1); \"YYYY\")}}"
+          },
+          {
+            "name": "last_month_month",
+            "value": "{{formatDate(addMonths(now; -1); \"M\")}}"
+          }
+        ]
+      },
+      "mapper": {},
+      "metadata": {
+        "designer": { "x": 0, "y": 0 }
+      }
+    },
+    {
+      "id": 2,
+      "module": "http:ActionSendData",
+      "version": 3,
+      "parameters": { "handleErrors": false, "useNewZLibDeCompress": true },
+      "mapper": {
+        "url": "https://SUPABASE_PROJECT_REF.supabase.co/rest/v1/staff",
+        "serializeUrl": false,
+        "method": "get",
+        "headers": [
+          { "name": "apikey",        "value": "SUPABASE_SERVICE_ROLE_KEY" },
+          { "name": "Authorization", "value": "Bearer SUPABASE_SERVICE_ROLE_KEY" },
+          { "name": "Accept",        "value": "application/json" }
+        ],
+        "qs": [
+          { "name": "select", "value": "id,name,role" },
+          { "name": "status", "value": "eq.Active" }
+        ],
+        "bodyType": "raw",
+        "parseResponse": true,
+        "timeout": 30,
+        "shareCookies": false,
+        "ca": "",
+        "rejectUnauthorized": true,
+        "followRedirect": true,
+        "useQuerystring": false,
+        "gzip": true,
+        "useMtls": false
+      },
+      "metadata": {
+        "designer": { "x": 300, "y": 0 }
+      }
+    },
+    {
+      "id": 3,
+      "module": "flow:Iterator",
+      "version": 1,
+      "parameters": {
+        "array": "{{2.data}}"
+      },
+      "mapper": {},
+      "metadata": {
+        "designer": { "x": 600, "y": 0 }
+      }
+    },
+    {
+      "id": 4,
+      "module": "http:ActionSendData",
+      "version": 3,
+      "parameters": { "handleErrors": false, "useNewZLibDeCompress": true },
+      "mapper": {
+        "url": "https://SUPABASE_PROJECT_REF.supabase.co/rest/v1/rpc/fn_evaluate_leader_month",
+        "serializeUrl": false,
+        "method": "post",
+        "headers": [
+          { "name": "apikey",        "value": "SUPABASE_SERVICE_ROLE_KEY" },
+          { "name": "Authorization", "value": "Bearer SUPABASE_SERVICE_ROLE_KEY" },
+          { "name": "Content-Type",  "value": "application/json" }
+        ],
+        "qs": [],
+        "bodyType": "raw",
+        "contentType": "json",
+        "body": "{\"p_staff_id\": \"{{3.id}}\", \"p_year\": {{1.last_month_year}}, \"p_month\": {{1.last_month_month}}}",
+        "parseResponse": true,
+        "timeout": 30,
+        "shareCookies": false,
+        "ca": "",
+        "rejectUnauthorized": true,
+        "followRedirect": true,
+        "useQuerystring": false,
+        "gzip": true,
+        "useMtls": false
+      },
+      "metadata": {
+        "designer": { "x": 900, "y": 0 }
+      }
+    },
+    {
+      "id": 5,
+      "module": "http:ActionSendData",
+      "version": 3,
+      "parameters": { "handleErrors": false, "useNewZLibDeCompress": true },
+      "mapper": {
+        "url": "https://SUPABASE_PROJECT_REF.supabase.co/rest/v1/rpc/fn_calculate_monthly_payout",
+        "serializeUrl": false,
+        "method": "post",
+        "headers": [
+          { "name": "apikey",        "value": "SUPABASE_SERVICE_ROLE_KEY" },
+          { "name": "Authorization", "value": "Bearer SUPABASE_SERVICE_ROLE_KEY" },
+          { "name": "Content-Type",  "value": "application/json" }
+        ],
+        "qs": [],
+        "bodyType": "raw",
+        "contentType": "json",
+        "body": "{\"p_staff_id\": \"{{3.id}}\", \"p_year\": {{1.last_month_year}}, \"p_month\": {{1.last_month_month}}}",
+        "parseResponse": true,
+        "timeout": 30,
+        "shareCookies": false,
+        "ca": "",
+        "rejectUnauthorized": true,
+        "followRedirect": true,
+        "useQuerystring": false,
+        "gzip": true,
+        "useMtls": false
+      },
+      "metadata": {
+        "designer": { "x": 1200, "y": 0 }
+      }
+    },
+    {
+      "id": 6,
+      "module": "http:ActionSendData",
+      "version": 3,
+      "parameters": { "handleErrors": false, "useNewZLibDeCompress": true },
+      "mapper": {
+        "url": "https://SUPABASE_PROJECT_REF.supabase.co/rest/v1/snapshots",
+        "serializeUrl": false,
+        "method": "post",
+        "headers": [
+          { "name": "apikey",        "value": "SUPABASE_SERVICE_ROLE_KEY" },
+          { "name": "Authorization", "value": "Bearer SUPABASE_SERVICE_ROLE_KEY" },
+          { "name": "Content-Type",  "value": "application/json" },
+          { "name": "Prefer",        "value": "resolution=ignore-duplicates" }
+        ],
+        "qs": [],
+        "bodyType": "raw",
+        "contentType": "json",
+        "body": "{\"staff_id\": \"{{3.id}}\", \"year\": {{1.last_month_year}}, \"month\": {{1.last_month_month}}, \"payload\": {{5.data}}, \"created_by\": \"make.com\"}",
+        "parseResponse": true,
+        "timeout": 30,
+        "shareCookies": false,
+        "ca": "",
+        "rejectUnauthorized": true,
+        "followRedirect": true,
+        "useQuerystring": false,
+        "gzip": true,
+        "useMtls": false
+      },
+      "metadata": {
+        "designer": { "x": 1500, "y": 0 }
+      }
+    }
+  ],
+  "metadata": {
+    "instant": false,
+    "version": 1,
+    "scenario": {
+      "roundtrips": 1,
+      "maxErrors": 3,
+      "autoCommit": true,
+      "autoCommitTriggerLast": true,
+      "sequential": true,
+      "confidential": false,
+      "dataloss": false,
+      "dlq": false,
+      "freshVariables": false
+    },
+    "designer": { "orphans": [] },
+    "zone": "eu1.make.com"
+  }
+}

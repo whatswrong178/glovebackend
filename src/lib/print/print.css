@@ -1,0 +1,298 @@
+/* ============================================================
+   MediGlove ERP — Global Print Engine (T-01.3)
+   Skill 2 Anti-Pattern: NO jspdf. Strictly browser-native print.
+   ============================================================
+
+   USAGE:
+     1. Import this file once in main.tsx (after index.css)
+     2. Wrap any printable document in <div className="print-area">
+     3. Call window.print() — everything outside .print-area disappears
+
+   DOCUMENT SIZES:
+     .print-area           → A4 portrait  (210mm × 297mm)
+     .print-area.landscape → A4 landscape (297mm × 210mm)
+     .print-area.half-page → A5 portrait  (148mm × 210mm)
+
+   TAILWIND HELPERS (use these inline on elements):
+     print:hidden  → hide element when printing
+     print:block   → force show element only when printing
+     print:break-after-page → force page break after element
+   ============================================================ */
+
+/* ─── Page geometry ──────────────────────────────────────── */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 0;          /* Margin is handled by .print-area padding */
+  }
+
+  @page landscape {
+    size: A4 landscape;
+    margin: 0;
+  }
+
+  /* ─── Screen → Print isolation ─────────────────────────── */
+  /* Hide everything on the screen layout */
+  body > * {
+    visibility: hidden !important;
+  }
+
+  /* Reveal only the designated print area */
+  .print-area,
+  .print-area * {
+    visibility: visible !important;
+  }
+
+  /* Override blur shield (SecurityShield must not blur prints) */
+  .blur-shield {
+    filter: none !important;
+  }
+
+  /* Hide canvas watermark on print */
+  .watermark-overlay {
+    display: none !important;
+  }
+
+  /* ─── Print area geometry ───────────────────────────────── */
+  .print-area {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    width: 210mm;
+    min-height: 297mm;
+    padding: 12mm 14mm;          /* Safe inner margin — NOT @page margin */
+    margin: 0 auto;
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-family: 'Inter', Arial, sans-serif;
+    font-size: 9pt;
+    line-height: 1.45;
+    box-sizing: border-box;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .print-area.landscape {
+    width: 297mm;
+    min-height: 210mm;
+  }
+
+  .print-area.half-page {
+    width: 148mm;
+    min-height: 210mm;
+  }
+
+  /* ─── Typography resets for print ──────────────────────── */
+  .print-area h1 { font-size: 14pt; font-weight: 700; margin: 0 0 6pt; }
+  .print-area h2 { font-size: 11pt; font-weight: 600; margin: 0 0 4pt; }
+  .print-area h3 { font-size: 10pt; font-weight: 600; margin: 0 0 3pt; }
+  .print-area p  { margin: 0 0 4pt; }
+
+  /* ─── Table layout (Invoice / PO / DO line items) ───────── */
+  .print-area table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 8.5pt;
+    page-break-inside: auto;
+  }
+
+  .print-area thead {
+    display: table-header-group;  /* Repeat header on each page */
+  }
+
+  .print-area tfoot {
+    display: table-footer-group;  /* Repeat footer on each page */
+  }
+
+  .print-area tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+
+  .print-area th,
+  .print-area td {
+    padding: 4pt 6pt;
+    text-align: left;
+    vertical-align: top;
+    border-bottom: 0.4pt solid #d1d5db;
+  }
+
+  .print-area th {
+    background-color: #f1f5f9 !important;
+    font-weight: 600;
+    font-size: 8pt;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    border-bottom: 0.8pt solid #94a3b8;
+  }
+
+  .print-area td.numeric,
+  .print-area th.numeric {
+    text-align: right;
+  }
+
+  .print-area td.center,
+  .print-area th.center {
+    text-align: center;
+  }
+
+  /* ─── Totals row ────────────────────────────────────────── */
+  .print-area tr.totals-row td {
+    font-weight: 600;
+    border-top: 0.8pt solid #374151;
+    border-bottom: none;
+  }
+
+  .print-area tr.grand-total td {
+    font-size: 10pt;
+    font-weight: 700;
+    border-top: 1.5pt double #111827;
+  }
+
+  /* ─── Document header block ─────────────────────────────── */
+  .print-doc-header {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8pt;
+    margin-bottom: 10pt;
+    padding-bottom: 8pt;
+    border-bottom: 1.5pt solid #111827;
+  }
+
+  .print-doc-header .company-block h1 {
+    font-size: 15pt;
+    font-weight: 800;
+    color: #1e3a8a !important;
+    letter-spacing: -0.02em;
+  }
+
+  .print-doc-header .doc-meta {
+    text-align: right;
+  }
+
+  .print-doc-header .doc-meta .doc-title {
+    font-size: 13pt;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #374151 !important;
+  }
+
+  .print-doc-header .doc-meta .doc-number {
+    font-size: 11pt;
+    font-weight: 600;
+    color: #1d4ed8 !important;
+  }
+
+  /* ─── Party info grid (Bill To / Ship To) ───────────────── */
+  .print-party-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8pt;
+    margin-bottom: 8pt;
+    font-size: 8.5pt;
+  }
+
+  .print-party-grid .party-block {
+    padding: 5pt 6pt;
+    background: #f8fafc !important;
+    border-left: 2pt solid #1e3a8a;
+  }
+
+  .print-party-grid .party-label {
+    font-size: 7pt;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #6b7280 !important;
+    margin-bottom: 3pt;
+  }
+
+  .print-party-grid .party-name {
+    font-weight: 600;
+    font-size: 9pt;
+  }
+
+  /* ─── Document footer (signatures / terms) ───────────────── */
+  .print-doc-footer {
+    margin-top: 12pt;
+    padding-top: 8pt;
+    border-top: 0.4pt solid #d1d5db;
+    font-size: 7.5pt;
+    color: #6b7280 !important;
+  }
+
+  .print-signature-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8pt;
+    margin-top: 16pt;
+  }
+
+  .print-signature-grid .sig-block {
+    border-top: 0.4pt solid #374151;
+    padding-top: 3pt;
+    font-size: 7.5pt;
+  }
+
+  /* ─── Status badge (print-safe, no Tailwind color) ─────── */
+  .print-badge {
+    display: inline-block;
+    padding: 1pt 5pt;
+    border-radius: 2pt;
+    font-size: 7.5pt;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border: 0.4pt solid currentColor;
+  }
+
+  .print-badge.paid    { color: #15803d !important; border-color: #16a34a !important; }
+  .print-badge.active  { color: #b45309 !important; border-color: #d97706 !important; }
+  .print-badge.cancelled { color: #b91c1c !important; border-color: #dc2626 !important; }
+
+  /* ─── Page break utilities ──────────────────────────────── */
+  .page-break-before { page-break-before: always; }
+  .page-break-after  { page-break-after:  always; }
+  .no-page-break     { page-break-inside: avoid; }
+
+  /* ─── QR / Barcode placeholder ──────────────────────────── */
+  .print-qr {
+    width: 48pt;
+    height: 48pt;
+    border: 0.4pt solid #d1d5db;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 6pt;
+    color: #9ca3af !important;
+  }
+
+  /* ─── Watermark text (for DRAFT / SAMPLE documents) ────── */
+  .print-watermark-text {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-35deg);
+    font-size: 60pt;
+    font-weight: 900;
+    color: rgba(0, 0, 0, 0.04) !important;
+    pointer-events: none;
+    z-index: 0;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  /* ─── Hide interactive / navigation elements ────────────── */
+  button,
+  nav,
+  aside,
+  header,
+  .no-print,
+  [data-no-print],
+  .watermark-overlay {
+    display: none !important;
+    visibility: hidden !important;
+  }
+}

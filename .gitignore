@@ -1,0 +1,43 @@
+# ──────────────────────────────────────────────────────────
+# MediGlove ERP — .gitignore
+# ──────────────────────────────────────────────────────────
+
+# ── Secrets — NEVER commit ────────────────────────────────
+.env
+.env.local
+.env.*.local
+supabase/functions/.env
+supabase/.env
+
+# ── Dependencies ──────────────────────────────────────────
+node_modules/
+.pnp
+.pnp.js
+
+# ── Build output ──────────────────────────────────────────
+dist/
+dist-ssr/
+build/
+
+# ── Test & Coverage ───────────────────────────────────────
+coverage/
+*.lcov
+
+# ── IDE & OS ──────────────────────────────────────────────
+.vscode/settings.json
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# ── Logs ──────────────────────────────────────────────────
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ── Supabase local state ──────────────────────────────────
+supabase/.branches/
+supabase/.temp/

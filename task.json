@@ -1,0 +1,441 @@
+{
+  "projectName": "MediGlove Supply ERP System",
+  "version": "10.0 (Ultimate Merged Edition)",
+  "lastUpdated": "2026-04-25",
+  "description": "企业级跨品类高客单价 B2B 供应链、零成本自动化通讯网关与代理系统全局开发任务清单 — v10 Ultimate Merged Edition",
+  "epics": [
+    {
+      "epicId": "EPIC-01",
+      "epicName": "底层架构、安全网关与测试基建",
+      "status": "COMPLETED",
+      "tasks": [
+        {
+          "taskId": "T-01.1",
+          "title": "初始化 Supabase 数据库与高并发行级锁",
+          "status": "completed",
+          "priority": "Critical",
+          "assignee": "Backend/DBA",
+          "description": "搭建全量关系型数据库表 (staff/suppliers/products/clients/invoices/delivery_orders/purchase_orders/commissions/snapshots/system_params)。强制设置 generate_invoice_no() 与 generate_do_no() 的 SELECT FOR UPDATE 悲观锁，确保 YYMMDD-XXXX 格式编号零撞号。Migration: 001_initial_schema.sql。"
+        },
+        {
+          "taskId": "T-01.2",
+          "title": "全局反间谍与防泄密前端机制 (Anti-Leak System)",
+          "status": "completed",
+          "priority": "High",
+          "assignee": "Frontend",
+          "description": "禁用右键/PrintScreen，叠加低透明度(员工姓名+ID+时间戳)动态水印；监听 document.visibilitychange + 录屏API检测，失焦或启动录屏瞬间触发全屏高斯模糊。组件: SecurityShield.tsx。"
+        },
+        {
+          "taskId": "T-01.3",
+          "title": "全局原生打印引擎 (Global Print Engine)",
+          "status": "completed",
+          "priority": "Medium",
+          "assignee": "Frontend",
+          "description": "为所有单据(Invoice/DO/PO/Receipt)编写 @media print 专属 CSS，确保 A4 无边距打印完美排版。适配 RBAC 数据隔离：Sales 只能打印自己的单据。"
+        },
+        {
+          "taskId": "T-01.4",
+          "title": "企业级多别名收发邮件网关打通",
+          "status": "completed",
+          "priority": "High",
+          "assignee": "DevOps/Backend",
+          "description": "配置主域名 DNS (SPF/DKIM/DMARC)。部署 Supabase Edge Function send-email 网关，对接 Resend API 4路由发信 (finance@/info@/care@/admin@)，打通 Zoho 单账号多别名收信机制。Migration: 004_email_send_log.sql。"
+        },
+        {
+          "taskId": "T-01.5",
+          "title": "初始化 Vitest 测试框架与 GitHub Actions 拦截哨兵",
+          "status": "completed",
+          "priority": "Critical",
+          "assignee": "DevOps",
+          "description": "配置 Vitest 单元测试环境 (vitest.config.ts)。在 GitHub 建立 CI/CD 流程：代码推送前必须在云端跑通所有财务测试用例，一旦报错直接拦截，禁止 Vercel 发布上线。当前覆盖: 基础佣金引擎纯函数 100% 分支覆盖。"
+        }
+      ]
+    },
+    {
+      "epicId": "EPIC-02",
+      "epicName": "中台枢纽与动态组织",
+      "status": "COMPLETED",
+      "tasks": [
+        {
+          "taskId": "T-02.1",
+          "title": "复合权限矩阵与精细化编制建档 (5角色 RBAC)",
+          "status": "completed",
+          "priority": "High",
+          "assignee": "Fullstack",
+          "description": "开发 5 角色体系 (Admin/HR/Leader/Sales/Logistics) + 模块化权限开关 (permissionSwitches JSONB)。员工建档强制要求录入 Department 和 Job Title。HR list/create/edit/show 全套页面。Migration: 007 添加 permission_switches/consecutive_fail_months/leader_frozen/mentor_id/phone/base_salary 列。"
+        },
+        {
+          "taskId": "T-02.2",
+          "title": "Leader 活跃度对赌、冻结与特批豁免流 (Death Line v10)",
+          "status": "completed",
+          "priority": "Critical",
+          "assignee": "Backend",
+          "description": "Leader 每月 50k 业绩校验 (fn_evaluate_leader_month)；Admin 独占 35k 特批豁免 (fn_grant_leader_exemption)；连续 2 个月不达标触发 leader_frozen=true，同步写入 staff 表 consecutive_fail_months + leader_frozen 字段。Migration: 006_leader_spinoff_birthday.sql。Leader Performance Dashboard: /hr/leader-performance。"
+        },
+        {
+          "taskId": "T-02.3",
+          "title": "团队裂变伯乐引擎 (Spin-off System)",
+          "status": "completed",
+          "priority": "Medium",
+          "assignee": "Backend",
+          "description": "当 Sales 累计 PAID GMV >= RM 50,000 申请裂变时，系统自动晋升角色为 Leader，记录 mentor_id (原 Leader ID)，在 spinoff_legacy_map 建立 0.5% 永久伯乐奖映射关系。fn_request_spinoff RPC。Spinoff 按钮集成于 HRShowPage。"
+        },
+        {
+          "taskId": "T-02.4",
+          "title": "Make.com 自动化工作流：员工生日与入职周年关怀",
+          "status": "completed",
+          "priority": "Low",
+          "assignee": "DevOps",
+          "description": "Make.com 每日 9AM (KL) 触发 → 查询 fn_get_birthday_celebrants/fn_get_anniversary_celebrants → Iterator → Resend 发送 HTML 关怀邮件 (care@)。Migration 006 提供 RPC + Email 模板。完整配置指南: MAKE_WORKFLOW_GUIDE.md。"
+        },
+        {
+          "taskId": "T-02.5",
+          "title": "离职账号一键断权与公海释放脚本 (Offboarding Automation)",
+          "status": "completed",
+          "priority": "Critical",
+          "assignee": "Backend",
+          "description": "Trigger trg_staff_offboarding 监听 staff.status Active→Inactive 变更。幂等守卫防止二次触发。三步骤: 释放客户至公海(is_orphan=TRUE)、解除直属 Leader 链接(leader_id=NULL)、结构化审计日志。Migration: 005_offboarding_v2.sql。"
+        }
+      ]
+    },
+    {
+      "epicId": "EPIC-03",
+      "epicName": "高利润产品字典与知识库",
+      "status": "COMPLETED",
+      "tasks": [
+        {
+          "taskId": "T-03.1",
+          "title": "Gemini AI 视觉解析极速建档 (AI OCR Import)",
+          "status": "completed",
+          "priority": "High",
+          "assignee": "Fullstack",
+          "description": "接入 Google Gemini 1.5 Flash API (免费)。实现上传供应商 PDF/图片，全自动提取产品名、SKU、成本价。生成预览表格供 Admin 人工校验后批量导入 Supabase。绝密 cost_price 仅写入后端，前端永不可见。"
+        },
+        {
+          "taskId": "T-03.2",
+          "title": "全域价格防线与单据级联 (Price Guard)",
+          "status": "completed",
+          "priority": "High",
+          "assignee": "Fullstack",
+          "description": "products.supplier_id NOT NULL 强制约束 (Migration 009)。开单时若 selling_price < min_selling_price 直接返回 400 拦截。products_safe_view (security_barrier=true) 屏蔽 cost_price 对非 Admin 角色。ProductCreate 页面强制绑定供应商。"
+        },
+        {
+          "taskId": "T-03.3",
+          "title": "Playbook 多媒体营销物料中台",
+          "status": "completed",
+          "priority": "Medium",
+          "assignee": "Frontend",
+          "description": "PlaybookPage 支持双层分类树 (mainCategory/subCategory)。拖拽上传组件支持 PDF/Script/Article/Comic/Video/Music 类型。Admin 独占上传/编辑权。Leader/Sales 只读查看，受防录屏机制保护。"
+        }
+      ]
+    },
+    {
+      "epicId": "EPIC-04",
+      "epicName": "客户关系与账期风控管理",
+      "status": "COMPLETED",
+      "tasks": [
+        {
+          "taskId": "T-04.1",
+          "title": "防盗客创建与西马/东马区域强制标记",
+          "status": "completed",
+          "priority": "High",
+          "assignee": "Frontend",
+          "description": "ClientCreate 强制选择 region (West Malaysia/East Malaysia)。SSM 号与诊所执照号去重校验 (UNIQUE constraint)。隐藏导出 CSV 按钮 (仅 Admin 可见)。created_by 字段在创建时固化为当前用户 ID。"
+        },
+        {
+          "taskId": "T-04.2",
+          "title": "防篡改编辑审批流 (Request to Edit)",
+          "status": "completed",
+          "priority": "Medium",
+          "assignee": "Fullstack",
+          "description": "Leader/Sales 修改客户信息 → 生成 edit_requests 暂存记录 (requested_changes JSONB)。HR & Finance / Admin 面板审批。批准后覆写实际数据库。拒绝时留审计备注 (review_note)。"
+        },
+        {
+          "taskId": "T-04.3",
+          "title": "账期信用评级档案 (Credit Terms Profile)",
+          "status": "completed",
+          "priority": "High",
+          "assignee": "Fullstack",
+          "description": "ClientCreate/Edit 强制录入 credit_terms (Cash Term/30 Days/60 Days)。此字段是 Auto-Dunning 催款引擎的底层触发依据。到期日公式: DueDate = invoice.created_at + credit_terms_days (Cash=0/30=30/60=60)。clients.credit_terms 已在 Migration 001 中定义。"
+        },
+        {
+          "taskId": "T-04.4",
+          "title": "客户档案动态怠慢指数追踪器 (Neglect Index + Tug-of-War)",
+          "status": "completed",
+          "priority": "Critical",
+          "assignee": "Backend",
+          "description": "trg_neglect_index Trigger (Migration 008): AFTER INSERT ON invoices。非 Owner 开单 → neglect_index = MIN(index+1, 6)；Owner 亲自开单且 index>0 → index = MAX(index-1, 0)。达到 Index 6 强制 Owner 变更 (Client.owner_id = invoicer)。neglect_split JSONB 记录当次分润比例快照。"
+        },
+        {
+          "taskId": "T-04.5",
+          "title": "公海视图与首单夺权引擎 (First-Blood Ownership Override)",
+          "status": "completed",
+          "priority": "Critical",
+          "assignee": "Backend/Frontend",
+          "description": "trg_first_blood_claim Trigger (Migration 008): AFTER INSERT ON invoices。若 Client.is_orphan=TRUE 且 Invoice.created_by != Client.owner_id → 强制 owner_id = invoicer, is_orphan=FALSE, neglect_index=0。Public Pool 标签页 UI: is_orphan=TRUE 客户全员可见。当次佣金 100% 归新 Owner。"
+        }
+      ]
+    },
+    {
+      "epicId": "EPIC-05",
+      "epicName": "交易风控引擎与智能促销",
+      "status": "COMPLETED",
+      "tasks": [
+        {
+          "taskId": "T-05.1",
+          "title": "账期视图双标签隔离 (Active/Completed Invoice Tabs)",
+          "status": "completed",
+          "priority": "High",
+          "assignee": "Frontend",
+          "description": "InvoiceListPage 强制拆分 Active (status=Active) 与 Completed (status=Paid) 标签页。Completed 状态全库锁死只读。Leader/Sales 界面物理移除 Delete 按钮，仅 Admin 可删。"
+        },
+        {
+          "taskId": "T-05.2",
+          "title": "三单联动同源生成器 (Invoice + Auto-DO + Draft Auto-PO)",
+          "status": "completed",
+          "priority": "Critical",
+          "assignee": "Backend/Frontend",
+          "description": "InvoiceCreate 表单提交 → 调用 fn_create_invoice_bundle RPC。原子事务: (1) generate_invoice_no() 悲观锁 → INSERT invoices (含 total_boxes/co_created_by/is_joint_order/neglect_split); (2) generate_do_no() → INSERT delivery_orders; (3) 按 product.supplier_id 分组 → INSERT purchase_orders (Draft)。返回 {invoice_id, do_id, po_ids[]}。"
+        },
+        {
+          "taskId": "T-05.3",
+          "title": "智能促销拦截与豁免引擎 (Promo Engine)",
+          "status": "completed",
+          "priority": "High",
+          "assignee": "Backend",
+          "description": "硬性拦截: total_boxes < 3 → 返回 400 'Minimum 3 boxes required'。免运费豁免: Client.region='West Malaysia' AND total_boxes >= 5 → delivery_charge = 0 (系统强制，Sales 无干预权)。invoices.total_boxes 字段已由 Migration 007 添加。"
+        },
+        {
+          "taskId": "T-05.4",
+          "title": "营销拿样双轨制 (Sample DO System)",
+          "status": "completed",
+          "priority": "Medium",
+          "assignee": "Fullstack",
+          "description": "ClientShowPage 发起 Request Sample → 生成 type='Sample' 的 DO (do_no 格式 SDO-YYMMDD-XXXX)。Sample DO 不关联 Invoice，不计入销售额。强制走 HR & Finance 审批流。Logistics 面板双轨显示 Invoice DO / Sample DO。"
+        },
+        {
+          "taskId": "T-05.5",
+          "title": "50/50 联合代办流 (Joint Order — HR 代开单)",
+          "status": "completed",
+          "priority": "High",
+          "assignee": "Backend/Frontend",
+          "description": "HR & Finance 代客户开单时: isJointOrder=TRUE, coCreatedBy=HR人员ID。佣金引擎 Step 9: Base_Comm 50% 归 Owner, 50% 归代办人；Revenue_Credit 各 50%；Bounty 100% 归原开发人 (Client.owner_id)。invoices.co_created_by + is_joint_order 字段已由 Migration 007 添加。"
+        }
+      ]
+    },
+    {
+      "epicId": "EPIC-06",
+      "epicName": "硬核佣金计算中枢 (Test-Driven)",
+      "status": "COMPLETED",
+      "tasks": [
+        {
+          "taskId": "T-06.1",
+          "title": "净毛利熔断与基础提成计算器 (Step 0-2)",
+          "status": "COMPLETED",
+          "priority": "Critical",
+          "assignee": "Backend",
+          "description": "纯函数: calculateBaseCommission({gpA, gpB, rateA=0.20, rateB=0.15}). 熔断: GP 最低 0，永不为负。折扣按 Revenue_A:Revenue_B 比例分摊。Vitest 100% 分支覆盖 (正常/亏本/零毛利/极端折扣)."
+        },
+        {
+          "taskId": "T-06.2",
+          "title": "KAM 老客津贴追加器 (Step 3 — 180天门槛)",
+          "status": "COMPLETED",
+          "priority": "High",
+          "assignee": "Backend",
+          "description": "纯函数: calculateKAMComm({gpA, gpB, firstOrderDate, currentDate, kamPeriod=180, kamA=0.05, kamB=0.03}). 合作期 >= 180天触发。Vitest: 临界值 179天=0, 180天=触发, 228天=触发。"
+        },
+        {
+          "taskId": "T-06.3",
+          "title": "四级长效新客悬赏器 (Step 4 — Bounty 4-Tier v10)",
+          "status": "COMPLETED",
+          "priority": "High",
+          "assignee": "Backend",
+          "description": "v10 变更: Tier 1 从 '首单 >= RM500' 改为 '首单总量 >= 3 箱' (→ RM 50)。Tier 2: 90天内累计 >= RM 1,000 (→ RM 50)。Tier 3: 180天内 >= RM 2,000 (→ RM 100)。Tier 4 (新增): 365天内 >= RM 6,000 (→ RM 200)。单客最高 RM 400。Claimed 状态由 clients.tier1_claimed ~ tier4_claimed 追踪。Vitest 需增加 Tier 4 + Tier 1 箱数逻辑测试用例。"
+        },
+        {
+          "taskId": "T-06.4",
+          "title": "阶梯大奖与 A 类健康检查 (Step 5 — Step Bonus)",
+          "status": "COMPLETED",
+          "priority": "Medium",
+          "assignee": "Backend",
+          "description": "A_Ratio = Revenue_A / Total_Net_Revenue。>= 70% 使用完整阶梯；< 70% 降一级。阶梯矩阵: Starter(0/RM0)/Bronze(10k/RM0)/Silver(20k/RM400)/Gold(50k/RM1000)/Platinum(120k/RM2500)/Diamond(200k/RM4000)。纯函数 + Vitest 覆盖健康检查临界值与降级场景。"
+        },
+        {
+          "taskId": "T-06.5",
+          "title": "Leader 1% 团队管理分红核算器 + 冻结检查 (Step 6)",
+          "status": "COMPLETED",
+          "priority": "High",
+          "assignee": "Backend",
+          "description": "月末结算: Leader 个人营收 >= 50k (或豁免 35k) 才可领取直属团队总 Net Revenue × 1%。连续 2 月不达标 → consecutive_fail_months >= 2 → leader_frozen=TRUE → 分红+伯乐奖全停。Admin 手动解冻。fn_evaluate_leader_month 需同步写入 staff.consecutive_fail_months 和 staff.leader_frozen。"
+        },
+        {
+          "taskId": "T-06.6",
+          "title": "裂变伯乐奖核算器 (Step 7 — Mentor Reward 0.5%)",
+          "status": "COMPLETED",
+          "priority": "Medium",
+          "assignee": "Backend",
+          "description": "触发条件: spinoff_legacy_map 存在映射 AND mentor.leader_frozen=FALSE。Mentor_Reward = 被孵化团队 Sales 总 Net Revenue × 0.5%。不含 Mentee Leader 本人营收。可叠加 (多个被孵化 Leader)。"
+        },
+        {
+          "taskId": "T-06.7",
+          "title": "服务债与主权抢夺结算器 (Step 8 — Tug-of-War Splitter)",
+          "status": "COMPLETED",
+          "priority": "Critical",
+          "assignee": "Backend",
+          "description": "纯函数 calculateTugOfWarSplit({neglectIndex, totalComm, isOwner}). 分润表: Index 0=100:0, 1=50:50, 2=40:60, 3=30:70, 4=20:80, 5=10:90, 6=0:100(触发易主). Supabase Trigger trg_neglect_index 实时执行状态机 (Migration 008). neglect_split JSONB 快照存入 invoices 表。Vitest 全 7 档分润 + 易主场景 100% 覆盖。"
+        },
+        {
+          "taskId": "T-06.8",
+          "title": "佣金最终汇总结算 RPC (Step 9 — Final Payout Aggregation)",
+          "status": "COMPLETED",
+          "priority": "High",
+          "assignee": "Backend",
+          "description": "fn_calculate_monthly_payout(p_staff_id, p_year, p_month): 聚合 Step 0-8 全部佣金组件。输出 JSONB: {baseComm, kamComm, bounty, stepBonus, leaderBonus, mentorReward, tugOfWarAdj, totalPayout}. 仅计算 status=Paid 的 Invoice (见款发佣原则). 月末 Cron 触发，结果写入 reports 表不可变快照。"
+        }
+      ]
+    },
+    {
+      "epicId": "EPIC-07",
+      "epicName": "物流履约与物理交割网关",
+      "status": "COMPLETED",
+      "tasks": [
+        {
+          "taskId": "T-07.1",
+          "title": "物流端双轨制列表与敏感数据脱敏 (Logistics View)",
+          "status": "COMPLETED",
+          "priority": "High",
+          "assignee": "Frontend",
+          "description": "DOListPage 重构为双轨: Invoice DO 标签 + Sample DO 标签。Logistics 角色 RLS: 仅可见 assigned_logistics_id=当前用户 的 Active DO。强制屏蔽 selling_price/cost_price/total_amount (前端 select 字段列表中物理排除)。"
+        },
+        {
+          "taskId": "T-07.2",
+          "title": "平板电子签收与凭证自动化 (e-POD)",
+          "status": "COMPLETED",
+          "priority": "High",
+          "assignee": "Fullstack",
+          "description": "Canvas 签名板 → Base64 存入 delivery_orders.signature_base64。相机拍照 → Base64 存入 photo_url。两者均为必填，缺一提交拦截。签收提交: status=Delivered, delivered_at=NOW()。触发 Resend (info@) 自动推送含签名 PDF 的 E-DO 给客户。DO 永久锁定只读。"
+        }
+      ]
+    },
+    {
+      "epicId": "EPIC-08",
+      "epicName": "财务大盘、现金流与应收风控",
+      "status": "COMPLETED",
+      "tasks": [
+        {
+          "taskId": "T-08.1",
+          "title": "Make.com 月末不可篡改财务快照",
+          "status": "COMPLETED",
+          "priority": "Critical",
+          "assignee": "DevOps",
+          "description": "Make.com 每月 1 日 00:01 KL 触发: (1) 调用 fn_calculate_monthly_payout 聚合上月所有员工佣金; (2) 生成 JSON 快照 → INSERT snapshots (不可变: CREATE RULE 阻断 UPDATE/DELETE); (3) 触发 Dashboard 指标归零。"
+        },
+        {
+          "taskId": "T-08.2",
+          "title": "AR Aging 应收账款追踪 & 见款发佣风控",
+          "status": "COMPLETED",
+          "priority": "Critical",
+          "assignee": "Backend/Frontend",
+          "description": "fn_ar_aging() RPC: 扫描所有 status=Active 发票，按 (created_at + credit_terms_days - CURRENT_DATE) 分桶: Current / 30 Days / 60 Days / 90+ Days。ReportsPage AR Aging 表格: Admin/HR 可见。见款发佣: Est.Comm 仅展示，Actual Comm = status=Paid 发票对应佣金，系统代码级阻断垫资发薪。"
+        },
+        {
+          "taskId": "T-08.3",
+          "title": "Make.com 账期智能连环催款引擎 (Auto-Dunning — 4 阶段)",
+          "status": "COMPLETED",
+          "priority": "High",
+          "assignee": "DevOps",
+          "description": "Make.com 每日 Cron: 查询所有 Active Invoice + Client.credit_terms → 计算 DueDate = created_at + credit_terms_days。Router 4路触发: T-7(友好提醒)/T+0(到期通知)/T+3(逾期警告)/T+7(最终催款)。使用 Resend (finance@) 发送 Dunning Reminder HTML 模板 ({{clientName}}/{{invoiceNo}}/{{overdueDays}}/{{dueDate}})。Cash Term: T+0 = Invoice 创建当天。"
+        },
+        {
+          "taskId": "T-08.4",
+          "title": "交互式组织架构图 (Interactive Org Chart)",
+          "status": "COMPLETED",
+          "priority": "Medium",
+          "assignee": "Frontend",
+          "description": "ReportsPage 树状图展示裂变网络。节点实时标示 Leader 达标状态: 绿(>= 50k或豁免35k)/黄(50%-99%进度)/红(冻结 leaderFrozen=true)。显示各节点当月业绩 + 团队规模。可展开/折叠。"
+        },
+        {
+          "taskId": "T-08.5",
+          "title": "全局 P&L 罗盘与供应链预测沙盘",
+          "status": "COMPLETED",
+          "priority": "High",
+          "assignee": "Frontend",
+          "description": "Admin Dashboard P&L: Gross Revenue / Total COGS / Gross Profit / Total Payout / Net Company Profit (实时计算)。供应链沙盘: 按供应商历史采购额折线图 + 热销 SKU 趋势 (基于 invoice_items JOIN products JOIN suppliers)。"
+        }
+      ]
+    },
+    {
+      "epicId": "EPIC-09",
+      "epicName": "超级管理员中枢与管线调度",
+      "status": "COMPLETED",
+      "tasks": [
+        {
+          "taskId": "T-09.1",
+          "title": "全局动力学参数控制台 (Params Config — v10 完整参数集)",
+          "status": "COMPLETED",
+          "priority": "High",
+          "assignee": "Frontend",
+          "description": "SettingsPage 暴露全部 system_params 配置: BASE_A/B, KAM_A/B, KAM_PERIOD(180), LEADER_THRESHOLD(50k), LEADER_THRESHOLD_EXEMPTION(35k), LEADER_DEATH_LINE_MONTHS(2), MENTOR_REWARD_RATE(0.5%), SPINOFF_THRESHOLD(50k), BOUNTY_TIER1(3箱/RM50)/TIER2(90d/1k/RM50)/TIER3(180d/2k/RM100)/TIER4(365d/6k/RM200)/BOUNTY_MAX(RM400), MIN_ORDER_BOXES(3), FREE_DELIVERY_BOXES(5), A_RATIO_THRESHOLD(70%), LADDER_MATRIX(JSON)。Admin 独占编辑。"
+        },
+        {
+          "taskId": "T-09.2",
+          "title": "供应商管线中心 (Supplier Directory)",
+          "status": "COMPLETED",
+          "priority": "High",
+          "assignee": "Fullstack",
+          "description": "CRUD 界面管理 suppliers 表 (name/email/contact_phone/address/isActive)。产品创建时必须绑定 supplier_id。供应商邮箱是 Auto-PO 发送的精确目标地址。"
+        },
+        {
+          "taskId": "T-09.3",
+          "title": "企业邮件路由分配器配置 UI",
+          "status": "COMPLETED",
+          "priority": "High",
+          "assignee": "Fullstack",
+          "description": "SettingsPage 可视化配置 email_routing 表: finance@(Invoice/Receipt/催款) / info@(E-DO) / care@(HR关怀) / admin@(Auto-PO)。基于模块自动切换发件身份，Edge Function send-email 读取此表路由。"
+        },
+        {
+          "taskId": "T-09.4",
+          "title": "动态 HTML 邮件变量模板库 (Email Template Engine)",
+          "status": "COMPLETED",
+          "priority": "Medium",
+          "assignee": "Fullstack",
+          "description": "SettingsPage WYSIWYG 编辑器管理 email_templates 表。支持模板: Invoice / DO (E-DO) / Receipt / Welcome / PO / Employee Care / Dunning Reminder。变量: {{clientName}}/{{invoiceNo}}/{{total}}/{{overdueDays}}/{{dueDate}} 等动态注入。Migration 006 已插入 staff_birthday + staff_anniversary 模板。需补充 Dunning Reminder 模板。"
+        }
+      ]
+    }
+  ],
+  "schemaVersionHistory": [
+    {
+      "migration": "001_initial_schema.sql",
+      "description": "全量关系型数据库 Schema: staff/suppliers/products/clients/invoices/delivery_orders/purchase_orders/commissions/edit_requests/playbook_materials/snapshots/system_params/email_routing/email_templates/leader_performance_log/spinoff_legacy_map + 系统参数种子数据"
+    },
+    {
+      "migration": "002_rls_policies.sql",
+      "description": "全角色 RLS 策略: Admin全局可见/Leader只见本人+直属团队/Sales孤岛模式/Logistics极度受限/products_safe_view屏蔽cost_price"
+    },
+    {
+      "migration": "003_functions_triggers.sql",
+      "description": "generate_invoice_no() + generate_do_no() 悲观锁引擎; trg_staff_offboarding v1 (初版)"
+    },
+    {
+      "migration": "004_email_send_log.sql",
+      "description": "email_send_log 表 + Resend Edge Function 审计追踪"
+    },
+    {
+      "migration": "005_offboarding_v2.sql",
+      "description": "fn_staff_offboarding() 全功能重写: 幂等守卫 + Leader级联断链 + GET DIAGNOSTICS 精确审计"
+    },
+    {
+      "migration": "006_leader_spinoff_birthday.sql",
+      "description": "fn_evaluate_leader_month + fn_grant_leader_exemption + fn_request_spinoff + fn_get_birthday/anniversary_celebrants + 生日/周年邮件模板 + staff.leader_bonus_active/spinoff_right_active"
+    },
+    {
+      "migration": "007_v10_schema_additions.sql",
+      "description": "v10新增列: staff(phone/hire_date/base_salary/commission_rate_override/updated_at/consecutive_fail_months/leader_frozen/permission_switches/mentor_id), invoices(co_created_by/is_joint_order/neglect_split/total_boxes), clients(tier1-4_claimed/total_revenue). 补充 system_params v10参数."
+    },
+    {
+      "migration": "008_tug_of_war_first_blood.sql",
+      "description": "trg_neglect_index (Tug-of-War状态机) + trg_first_blood_claim (孤儿客户首单夺权) + fn_evaluate_leader_month补丁(写回staff.consecutive_fail_months/leader_frozen)"
+    }
+  ]
+}

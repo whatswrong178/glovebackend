@@ -1,0 +1,2037 @@
+# MediGlove Supply 后端系统规格书 v10 (Ultimate Merged Edition)
+
+> **财务底线公式 (Financial Bottom Line):**
+> `Revenue - Cost of Goods Sold = Gross Profit - Expenses = Net Profit`
+> 本系统一切设计围绕此公式展开，确保公司净利润始终为正。
+
+---
+
+## 目录 (Table of Contents)
+
+1. [系统概览 & 技术栈](#1-系统概览--技术栈)
+2. [全局安全防线](#2-全局安全防线)
+3. [Home - 仪表盘](#3-home---仪表盘)
+4. [Playbook - 营销知识库](#4-playbook---营销知识库)
+5. [Product Catalogue - 产品目录 & 供应商映射](#5-product-catalogue---产品目录--供应商映射)
+6. [Clients - CRM & 公海机制](#6-clients---crm--公海机制)
+7. [Invoice - 三单联动 (Invoice + Auto-DO + Auto-PO)](#7-invoice---三单联动)
+8. [Delivery Order - 物流网关](#8-delivery-order---物流网关)
+9. [HR - 复合权限与动态组织](#9-hr---复合权限与动态组织)
+10. [Reports - 财务大盘 & AR Aging](#10-reports---财务大盘--ar-aging)
+11. [Settings - 超级管理员配置中心](#11-settings---超级管理员配置中心)
+12. [佣金引擎完整公式 (所有步骤)](#12-佣金引擎完整公式)
+13. [Neglect Index & 拔河模型公式](#13-neglect-index--拔河模型公式)
+14. [公司损益表 (P&L)](#14-公司损益表-pl)
+15. [RBAC 权限矩阵 (5 角色)](#15-rbac-权限矩阵-5-角色)
+16. [安全与反欺诈检查清单](#16-安全与反欺诈检查清单)
+17. [测试矩阵 (Testing Matrix)](#17-测试矩阵-testing-matrix)
+18. [部署标准 (Deployment Standards)](#18-部署标准-deployment-standards)
+
+---
+
+## 1. 系统概览 & 技术栈
+
+### 系统定位
+
+MediGlove Supply 后端系统是一套面向医疗耗材经销商的全流程业务管理平台，覆盖产品管理、客户关系、发票流转、送货签收、人事佣金、财务报表六大核心模块。系统设计的核心原则是**确保财务底线公式始终成立**：
+
+```
+Revenue (总营收)
+- Cost of Goods Sold (销售成本 COGS)
+= Gross Profit (毛利润 GP)
+- Expenses (费用/佣金支出)
+= Net Profit (净利润) → 必须 > 0
+```
+
+### 系统导航顺序 (Sidebar Layout)
+
+```
+Home → Playbook → Product Catalogue → Clients → Invoice → Delivery Order → HR → Reports → Settings
+```
+
+### 技术栈 (Tech Stack — Zero-Cost Cloud-Native)
+
+| 层级 | 技术选型 | 说明 |
+|------|---------|------|
+| 部署 (Deployment) | **Vercel** + GitHub 私有代码库 | 零成本极速 CI/CD 发布 |
+| 前端 (Frontend) | **Refine.dev** + **React Query** + TailwindCSS | 中后台 CRUD 框架，数据缓存与静默更新 |
+| 数据库 (Database) | Supabase (PostgreSQL) | 实时订阅，Row Level Security |
+| 后端逻辑 (Backend-less) | **PostgreSQL Triggers + RPC 存储过程** | 后端零代码化，核心逻辑下沉至数据库 |
+| 鉴权 (Auth) | **Row Level Security (RLS)** 原生 | 无中间件，数据库底层原生隔离数据视野 |
+| 高并发风控 | PostgreSQL 行级悲观锁 (`SELECT FOR UPDATE`) | 彻底解决并发撞号问题（Invoice/DO/PO 编号） |
+| AI OCR | **Google Gemini 1.5 Flash** (免费) | 全自动精准提取产品名、SKU、绝密净成本 |
+| 全局输出层 (Print Engine) | 原生 A4 无边距打印 | 全系统单据一键无边距打印与预览（Invoice, DO, Receipt, PO） |
+| 邮件发送 (Email Sending) | Resend API + 企业域名多身份路由 | 按模块自动切换发件身份：`finance@`, `info@`, `care@`, `admin@` |
+| 邮件接收 (Email Receiving) | **Zoho Mail** 免费版 | 单账号多别名机制 |
+| 通讯 (Communication) | WhatsApp 集成 | 一键跟进，预设话术脚本 |
+| 自动化/Cron | **Make.com** | 月度结算、Auto-Dunning 催款、里程碑关怀 |
+| 测试 (Testing) | **Vitest** | 佣金引擎/拔河分润 100% 覆盖率 |
+| CI/CD | **GitHub Actions** → 拦截 Vercel 发布 | 测试失败强制阻断部署 |
+| 全局安全 (Data Security) | 多层防泄密体系 | 禁用右键/截屏键；动态水印；切屏高斯模糊防窥 |
+
+### 五大角色体系
+
+| 角色 | 定位 | 数据视野 |
+|------|------|---------|
+| Admin | 超级管理员 / 老板 — 系统上帝视角、规则制定者与终极风控官 | 100% 全局可见 |
+| HR & Finance | 人事与财务中台 — 资金、物料与数据的"守门员" | 全公司订单/客户/人员可见，不可见绝密进货底价和系统参数 |
+| Leader | 团队领袖 — 带兵打仗的将军 | 本人 + 直属团队成员 |
+| Sales | 一线业务员 — 前线冲锋陷阵的士兵 | 100% 孤岛模式，仅本人数据 |
+| Logistics | 物流送货员 — 完成闭环最后一公里的物理执行者 | 极度受限，仅分配给自己的 Active DO，强制屏蔽单价/总价/提成 |
+
+---
+
+## 2. 全局安全防线 (Global Security Layer)
+
+### 功能描述
+
+全局安全防线强制应用于所有角色（含 Admin），是系统级数据防泄密体系。覆盖反截屏、动态水印、防录屏三大核心能力，同时提供原生级打印引擎满足合规输出需求。
+
+### 2.1 反间谍与防泄密系统 (Anti-Leak)
+
+| 安全机制 | 技术实现 | 说明 |
+|----------|---------|------|
+| 右键禁用 | `document.addEventListener('contextmenu', e => e.preventDefault())` | 阻止右键菜单，防止另存为/审查元素 |
+| PrintScreen 禁用 | 键盘事件监听拦截 `PrintScreen` 键 | 系统级禁用截屏快捷键 |
+| 动态水印 | Canvas 低透明度渲染叠加层 | 全页面铺设"员工姓名 + 员工ID + 时间戳"水印，极难消除 |
+| 切屏/录屏防窥 | `document.visibilitychange` + 录屏API检测 | 浏览器失去焦点或检测到录屏软件时，全屏触发高斯模糊 (Gaussian Blur) |
+
+### 2.2 原生级联打印引擎 (Print Engine)
+
+- 全角色开放：任何人均可通过系统自带的 `Print` 按钮输出单据
+- 范围限制：仅能打印**自己权限视野内**的单据（Invoice, DO, Receipt, PO）
+- 打印格式：一键生成无边距、适配 A4 的完美打印排版（原生浏览器打印）
+- 支持单据类型：Invoice / Delivery Order / Receipt / Purchase Order
+
+### 业务规则
+
+1. 安全机制强制应用于所有角色，包括 Admin，无人可豁免
+2. 动态水印包含三要素：员工姓名、员工ID、实时时间戳，确保泄密可溯源
+3. 高斯模糊在浏览器重新获得焦点后自动解除
+4. 打印引擎遵循 RBAC 数据隔离原则，Sales 只能打印自己的单据
+
+### 权限控制
+
+| 功能 | Admin | HR & Finance | Leader | Sales | Logistics |
+|------|-------|-------------|--------|-------|-----------|
+| 受安全防线约束 | 是 | 是 | 是 | 是 | 是 |
+| 打印自己权限内单据 | 全部 | 全部 | 本人+团队 | 仅本人 | 仅分配的DO |
+
+---
+
+## 3. Home - 仪表盘
+
+### 功能描述
+
+Home 模块是系统登录后的首页，根据角色展示不同维度的数据看板。Admin 侧重公司整体财务健康（P&L），Leader/Sales 侧重个人及团队业绩进度。所有指标每月1日自动归零重置。新增竞赛排行榜，激发狼性文化。
+
+### 数据字段
+
+**Admin P&L 财务仪表盘:**
+
+| 字段 | 说明 | 数据来源 |
+|------|------|---------|
+| Gross Revenue (总营收) | 所有已付款 Invoice 总额（不含运费） | Invoice.total (status=Paid) |
+| Total COGS (总销售成本) | 所有已售商品的成本总和 | Sum(costPrice × qty) |
+| Gross Profit (毛利润) | Gross Revenue - Total COGS | 实时计算 |
+| Total Payout (总佣金支出) | 所有员工佣金总和 | 佣金引擎输出 |
+| Net Company Profit (净利润) | Gross Profit - Total Payout | 实时计算 |
+
+**Leader/Sales 简化4视图侧边栏:**
+
+| 视图 | 说明 |
+|------|------|
+| Overview (概览) | 当月关键指标汇总 |
+| Monthly (月度) | 当月业绩趋势图 |
+| Staff (团队) | Leader: 下属业绩列表; Sales: 不可见 |
+| Client (客户) | 客户贡献排名 |
+
+**双佣金显示:**
+
+| 字段 | 说明 |
+|------|------|
+| Est. Comm (预估佣金) | 基于所有 Active（未付款）Invoice 计算 |
+| Actual Comm (实际佣金) | 仅基于 Paid（已付款）Invoice 计算，严格基于货款到账 |
+
+**动态排名进度条 (Ranking Progress Bar):**
+
+```
+Current Tier = 个人营收所达到的最高阶梯
+Next Tier = 当前阶梯的上一级
+Progress % = (Personal_Revenue - Current_Tier.threshold) / (Next_Tier.threshold - Current_Tier.threshold) × 100
+
+示例: 当前营收 RM 12,000, 处于 Starter 阶梯
+  → 目标: Silver (RM 20,000)
+  → Progress = (12,000 - 0) / (20,000 - 0) × 100 = 60%
+```
+
+**竞赛排行榜 (Competition Leaderboard) — 狼性文化:**
+
+| 排行榜 | 说明 | 排序依据 |
+|--------|------|---------|
+| Top 总业绩排行榜 | 当月全公司销售人员业绩排名 | 个人 Net Revenue 降序 |
+| 拓客王者排行榜 | 当月新客户开发数量排名 | 新客户首单 Invoice 数降序 |
+
+### 业务规则
+
+1. Admin 可查看全公司 P&L 财务仪表盘，实时聚合数据
+2. Leader 可查看自己 + 直属团队的业绩数据
+3. Sales 仅可查看自己的业绩数据
+4. 跟进提醒 (Follow-up Reminders) 自动出现在 Sales 的待办列表中
+5. 每月1日自动重置所有 Dashboard 指标为零（由 Cron Job 执行）
+6. 进度条动态显示从当前阶梯到下一阶梯的进度，智能识别阶段差额，拒绝展示满级目标
+7. 竞赛排行榜全员可见，激发良性竞争
+8. Sales 个人控制台新增"首单悬赏"追踪进度，清晰知道哪个新客户满足条件后能拿到悬赏
+
+### 权限控制
+
+| 功能 | Admin | HR & Finance | Leader | Sales | Logistics |
+|------|-------|-------------|--------|-------|-----------|
+| 查看 P&L 仪表盘 | 全部 | 全部 | 不可见 | 不可见 | 不可见 |
+| 查看团队数据 | 全部 | 全部 | 仅直属 | 不可见 | 不可见 |
+| 查看个人业绩 | 全部 | 全部 | 本人 | 本人 | 不可见 |
+| 跟进提醒待办 | — | — | 可见 | 可见 | 不可见 |
+| 竞赛排行榜 | 可见 | 可见 | 可见 | 可见 | 不可见 |
+| 首单悬赏追踪 | — | — | 可见 | 可见 | 不可见 |
+
+---
+
+## 4. Playbook - 营销知识库
+
+### 功能描述
+
+Playbook 是面向一线销售代理的多维度营销武器库，提供从产品知识到成交话术的全方位支持。采用双层分类树结构组织内容，支持多媒体资料格式，赋能前线团队多维度获客。Admin 拖拽上传物料，通过二级菜单极速打标签，集中管理确保公司输出的声音绝对统一。
+
+### 数据字段
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| mainCategory | String | 主分类 (如: 促单技巧、产品知识、客户异议处理) |
+| subCategory | String | 子分类 (如: 价格异议、竞品对比、使用场景) |
+| title | String | 资料标题 |
+| type | Enum | 资料类型: PDF / Script / Article / Comic / Video / Music |
+| content | Text/URL | 内容正文或媒体链接 |
+| uploadedBy | UUID | 上传者 ID |
+| createdAt | Timestamp | 创建时间 |
+
+### 业务规则
+
+1. **双层分类树 (Dual-tier Category Tree):**
+   - 第一层: 主分类 (Main Category) — 如 促单技巧、产品科普、营销素材
+   - 第二层: 子分类 (Sub Category) — 如 价格异议、规格对比、使用方法
+
+2. **多媒体营销武器库 (Multi-media Marketing Arsenal):**
+   - 标准医疗产品 PDF 手册
+   - 营销话术脚本 (Marketing Scripts)
+   - 小说风格软文 (Novel-style Soft Articles)
+   - 产品科学漫画 (Product Science Comics)
+   - 推广视频/音乐资源 (Promotional Video & Music Resources)
+
+3. Admin 负责上传和管理所有 Playbook 内容（唯一拥有 Upload 与 Edit 权限）
+4. Leader/Sales 可查看、下载和使用，可全屏播放营销短视频和剧本（受防录屏机制严格保护）
+5. 高利润营销库：结构化存储高毛利产品卖点、场景化营销剧本与短视频素材
+
+### 权限控制
+
+| 功能 | Admin | HR & Finance | Leader | Sales | Logistics |
+|------|-------|-------------|--------|-------|-----------|
+| 上传/编辑资料 | 独占 | 不可 | 不可 | 不可 | 不可 |
+| 查看/下载资料 | 全部 | 全部 | 全部 | 全部 | 不可 |
+| 管理分类结构 | 独占 | 不可 | 不可 | 不可 | 不可 |
+| 全屏播放视频 | 可以 | 可以 | 可以 | 可以 | 不可 |
+
+---
+
+## 5. Product Catalogue - 产品目录 & 供应商映射
+
+### 功能描述
+
+产品目录是系统的价格中枢，Admin 统一维护所有商品的成本价、最低售价和建议售价。支持 AI OCR 一键导入供应商 PDF，价格变更实时同步至发票创建模块。新增**供应商强绑定 (Supplier Mapping)**：新产品必须关联供应商，为 Auto-PO 采购流提供底层数据支撑。
+
+### 数据字段
+
+| 字段 | 类型 | 说明 | 可见性 |
+|------|------|------|--------|
+| productName | String | 产品名称 | 全部角色 |
+| sku | String | 产品编号 | 全部角色 |
+| category | Enum | 产品分类: A (医疗耗材) / B (其他产品) | 全部角色 |
+| boxPerCarton | Integer | 每箱盒数 | 全部角色 |
+| costPrice | Decimal | 成本价 (系统内部绝密) | **仅 Admin (系统级)** |
+| minSellingPrice | Decimal | 最低售价 (价格底线红线) | Admin + Leader |
+| suggestedPrice | Decimal | 建议售价 (指导价格) | 全部角色 |
+| supplierId | UUID | **必填** — 绑定供应商 ID (Supplier Mapping) | Admin |
+| isActive | Boolean | 是否启用 | Admin |
+
+### 业务规则
+
+1. **Admin 统一定价体系 (全域价格防线):**
+   - `costPrice` (绝密净成本): 系统内部字段，仅用于毛利计算，任何前端界面不可见
+   - `minSellingPrice` (开单底价红线): 价格底线，Sales 开单时售价不可低于此值
+   - `suggestedPrice` (建议售价): 指导价格，供 Sales 参考
+
+2. **供应商强绑定 (Supplier Mapping):**
+   - 新产品创建时**必须**选择绑定供应商 (`supplierId` 为必填)
+   - 供应商字典在 Settings → 供应商管线中维护
+   - 此绑定关系是 Auto-PO (自动采购单) 流程的底层依据
+   - 一个产品绑定一个主供应商
+
+3. **AI OCR 一键导入 (AI-powered PDF Import):**
+   - 步骤 1: Admin 上传供应商 PDF 价格单
+   - 步骤 2: 调用 **Google Gemini 1.5 Flash** (免费视觉接口) 进行 OCR 识别
+   - 步骤 3: 自动提取 Product Name, SKU, Box/Carton, Cost Price
+   - 步骤 4: 生成预览表格供 Admin 人工校验
+   - 步骤 5: 确认后批量导入 Supabase
+
+4. **实时价格同步:**
+   - 产品价格更新后，立即反映在 Invoice 创建模块中
+   - 已存在的 Invoice 中的价格不受影响（历史价格锁定）
+
+### 相关公式
+
+```
+Per Item Raw GP = (Selling Price - Cost Price) × Qty
+```
+
+> costPrice 是财务底线公式中 COGS 的基础，直接影响 Gross Profit 的计算。
+
+### 权限控制
+
+| 功能 | Admin | HR & Finance | Leader | Sales | Logistics |
+|------|-------|-------------|--------|-------|-----------|
+| 查看产品列表 | 全部 | 全部 | 全部 | 全部 | 不可 |
+| 查看成本价 | 独占(系统级) | 不可 | 不可 | 不可 | 不可 |
+| 编辑产品信息 | 独占 | 不可 | 不可 | 不可 | 不可 |
+| 上传 PDF OCR 导入 | 独占 | 不可 | 不可 | 不可 | 不可 |
+| 查看最低售价 | 可以 | 不可 | 可以 | 不可 | 不可 |
+| 管理供应商绑定 | 独占 | 不可 | 不可 | 不可 | 不可 |
+
+---
+
+## 6. Clients - CRM & 公海机制
+
+### 功能描述
+
+客户管理模块是公司客户资产的保护框架，所有客户数据归属公司。每位客户必须关联创建者 (Created By)，客户信息的修改需经 Admin 审批。新增**区域强制选择**、**拿样系统**、**账期信用评级**、**公海孤儿机制**和**首单夺权锁**，形成完整的客户全生命周期管理。
+
+### 数据字段
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| clientName | String | 客户名称 (诊所/医院名) |
+| contactPerson | String | 联系人姓名 |
+| phone | String | 联系电话 |
+| email | String | 邮箱 |
+| address | Text | 地址 |
+| region | Enum | **必填** — 区域: West Malaysia (西马) / East Malaysia (东马) |
+| ssmNo | String | SSM 商业注册号（用于反欺诈查重） |
+| licenseNo | String | 诊所执照号（用于反欺诈查重） |
+| createdBy | UUID | **必填** — 客户归属 (创建者 ID / Owner) |
+| firstOrderDate | Date | 首次下单日期 (用于 KAM 计算) |
+| totalRevenue | Decimal | 累计营收 (用于新客悬赏) |
+| creditTerms | Enum | **必填** — 账期属性: Cash Term / 30 Days / 60 Days |
+| neglectIndex | Integer | 怠慢指数 (0-6)，默认 0 |
+| isOrphan | Boolean | 是否为孤儿客户，默认 false |
+| isActive | Boolean | 客户状态 |
+| createdAt | Timestamp | 创建时间 |
+
+### 业务规则
+
+1. **客户归属追踪:** `createdBy` 为必填字段，明确每位客户的归属 Sales (Owner)
+
+2. **区域强制选择:** 创建客户时必须选择 `region`（西马/东马），此字段影响促销规则引擎（西马 >= 5 箱免运费）
+
+3. **编辑审批流程 (Request to Edit):**
+   - Leader/Sales 修改客户信息 → 提交编辑请求 (附带修改原因 + 新数据)
+   - Admin / HR & Finance 审核后批准或拒绝
+   - 仅 Admin 可直接编辑
+
+4. **CSV 导出:** 仅 Admin 可执行，Leader/Sales 无此按钮（唯一导出权防止数据泄露）
+
+5. **拿样系统 (Request Sample):**
+   - Leader/Sales 可为高意向客户提交 `Request Sample` 申请
+   - 生成独立的 **Sample DO**（样品送货单），与正常 Invoice DO 分开
+   - Sample DO 不产生 Invoice，不计入销售额或营收
+   - Sample DO 强制走 HR & Finance 审批流（防止样品倒卖）
+   - 财务独立核算营销损耗
+
+6. **账期信用评级 (Credit Terms Profile):**
+   - 创建客户时必须录入 `creditTerms` 属性
+   - 支持三种账期：Cash Term (现金)、30 Days (30天账期)、60 Days (60天账期)
+   - 此属性是 Auto-Dunning (自动催款引擎) 的底层触发依据
+
+7. **公海孤儿机制 (Public Pool & Orphan Mechanism):**
+   - 当员工账号被置为 Inactive（离职）时，触发连带更新
+   - 系统自动将其名下所有 Client 的 `Is_Orphan` 设为 True
+   - 新增 **Public Pool 公海视图**，全员可见 Orphan 客户资料
+   - 孤儿客户等待重新认领
+
+8. **首单夺权锁 (First-Blood Claim):**
+   ```
+   触发条件: 任何 Active 业务员为 Orphan 客户成功开出新 Invoice
+   执行动作:
+     1. 强制将 Client.createdBy (Owner) 变更为当前开单人
+     2. 设置 Client.isOrphan = false (取消孤儿状态)
+     3. 重置 Client.neglectIndex = 0
+     4. 当次 Invoice 佣金 100% 归属新 Owner
+   ```
+   - 独占转移机制：第一个开出 Invoice 的人独占该客户
+   - 一旦转移完成，其他人不可再争夺
+
+9. **客户资产保护:** 所有客户数据视为公司资产，员工离职后客户数据保留并进入公海
+
+### 相关公式
+
+```
+# 首单夺权逻辑 (First-Blood Claim)
+IF Client.isOrphan == True AND Invoice.createdBy != Client.createdBy:
+  Client.createdBy = Invoice.createdBy  // 强制转移 Owner
+  Client.isOrphan = False
+  Client.neglectIndex = 0
+  Commission_Split = 100% to new Owner  // 当次佣金全归新 Owner
+```
+
+### 权限控制
+
+| 功能 | Admin | HR & Finance | Leader | Sales | Logistics |
+|------|-------|-------------|--------|-------|-----------|
+| 查看客户列表 | 全部 | 全部 | 本人+团队 | 仅本人 | 不可 |
+| 创建客户 | 可以 | 可以 | 可以 | 可以 | 不可 |
+| 直接编辑客户 | 独占 | 不可 | 不可 | 不可 | 不可 |
+| 请求编辑客户 | — | 审批 | 提交请求 | 提交请求 | 不可 |
+| 导出 CSV | 独占 | 不可 | 不可 | 不可 | 不可 |
+| 查看公海 (Public Pool) | 可以 | 可以 | 可以 | 可以 | 不可 |
+| Request Sample | 可以 | 审批 | 可以(提交) | 可以(提交) | 不可 |
+| 首单夺权 | — | — | 自动触发 | 自动触发 | 不可 |
+
+---
+
+## 7. Invoice - 三单联动 (Invoice + Auto-DO + Auto-PO)
+
+### 功能描述
+
+发票模块是系统的核心收入入口，直接驱动财务底线公式中的 Revenue。采用双标签页设计（Active/Completed），配合严格的状态锁定机制和审批工作流。新增**防并发撞号**、**智能促销规则引擎**、**50/50 联合代办流**、**Neglect Index 动态分润**以及**三单联动**（Invoice 自动生成 DO + 自动生成 PO），形成完整的销售-物流-采购闭环。
+
+### 数据字段
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| invoiceNo | String | 发票编号 — 格式 `YYMMDD-XXXX` (PostgreSQL 行级悲观锁防撞号) |
+| clientId | UUID | 关联客户 |
+| createdBy | UUID | 创建者 (Sales / Owner) |
+| coCreatedBy | UUID | 联合创建者 (50/50 联合代办时填充) |
+| items[] | Array | 商品明细: productId, qty, sellingPrice, supplierId |
+| subtotal | Decimal | 小计 (商品总额) |
+| discount | Decimal | 折扣金额 |
+| deliveryCharge | Decimal | 运费 (西马 >= 5 箱自动置零) |
+| total | Decimal | 发票总额 |
+| totalBoxes | Integer | 总箱数 (用于促销规则引擎校验) |
+| status | Enum | Active (未付款) / Paid (已付款) |
+| paidDate | Date | 付款日期 |
+| linkedDO | UUID | 关联的 Delivery Order (自动生成) |
+| linkedPO | UUID | 关联的 Purchase Order (自动生成) |
+| neglectSplit | JSON | Neglect Index 分润记录: {ownerShare, invoicerShare, index} |
+| isJointOrder | Boolean | 是否为 50/50 联合代办单 |
+| createdAt | Timestamp | 创建时间 |
+| lockedAt | Timestamp | 锁定时间 (Paid 后自动填充) |
+
+### 业务规则
+
+1. **双标签页 (Dual Tabs):**
+   - **Active 标签:** 显示所有未付款发票
+   - **Completed 标签:** 显示所有已付款发票
+
+2. **防并发撞号机制 (Invoice Numbering):**
+   ```
+   格式: YYMMDD-XXXX
+   示例: 260422-0001, 260422-0002, ...
+
+   技术实现:
+   BEGIN TRANSACTION;
+     SELECT nextval FROM invoice_sequence WHERE date = CURRENT_DATE FOR UPDATE;  -- 行级悲观锁
+     new_no = YYMMDD + '-' + LPAD(nextval + 1, 4, '0');
+     INSERT INTO invoices (invoiceNo, ...) VALUES (new_no, ...);
+     UPDATE invoice_sequence SET nextval = nextval + 1 WHERE date = CURRENT_DATE;
+   COMMIT;
+   ```
+   - 使用 Supabase (PostgreSQL) 事务 + `FOR UPDATE` 行级悲观锁
+   - 彻底杜绝高并发下多人同时开单的撞号问题
+
+3. **智能促销规则引擎 (Promo Engine):**
+   ```
+   规则 1 — 最低起送门槛:
+     IF totalBoxes < 3:
+       REJECT → 返回 400 Bad Request "最低起送 3 箱"
+       // 后端纯函数硬性拦截，前端无法绕过
+
+   规则 2 — 西马免运费:
+     IF Client.region == "West Malaysia" AND totalBoxes >= 5:
+       deliveryCharge = 0  // 系统自动抹除运费
+     // Sales 没有任何干预和篡改此规则的权限
+   ```
+   - 规则引擎锁定在后端纯函数中，任何前端篡改参数的 Invoice 请求都被拦截返回 `400 Bad Request`
+
+4. **50/50 联合代办流 (Joint Order):**
+   ```
+   触发场景: 中台 (HR & Finance) 代客户开单
+   规则:
+     - 基础提成 (Base Commission): 50% 归原 Owner, 50% 归代办人
+     - 业绩 (Revenue): 50% 归原 Owner, 50% 归代办人
+     - 新客悬赏 (Bounty): 100% 归原开发人 (createdBy / Owner)
+     - Invoice.isJointOrder = true
+     - Invoice.coCreatedBy = 代办人 ID
+   ```
+
+5. **Neglect Index 动态分润 (Tug-of-War Model):**
+   - 详见第 13 节完整公式
+   - 当非 Owner (B) 为 Owner (A) 的客户开单时，触发 Neglect Index 机制
+   - 分润比例随 Neglect_Index 动态变化
+   - 达到 index 6 时强制转移客户 Owner
+
+6. **完整工作流 SOP:**
+   ```
+   创建 Invoice → 状态: Active
+   → 系统自动校验促销规则（3 箱起送、5 箱免运费）
+   → 自动生成 Delivery Order (Auto-DO)
+   → 自动生成 Purchase Order (Auto-PO，发至对应供应商)
+   → 通过 Resend API 发送 Invoice 邮件给客户 (finance@)
+   → T+3 天: 自动触发破冰回访提醒 (ice-breaker callback)
+   → T+25 天: 自动触发复购推送 (reorder push)
+   → 客户付款 → 标记为 Paid → 自动锁定为 Read-Only
+   → 通过 Resend API 发送 Receipt 邮件给客户 (finance@)
+   ```
+
+7. **Auto-DO (自动生成送货单):**
+   - Invoice 创建时自动生成对应 Delivery Order
+   - DO 商品明细从 Invoice items 自动映射
+   - DO 状态初始为 Active (待签收)
+
+8. **Auto-PO (自动生成采购单):**
+   - Invoice 创建时，按商品绑定的供应商自动汇总生成 Purchase Order
+   - 若一张 Invoice 涉及多个供应商，分别生成多张 PO
+   - PO 需经 HR & Finance 审批后发给供应商
+
+9. **付款前置条件:** 不可将 Invoice 标记为 Paid，除非已关联已签收的 Delivery Order (DO)
+
+10. **已付款发票锁定 (Paid Invoice Lock):**
+    - Paid 后自动设为 Read-Only，任何角色不可直接编辑
+    - 修改需通过 "Request to Edit" 工作流
+    - Admin 审批后系统自动重新计算佣金
+
+11. **WhatsApp 集成:**
+    - 一键跟进按钮，发送预设话术脚本
+    - 支持 T+3 破冰话术和 T+25 复购话术
+
+12. **删除按钮:** Leader/Sales 界面物理移除 Delete 按钮，仅 Admin 可删除
+
+### 相关公式
+
+```
+Net Revenue = Invoice Total - Delivery Charge
+Revenue_A = Sum of all Category A product line items
+Revenue_B = Sum of all Category B product line items
+
+# 50/50 Joint Order Split
+IF Invoice.isJointOrder == true:
+  Owner_Base_Comm = Base_Comm × 0.5
+  CoCreator_Base_Comm = Base_Comm × 0.5
+  Owner_Revenue_Credit = Net_Revenue × 0.5
+  CoCreator_Revenue_Credit = Net_Revenue × 0.5
+  Bounty → 100% to Client.createdBy (原始开发人)
+
+# Promo Engine Validation
+IF totalBoxes < 3: REJECT(400)
+IF region == "West Malaysia" AND totalBoxes >= 5: deliveryCharge = 0
+```
+
+> Invoice.total (已付款) 直接进入 Gross Revenue 计算，是财务底线公式的起点。
+
+### 权限控制
+
+| 功能 | Admin | HR & Finance | Leader | Sales | Logistics |
+|------|-------|-------------|--------|-------|-----------|
+| 查看发票 | 全部 | 全部 | 本人+团队 | 仅本人 | 不可 |
+| 创建发票 | 可以 | 可以(代办) | 可以 | 可以 | 不可 |
+| 删除发票 | 独占 | 不可(按钮移除) | 不可(按钮移除) | 不可(按钮移除) | 不可 |
+| 编辑已付款发票 | 审批通过后 | 提交请求 | 提交请求 | 提交请求 | 不可 |
+| 标记为 Paid | 可以 | 可以 | 可以 | 可以 | 不可 |
+| 发送邮件 | 可以 | 可以 | 可以 | 可以 | 不可 |
+| 修改促销规则 | 独占 | 不可 | 不可 | 不可 | 不可 |
+| 审批 Auto-PO | 可以 | 可以 | 不可 | 不可 | 不可 |
+
+---
+
+## 8. Delivery Order - 物流网关
+
+### 功能描述
+
+送货单 (DO) 模块管理从仓库出货到客户签收的全流程物流追踪。新增**双轨制列表**（Invoice DO vs Sample DO），支持平板签名 + 拍照作为签收凭证 (POD)。签收后系统自动发送 E-DO (电子送货单 PDF) 给客户，DO 永久锁定并与 Invoice 付款流程联动。
+
+### 数据字段
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| doNo | String | 送货单编号 — 格式 `YYMMDD-XXXX` (与 Invoice 共享悲观锁机制) |
+| doType | Enum | **Invoice DO** (正常交易发货单) / **Sample DO** (样品发货单) |
+| linkedInvoice | UUID | 关联的 Invoice (Invoice DO 必填，Sample DO 为空) |
+| clientId | UUID | 客户 ID |
+| items[] | Array | 送货商品明细 |
+| status | Enum | Active (未签收) / Completed (已签收) |
+| signatureData | Base64 | 平板签名数据 |
+| photoProof | Base64/URL | 签收照片 (POD) |
+| deliveredDate | Timestamp | 完成签收时间戳 |
+| autoEmailSent | Boolean | E-DO 邮件是否已发送 |
+| createdBy | UUID | 创建者 |
+| assignedTo | UUID | 分配的物流送货员 (Logistics 角色) |
+| createdAt | Timestamp | 创建时间 |
+
+### 业务规则
+
+1. **双轨制列表 (Dual-Track DO):**
+   - **Invoice DO 列表:** 正常交易发货单，关联 Invoice，影响付款流程
+   - **Sample DO 列表:** 样品发货单，独立于 Invoice，不产生营收
+   - 两者在界面上强制拆分显示，互不干扰
+   - Logistics 角色面板清晰拆分为两个作业界面
+
+2. **双标签页 (每个列表内):**
+   - **Active 标签:** 显示所有未签收送货单
+   - **Completed 标签:** 显示所有已签收送货单
+
+3. **完整物流工作流:**
+   ```
+   仓库接收订单 (Warehouse receives order)
+   → 分配给 Logistics 送货员
+   → 货物交付配送 (Goods to delivery)
+   → 到达诊所/医院 (Arrive at clinic)
+   → 平板签名 + 拍照签收 (Tablet signature + photo)
+   → DO 状态更新为 Completed → 永久锁定
+   → 系统自动通过 Resend API 发送 E-DO (PDF) 给客户 (info@)
+   ```
+
+4. **签收凭证 (Proof of Delivery - POD):**
+   - 平板电子签名 (Base64 存储) — 必填
+   - 现场拍照上传 (Base64 存储) — 必填
+   - 两者均为必填项，缺一不可
+
+5. **Auto E-DO 邮件:**
+   - 签收完成后，系统自动将签收后的 DO PDF 通过邮件发送给客户
+   - 使用 `info@` 发件身份 (运营模块路由)
+   - 邮件包含签名图片和送货明细
+
+6. **永久锁定:** Completed 状态的 DO 自动记录 `deliveredDate` 时间戳，此后不可修改
+
+7. **全局状态同步:** Invoice DO 签收后，关联的 Invoice 同步更新状态（满足 Invoice 标记 Paid 的前置条件）
+
+8. **Sample DO 审批流:**
+   - Sample DO 创建需经 HR & Finance 审批
+   - 审批通过后方可出库配送
+   - Sample DO 货物不计入销售额，独立核算为营销成本
+
+### 权限控制
+
+| 功能 | Admin | HR & Finance | Leader | Sales | Logistics |
+|------|-------|-------------|--------|-------|-----------|
+| 查看 Invoice DO | 全部 | 全部 | 本人+团队 | 仅本人 | 仅分配给自己的 |
+| 查看 Sample DO | 全部 | 全部 | 本人+团队 | 仅本人 | 仅分配给自己的 |
+| 创建 DO | 自动生成 | 自动生成 | 自动生成 | 自动生成 | 不可 |
+| 签收 DO | 可以 | 可以 | 可以 | 可以 | 可以 |
+| 审批 Sample DO | 可以 | 可以 | 不可 | 不可 | 不可 |
+| 编辑已签收 DO | 不可(永久锁定) | 不可 | 不可 | 不可 | 不可 |
+| 查看单价/总价 | 可以 | 可以 | 可以 | 可以 | **不可(强制屏蔽)** |
+
+---
+
+## 9. HR - 复合权限与动态组织
+
+### 功能描述
+
+HR 模块管理全公司员工档案、角色分配和组织架构。新增**复合权限矩阵**（基础角色 + 模块化权限开关）、**精细化编制**（Department/Job Title）、**团队裂变 (Spin-off)** 晋升机制、**裂变伯乐奖**以及**荣誉里程碑自动关怀**。采用严格的账户安全策略（无开放注册），支持员工离职冻结和历史数据保留，离职触发公海孤儿机制。
+
+### 数据字段
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| employeeId | UUID | 员工唯一标识 |
+| name | String | 姓名 |
+| phone | String | 联系电话 |
+| email | String | 登录邮箱 |
+| role | Enum | Admin / HR & Finance / Leader / Sales / Logistics |
+| department | String | 部门 (如: 销售部、运营部、物流部) |
+| jobTitle | String | 职位头衔 (如: 高级销售代表、区域经理) |
+| leaderId | UUID | 所属 Leader ID (**创建 Sales 账户时必填**) |
+| mentorId | UUID | 孵化人 ID (团队裂变后记录原 Leader) |
+| joinDate | Date | 入职日期 |
+| birthday | Date | 生日 (用于里程碑自动关怀) |
+| bankAccount | String | 银行账户 (用于佣金发放) |
+| cumulativeRevenue | Decimal | 累计业绩 (用于裂变晋升判定) |
+| status | Enum | Active / Inactive (离职冻结) |
+| permissionSwitches | JSON | 模块化权限开关 (如: {allowDelivery: true, allowSampleApproval: false}) |
+| consecutiveFailMonths | Integer | 连续不达标月数 (Leader 生死底线追踪) |
+| leaderFrozen | Boolean | Leader 特权是否已冻结 |
+| createdAt | Timestamp | 账户创建时间 |
+
+### 业务规则
+
+1. **登录安全策略:**
+   - **禁止开放注册 (No Open Registration):** 所有账户由 Admin 手动创建
+   - **生产环境必须移除所有 "快速登录 (Quick Login)" 按钮**
+   - 账户创建时密码由 Admin 设定并通知员工
+
+2. **五大角色定义 (RBAC):**
+   - **Admin:** 系统最高权限，管理一切，规则制定者与终极风控官
+   - **HR & Finance:** 人事与财务中台，资金/物料/数据的守门员
+   - **Leader:** 管理直属 Sales 团队，享有团队奖金
+   - **Sales:** 基础销售角色，仅管理自己的数据
+   - **Logistics:** 物流送货员，完成最后一公里配送
+
+3. **复合权限矩阵 (Composite Permission Matrix):**
+   - 基础角色 (base role) 决定核心数据视野
+   - 模块化权限开关 (permission switches) 叠加额外能力
+   - 示例: Sales 角色 + `allowDelivery: true` = 可执行物流送货任务
+   - 实现"一号通办"，灵活适配小团队多职能场景
+
+4. **组织架构层级树 (Org Hierarchy Tree):**
+   ```
+   Admin
+   ├── HR & Finance
+   ├── Leader A
+   │   ├── Sales 1 (leaderId = Leader A)
+   │   ├── Sales 2 (leaderId = Leader A)
+   │   └── Sales 3 (leaderId = Leader A)
+   └── Leader B (mentorId = Leader A，由 Leader A 孵化)
+       ├── Sales 4 (leaderId = Leader B)
+       └── Sales 5 (leaderId = Leader B)
+   ```
+   - 创建 Sales 账户时 **必须指定 leaderId**
+   - 此层级关系用于 Leader 1% 团队奖金计算和裂变伯乐奖
+
+5. **团队裂变 (Spin-off) 晋升机制:**
+   ```
+   晋升条件: Sales 累计业绩 (cumulativeRevenue) >= RM 50,000
+   流程:
+     1. Sales 向 Admin 申请晋升为 Leader
+     2. Admin 审批通过后，角色变更为 Leader
+     3. 系统记录 mentorId = 原 Leader ID
+     4. 新 Leader 可开始组建自己的团队
+     5. 原 Leader 自动激活裂变伯乐奖
+   ```
+
+6. **裂变伯乐奖 (Mentor Reward):**
+   ```
+   触发条件: 原 Leader (Mentor) 成功孵化出新 Leader
+   奖励: 永久提取新团队 Net Revenue 的 0.5%
+   公式: Mentor_Reward = New_Team_Total_Net_Revenue × 0.005
+   说明:
+     - "永久"指只要 Mentor 仍为 Active 状态
+     - 新团队包括新 Leader 的所有直属 Sales
+     - 不包括新 Leader 自己的个人营收
+     - 可叠加: 孵化多个 Leader 则分别计算
+   ```
+
+7. **Leader 生死底线 (Death Line):**
+   ```
+   标准红线: Leader 个人当月业绩 >= RM 50,000
+   特批豁免: Admin 可审批降至 RM 35,000
+
+   死亡判定:
+     IF Leader 连续 2 个月个人业绩 < 门槛 (50k 或豁免后的 35k):
+       consecutiveFailMonths >= 2
+       → leaderFrozen = true
+       → 全面冻结: 管理分红 (Leader Override) + 裂变伯乐奖 全部暂停
+       → 需 Admin 手动解冻
+
+   恢复机制:
+     Leader 在冻结期间若单月达标:
+       → consecutiveFailMonths 重置为 0
+       → Admin 可手动解冻 leaderFrozen
+   ```
+
+8. **荣誉里程碑与自动关怀 (Milestone Auto-Care):**
+   - 系统自动记录入职日期、生日、晋升节点
+   - 到期自动通过 Resend API 发送专属祝贺邮件 (care@)
+   - 模板包括: 生日祝贺、入职周年纪念、晋升恭喜
+   - Cron Job 每日扫描即将到来的里程碑
+
+9. **员工离职处理:**
+   - 将状态设为 Inactive（账户冻结，不可登录）
+   - **不删除账户**，保留所有历史数据（发票、佣金记录等）
+   - **触发公海孤儿机制:** 自动将其名下所有客户 `isOrphan = true`
+   - 冻结后的客户进入公海等待认领
+
+### 权限控制
+
+| 功能 | Admin | HR & Finance | Leader | Sales | Logistics |
+|------|-------|-------------|--------|-------|-----------|
+| 创建员工账户 | 独占 | 不可 | 不可 | 不可 | 不可 |
+| 查看所有员工 | 全部 | 全部 | 仅直属 | 不可 | 不可 |
+| 编辑员工信息 | 独占 | 不可 | 不可 | 不可 | 不可 |
+| 冻结/激活账户 | 可以 | 可以 | 不可 | 不可 | 不可 |
+| 审批裂变晋升 | 独占 | 不可 | 不可 | 不可 | 不可 |
+| 配置权限开关 | 独占 | 不可 | 不可 | 不可 | 不可 |
+| 特批 Leader 豁免 | 独占 | 不可 | 不可 | 不可 | 不可 |
+
+---
+
+## 10. Reports - 财务大盘 & AR Aging
+
+### 功能描述
+
+报表中心是佣金结算的最终归档地与财务风控中枢。每月1日 00:01 由 Cron Job 自动执行结算，扫描上月所有 Paid Invoice，锁定佣金数据，生成不可变的 JSON + PDF 报表。新增 **AR Aging 应收账款追踪**、**见款发佣**现金流风控、**全自动催款引擎 (Auto-Dunning)**、**交互式组织架构图**和**供应链预测沙盘**。
+
+### 数据字段
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| reportId | UUID | 报表唯一标识 |
+| period | String | 结算月份 (如: 2026-03) |
+| employeeId | UUID | 员工 ID |
+| baseComm | Decimal | 基础提成 |
+| kamComm | Decimal | 老客津贴 |
+| bounty | Decimal | 新客悬赏 |
+| stepBonus | Decimal | 阶梯奖金 |
+| leaderBonus | Decimal | 领袖分红 (仅 Leader) |
+| mentorReward | Decimal | 裂变伯乐奖 (仅孵化过新 Leader 的 Leader) |
+| neglectSplitAdj | Decimal | Neglect Index 分润调整 |
+| jointOrderAdj | Decimal | 50/50 联合代办调整 |
+| totalPayout | Decimal | 总佣金 |
+| arAgingData | JSON | AR Aging 分类数据: {current, days30, days60, days90plus} |
+| jsonSnapshot | JSON | 完整计算过程快照 (不可变) |
+| pdfUrl | URL | 生成的 PDF 报表链接 |
+| generatedAt | Timestamp | 报表生成时间 |
+
+### 业务规则
+
+1. **Cron 自动结算流程:**
+   ```
+   每月 1 日 00:01 UTC+8 (Make.com 触发 Supabase RPC)
+   → 扫描上月所有 status=Paid 的 Invoice
+   → 为每位员工执行佣金引擎完整计算 (含 Neglect Split, Joint Order, Mentor Reward)
+   → 锁定最终佣金数据，固化不可篡改的佣金与流水 JSON 快照
+   → 生成 PDF 报表
+   → 归档至 Admin → Reports
+   → 重置 Dashboard 所有指标为零
+   ```
+
+2. **AR Aging 应收账款追踪 & 见款发佣 (Cash-based Commission):**
+   ```
+   AR Aging 分类:
+     Current (未逾期): Invoice 在 Credit Terms 期限内
+     30 Days: 逾期 1-30 天
+     60 Days: 逾期 31-60 天
+     90+ Days: 逾期 90 天以上
+
+   AR Aging 计算:
+     Overdue_Days = CurrentDate - (Invoice.createdAt + Client.creditTerms_days)
+     IF Overdue_Days <= 0: 归入 Current
+     IF 0 < Overdue_Days <= 30: 归入 30 Days
+     IF 30 < Overdue_Days <= 60: 归入 60 Days
+     IF Overdue_Days > 90: 归入 90+ Days
+   ```
+   - 实时追踪所有未付款 Invoice 的账期状态
+   - **见款发佣:** 业务员的提成与悬赏必须等财务确认款项到账、Invoice 彻底转为 Paid 后，方可进入实际派发，绝对禁止垫资发佣金
+   - Actual Comm 仅计算 status=Paid 的 Invoice
+
+3. **全自动催款引擎 (Auto-Dunning System):**
+   ```
+   系统每日 Cron 扫描所有 Active (未付款) Invoice + 客户 Credit Terms
+
+   触发时间线 (基于 Credit Terms 到期日):
+     T-7 (到期前7天): 发送"友好提醒"邮件 — 附件包含未结 Invoice PDF
+     T+0 (到期当天):  发送"到期通知"邮件 — 正式催款口吻
+     T+3 (逾期3天):   发送"逾期警告"邮件 — 强调逾期后果
+     T+7 (逾期7天):   发送"最终催款"邮件 — 升级通知
+
+   到期日计算:
+     DueDate = Invoice.createdAt + CreditTerms_days
+     (Cash Term: CreditTerms_days = 0, 即创建当天到期)
+     (30 Days: CreditTerms_days = 30)
+     (60 Days: CreditTerms_days = 60)
+
+   触发判定:
+     Days_Until_Due = DueDate - CurrentDate
+     IF Days_Until_Due == 7: 发送 T-7 邮件
+     IF Days_Until_Due == 0: 发送 T+0 邮件
+     IF Days_Until_Due == -3: 发送 T+3 邮件
+     IF Days_Until_Due == -7: 发送 T+7 邮件
+   ```
+   - 使用 Resend API (finance@) 发送专业催款邮件
+   - 邮件附件包含未结 Invoice PDF
+   - 实现"系统唱黑脸催款，业务唱白脸跟进"的协同策略
+   - Cash Term 客户在创建 Invoice 当天即触发 T+0
+
+4. **交互式组织架构图 (Interactive Org Chart):**
+   - 树状图全景展示裂变网络 (Fission Network)
+   - 节点实时标示 Leader 的达标状态:
+     - 绿色: 当月已达 RM 50,000 (或豁免后的 RM 35,000)
+     - 黄色: 当月 50%-99% 进度
+     - 红色: 连续不达标 / 已冻结
+   - 可交互展开/折叠分支
+   - 显示各节点当月业绩和团队规模
+
+5. **供应链预测沙盘 (Supply Chain Prediction Sandbox):**
+   - 按供应商维度生成历史采购额折线图
+   - 热销 SKU 预测 (基于历史销售趋势)
+   - 帮助 Admin 提前规划采购计划和库存管理
+
+6. **数据不可变性:** 一旦生成，报表数据和 PDF 不可修改或删除
+7. **跨月订单处理:** 严格按 `paidDate` 归属月份，杜绝重复计算
+8. **性能要求:** 100 名员工的 PDF + 数据汇总生成时间 < 5 秒
+
+### 相关公式
+
+```
+# AR Aging Overdue Days
+Overdue_Days = CurrentDate - (Invoice.createdAt + CreditTerms_days)
+
+# Auto-Dunning Trigger
+DueDate = Invoice.createdAt + CreditTerms_days
+Trigger_Points = [DueDate - 7, DueDate, DueDate + 3, DueDate + 7]
+```
+
+### 权限控制
+
+| 功能 | Admin | HR & Finance | Leader | Sales | Logistics |
+|------|-------|-------------|--------|-------|-----------|
+| 查看所有报表 | 全部 | 全部 | 不可 | 不可 | 不可 |
+| 查看个人报表 | 全部 | 全部 | 仅个人 | 仅个人 | 不可 |
+| 下载 PDF | 全部 | 全部 | 仅个人 | 仅个人 | 不可 |
+| 触发手动结算 | 独占 | 不可 | 不可 | 不可 | 不可 |
+| 查看 AR Aging | 全部 | 全部 | 不可 | 不可 | 不可 |
+| 查看组织架构图 | 全部 | 全部 | 不可 | 不可 | 不可 |
+| 查看供应链沙盘 | 全部 | 全部 | 不可 | 不可 | 不可 |
+| 复核悬赏/免运费 | 可以 | 可以(高亮展示) | 不可 | 不可 | 不可 |
+
+---
+
+## 11. Settings - 超级管理员配置中心
+
+### 功能描述
+
+Settings 是系统的全局配置中心，涵盖公司信息、佣金参数配置器、邮件模板引擎、供应商管线管理和企业邮件路由配置五大板块。所有配置均仅限 Admin 操作。
+
+### 数据字段
+
+**11.1 公司设置 (Company Settings):**
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| companyName | String | 公司名称 |
+| ssmNo | String | SSM 注册号 |
+| sstRate | Decimal | SST 税率 (%) |
+| invoicePrefix | String | 发票编号前缀 (格式: YYMMDD-XXXX) |
+| doPrefix | String | 送货单编号前缀 (格式: YYMMDD-XXXX) |
+| poPrefix | String | 采购单编号前缀 |
+| companyEmail | String | 公司邮箱 |
+| companyAddress | Text | 公司地址 |
+| companyPhone | String | 公司电话 |
+
+**11.2 佣金配置器 (Commission Configurator):**
+
+| 参数 | 默认值 | 说明 |
+|------|--------|------|
+| BASE_A | 20% | A 类产品基础提成率 |
+| BASE_B | 15% | B 类产品基础提成率 |
+| KAM_A | 5% | A 类老客户额外津贴率 |
+| KAM_B | 3% | B 类老客户额外津贴率 |
+| KAM_PERIOD | 180 天 | 老客户认定周期 |
+| LEADER_THRESHOLD | **RM 50,000** | Leader 团队奖金个人营收门槛 (v9 为 30k，v10 升至 50k) |
+| LEADER_THRESHOLD_EXEMPTION | **RM 35,000** | Admin 特批豁免最低保底线 |
+| LEADER_RATE | 1% | Leader 团队奖金比例 |
+| LEADER_DEATH_LINE_MONTHS | 2 | 连续不达标月数触发冻结 |
+| MENTOR_REWARD_RATE | 0.5% | 裂变伯乐奖比例 (永久) |
+| SPINOFF_THRESHOLD | RM 50,000 | 累计业绩达标可申请裂变晋升 |
+| BOUNTY_ENABLED | true | 新客悬赏功能开关 |
+| BOUNTY_TIER1 | 首单 >= 3 箱 → RM 50 | 新客悬赏第一档 |
+| BOUNTY_TIER2 | 90 天内累计 >= RM 1,000 → RM 50 | 新客悬赏第二档 |
+| BOUNTY_TIER3 | 180 天内累计 >= RM 2,000 → RM 100 | 新客悬赏第三档 |
+| BOUNTY_TIER4 | 365 天内累计 >= RM 6,000 → RM 200 | 新客悬赏第四档 |
+| BOUNTY_MAX | RM 400 | 单客户悬赏上限 (50+50+100+200) |
+| MIN_ORDER_BOXES | 3 | 最低起送箱数 |
+| FREE_DELIVERY_BOXES | 5 | 西马免运费最低箱数 |
+| LADDER_MATRIX | JSON | 阶梯奖金矩阵 (详见佣金公式 Step 5) |
+| A_RATIO_THRESHOLD | 70% | A 类产品营收占比健康线 |
+| NEGLECT_MAX_INDEX | 6 | Neglect Index 最大值 (触发强制转移) |
+
+**11.3 供应商管线 (Supplier Pipeline):**
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| supplierId | UUID | 供应商唯一标识 |
+| supplierName | String | 供应商名称 |
+| contactPerson | String | 联系人 |
+| email | String | 联系邮箱 (Auto-PO 自动发送目标) |
+| phone | String | 联系电话 |
+| isActive | Boolean | 是否启用 |
+
+**11.4 企业邮件路由配置 (Email Routing Setup):**
+
+| 模块 | 发件身份 | 用途 |
+|------|---------|------|
+| 财务模块 (Invoice/Receipt/催款) | finance@company.com | Invoice 邮件、Receipt 确认、Dunning 催款 |
+| 运营模块 (DO/样品) | info@company.com | E-DO 签收通知、Sample DO 通知 |
+| 人事模块 (关怀) | care@company.com | 生日祝贺、入职周年、晋升恭喜 |
+| 采购模块 (PO) | admin@company.com | Auto-PO 发送给供应商 |
+
+- Admin 可视化配置各业务模块的发件身份
+- 收信端接入企业邮箱单账号多别名机制
+- 基于模块自动切换发件身份，无需手动选择
+
+**11.5 邮件模板引擎 (Email Template Engine):**
+
+| 模板名称 | 用途 | 可用变量 |
+|----------|------|---------|
+| Invoice Email | 发送发票给客户 | {{clientName}}, {{invoiceNo}}, {{total}}, {{items}} |
+| DO Email (E-DO) | 签收后自动发送电子送货单 | {{clientName}}, {{doNo}}, {{deliveryDate}}, {{signature}} |
+| Receipt Email | 发送收据确认 | {{clientName}}, {{invoiceNo}}, {{paidDate}}, {{total}} |
+| Welcome Email | 新客户欢迎邮件 | {{clientName}}, {{salesName}}, {{companyName}} |
+| PO Email | 采购单发送给供应商 | {{supplierName}}, {{poNo}}, {{items}}, {{total}} |
+| Employee Care | 里程碑自动关怀 | {{employeeName}}, {{milestone}}, {{date}} |
+| **Dunning Reminder** | 催款预警邮件 | {{clientName}}, {{invoiceNo}}, {{amount}}, {{overdueDays}}, {{dueDate}} |
+
+- 所有模板使用 HTML 代码编辑器
+- 支持调用系统变量进行精准触达
+- Resend API 动态渲染 HTML
+
+### 业务规则
+
+1. 所有佣金参数可动态调整，调整后立即生效于新的佣金计算
+2. 已结算的历史报表不受参数变更影响（不可变性保障）
+3. Leader 门槛已从 v9 的 RM 30,000 提升至 RM 50,000
+4. Admin 独家审批特批豁免权，可将个别 Leader 门槛降至 RM 35,000
+5. 供应商管线是 Auto-PO 的基础数据来源
+6. 邮件路由配置实现模块级发件身份自动切换
+
+### 权限控制
+
+| 功能 | Admin | HR & Finance | Leader | Sales | Logistics |
+|------|-------|-------------|--------|-------|-----------|
+| 查看/编辑公司设置 | 独占 | 不可 | 不可 | 不可 | 不可 |
+| 修改佣金参数 | 独占 | 不可 | 不可 | 不可 | 不可 |
+| 管理邮件模板 | 独占 | 不可 | 不可 | 不可 | 不可 |
+| 管理供应商管线 | 独占 | 不可 | 不可 | 不可 | 不可 |
+| 配置邮件路由 | 独占 | 不可 | 不可 | 不可 | 不可 |
+| 修改促销规则 | 独占 | 不可 | 不可 | 不可 | 不可 |
+| 特批 Leader 豁免 | 独占 | 不可 | 不可 | 不可 | 不可 |
+
+## 12. 佣金引擎完整公式 (Commission Engine)
+
+> **财务底线核心:**
+> `Revenue - COGS = Gross Profit - Expenses (佣金) = Net Profit`
+> 佣金引擎是 Expenses 的全部来源，必须确保 Net Profit > 0。
+
+### 财务底线公式总览
+
+```
+Revenue (总营收)
+- Cost of Goods Sold (销售成本 COGS)
+= Gross Profit (毛利润 GP)
+- Expenses (费用/佣金支出)
+  - Base Commission (基础提成)
+  - KAM Commission (老客津贴)
+  - New Client Bounty (新客悬赏 — 4 档)
+  - Step Bonus (阶梯奖金)
+  - Leader Override (领袖分红)
+  - Mentor Reward (裂变伯乐奖)
+  - Tug-of-War Split Adjustment (拔河分润调整)
+= Net Profit (净利润) → 必须 > 0
+```
+
+---
+
+### Step 0: 营收隔离 (Revenue Isolation)
+
+```
+Net Revenue = Invoice Total - Delivery Charge
+
+Revenue_A = Sum of all Category A product line items (A 类产品营收)
+Revenue_B = Sum of all Category B product line items (B 类产品营收)
+
+Total_Net_Revenue = Revenue_A + Revenue_B
+```
+
+> 运费 (Delivery Charge) 不计入营收，不参与佣金计算。
+> 西马 >= 5 箱时 deliveryCharge = 0，但此项仍从 Invoice Total 中隔离处理。
+
+---
+
+### Step 1: 单品毛利计算 (Per-item Gross Profit)
+
+```
+Per Item Raw GP = (Selling Price - Cost Price) × Qty
+```
+
+**折扣按营收比例分摊 (Discount Allocation):**
+
+```
+Discount_A = Total Discount × (Revenue_A / (Revenue_A + Revenue_B))
+Discount_B = Total Discount × (Revenue_B / (Revenue_A + Revenue_B))
+```
+
+**分类毛利汇总:**
+
+```
+GP_A = Math.max(0, Sum of A-item Raw GPs - Discount_A)
+GP_B = Math.max(0, Sum of B-item Raw GPs - Discount_B)
+```
+
+> **熔断机制 (GP Floor = 0):** 毛利最低为 0，永远不会为负数。
+> 这是保障财务底线公式中 Net Profit > 0 的关键安全阀。
+
+**计算示例:**
+```
+Invoice Items:
+  - A类产品: Selling RM 10 × 200 = RM 2,000 / Cost RM 6 × 200 = RM 1,200 → Raw GP = RM 800
+  - B类产品: Selling RM 8 × 100  = RM 800   / Cost RM 5 × 100 = RM 500   → Raw GP = RM 300
+
+Total Discount = RM 100
+Revenue_A = RM 2,000, Revenue_B = RM 800
+Discount_A = 100 × (2000 / 2800) = RM 71.43
+Discount_B = 100 × (800 / 2800)  = RM 28.57
+
+GP_A = max(0, 800 - 71.43) = RM 728.57
+GP_B = max(0, 300 - 28.57) = RM 271.43
+```
+
+---
+
+### Step 2: 基础提成 (Base Commission)
+
+```
+Base_Comm = (GP_A × CE.BASE_A) + (GP_B × CE.BASE_B)
+```
+
+**默认参数:**
+
+| 参数 | 默认值 | 说明 |
+|------|--------|------|
+| CE.BASE_A | 20% | A 类医疗耗材基础提成率 |
+| CE.BASE_B | 15% | B 类产品基础提成率 |
+
+**计算示例:**
+```
+GP_A = RM 5,000, GP_B = RM 2,000
+Base_Comm = (5,000 × 0.20) + (2,000 × 0.15) = 1,000 + 300 = RM 1,300
+```
+
+---
+
+### Step 3: 老客津贴 (KAM Old Client Allowance)
+
+```
+IF (CurrentDate - Customer.FirstOrderDate) >= CE.KAM_PERIOD (默认 180 天):
+  KAM_Comm = (GP_A × CE.KAM_A) + (GP_B × CE.KAM_B)
+ELSE:
+  KAM_Comm = 0
+```
+
+**默认参数:**
+
+| 参数 | 默认值 | 说明 |
+|------|--------|------|
+| CE.KAM_A | 5% | A 类老客户额外津贴率 |
+| CE.KAM_B | 3% | B 类老客户额外津贴率 |
+| CE.KAM_PERIOD | 180 天 | 老客户认定门槛（合作期 >= 180 天） |
+
+> v8.8 明确: 开单时校验合作期 >= 180 天，强制追加 A 类+5%、B 类+3% 的维护提成。
+
+**计算示例:**
+```
+客户首单日期: 2025-06-01, 当前日期: 2026-01-15
+间隔: 228 天 >= 180 天 → 触发 KAM
+
+GP_A = RM 5,000, GP_B = RM 2,000
+KAM_Comm = (5,000 × 0.05) + (2,000 × 0.03) = 250 + 60 = RM 310
+```
+
+---
+
+### Step 4: 新客悬赏 — 长效 4 档 (New Client Bounty — 4-Tier)
+
+> **注意:** 此功能可通过 Settings 中 `BOUNTY_ENABLED` 开关启用/禁用。
+
+**4 档长效悬赏体系:**
+
+```
+Tier 1 — 首单破冰:
+  条件: 首单总量 >= 3 箱
+  奖励 = RM 50
+
+Tier 2 — 90 天锁定:
+  条件: 首单后 90 天内累计下单 >= RM 1,000
+  奖励 = RM 50
+
+Tier 3 — 180 天深耕:
+  条件: 首单后 180 天内累计下单 >= RM 2,000
+  奖励 = RM 100
+
+Tier 4 — 365 天铁粉:
+  条件: 首单后 365 天内累计下单 >= RM 6,000
+  奖励 = RM 200
+
+Total Max Bounty per new client = RM 400 (50+50+100+200)
+```
+
+**规则:**
+- 每个 Tier 每位新客户仅可领取一次 (tracked by `tierXClaimed` flags)
+- 四档奖励可叠加，单客户最高 RM 400
+- 各档计算窗口分别从首单日期开始计算 90/180/365 天
+- Tier 1 从 v9 的"首单金额 >= RM 500"变更为"首单总量 >= 3 箱"
+- Tier 4 为 v8.8 新增档位
+
+**反欺诈验证 (Anti-fraud):**
+```
+SSM 去重查验 (SSM Dedup Check):
+  新客户创建时检查 Client.ssmNo 是否已存在于系统中
+  IF EXISTS(SELECT 1 FROM clients WHERE ssmNo = :newSsmNo AND clientId != :currentId):
+    REJECT → "该 SSM 号已注册，疑似重复客户"
+  防止同一诊所/公司以不同名称多次注册骗取悬赏
+
+许可证去重 (License Dedup Check):
+  同理检查 Client.licenseNo 防止诊所执照重复注册
+```
+
+**计算示例:**
+```
+新客户首单: 5 箱 (>= 3 箱) → Tier 1 解锁 = RM 50
+60 天后第二单: RM 600 (累计 RM 1,400 >= RM 1,000) → Tier 2 解锁 = RM 50
+150 天后第三单: RM 800 (累计 RM 2,200 >= RM 2,000) → Tier 3 解锁 = RM 100
+300 天后第四单: RM 4,000 (累计 RM 6,200 >= RM 6,000) → Tier 4 解锁 = RM 200
+Bounty = 50 + 50 + 100 + 200 = RM 400 (已达上限)
+```
+
+---
+
+### Step 5: 阶梯奖金 (Step Bonus / Ladder)
+
+**5a. A 类产品占比健康检查 (Health Check):**
+
+```
+A_Ratio = Revenue_A / Total_Net_Revenue
+
+IF A_Ratio >= 0.70 (70%):
+  → 使用完整阶梯 (Full Ladder)
+ELSE:
+  → 降一级阶梯 (Downgrade one tier)
+```
+
+**5b. 阶梯矩阵 (Ladder Matrix):**
+
+| 阶梯 | 个人营收门槛 | 奖金 |
+|------|-------------|------|
+| Starter (起步) | RM 0 | RM 0 |
+| Bronze (铜牌) | RM 10,000 | RM 0 (仅荣誉认定) |
+| Silver (银牌) | RM 20,000 | RM 400 |
+| Gold (金牌) | RM 50,000 | RM 1,000 |
+| Platinum (白金) | RM 120,000 | RM 2,500 |
+| Diamond (钻石) | RM 200,000 | RM 4,000 |
+
+**5c. 计算逻辑:**
+
+```
+Step_Bonus = Reward of highest matched tier
+
+IF Health Check fails (A_Ratio < 0.70):
+  Step_Bonus = Reward of (highest matched tier - 1)
+  即: 原本达到 Gold，降为 Silver 的奖金
+```
+
+**计算示例:**
+```
+个人营收: RM 55,000 → 达到 Gold 阶梯
+A_Ratio = 75% >= 70% → 健康检查通过
+Step_Bonus = RM 1,000 (Gold)
+
+个人营收: RM 55,000 → 达到 Gold 阶梯
+A_Ratio = 60% < 70% → 健康检查不通过 → 降一级
+Step_Bonus = RM 400 (Silver)
+```
+
+---
+
+### Step 6: 领袖分红 (Leader Override)
+
+```
+标准红线: CE.LEADER_THRESHOLD = RM 50,000
+特批豁免: CE.LEADER_THRESHOLD_EXEMPTION = RM 35,000 (Admin 独家审批)
+
+Effective_Threshold = IF Leader.hasExemption THEN 35,000 ELSE 50,000
+
+IF Leader_Personal_Net_Revenue >= Effective_Threshold:
+  Leader_Bonus = Team_Total_Net_Revenue × CE.LEADER_RATE (默认 0.01)
+ELSE:
+  Leader_Bonus = 0
+```
+
+**生死底线 (Death Line) 检查:**
+
+```
+# 每月结算时执行
+IF Leader_Personal_Net_Revenue < Effective_Threshold:
+  Leader.consecutiveFailMonths += 1
+ELSE:
+  Leader.consecutiveFailMonths = 0
+
+IF Leader.consecutiveFailMonths >= CE.LEADER_DEATH_LINE_MONTHS (默认 2):
+  Leader.leaderFrozen = true
+  Leader_Bonus = 0       # 管理分红冻结
+  Mentor_Reward = 0      # 裂变伯乐奖冻结
+
+# Admin 手动解冻条件: Leader 单月达标后，Admin 可选择解冻
+```
+
+**说明:**
+- `Team_Total_Net_Revenue` 包含所有直属 Sales 的 Net Revenue 总和
+- Leader 必须自身业绩达标方可享受团队分红
+- Leader 自己的营收不计入 `Team_Total_Net_Revenue`
+- v10 门槛从 v9 的 RM 30,000 提升至 RM 50,000
+
+**计算示例:**
+```
+Leader 个人营收: RM 55,000 >= RM 50,000 → 达标
+直属 Sales 团队总营收:
+  Sales 1: RM 25,000
+  Sales 2: RM 18,000
+  Sales 3: RM 32,000
+  Team_Total = RM 75,000
+
+Leader_Bonus = 75,000 × 0.01 = RM 750
+
+--- 冻结示例 ---
+Leader 2026年1月: 营收 RM 28,000 < RM 50,000 → consecutiveFailMonths = 1
+Leader 2026年2月: 营收 RM 30,000 < RM 50,000 → consecutiveFailMonths = 2 → 触发冻结
+Leader 2026年3月: leaderFrozen = true → Leader_Bonus = 0, Mentor_Reward = 0
+```
+
+---
+
+### Step 7: 裂变伯乐奖 (Mentor Reward)
+
+```
+触发条件: Leader (Mentor) 成功孵化出新 Leader (Mentee)
+         且 Leader.leaderFrozen == false
+
+Mentor_Reward = New_Team_Total_Net_Revenue × CE.MENTOR_REWARD_RATE (默认 0.005)
+
+其中:
+  New_Team_Total_Net_Revenue = Sum of all Sales under Mentee Leader 的 Net Revenue
+  不包括 Mentee Leader 自己的个人营收
+```
+
+**规则:**
+- "永久" = 只要 Mentor 仍为 Active 状态且未被冻结
+- 可叠加: 孵化多个 Leader 则分别计算
+- 裂变条件: Sales 累计业绩 >= RM 50,000 后申请晋升
+
+**计算示例:**
+```
+Leader A 孵化了 Leader B
+Leader B 直属团队:
+  Sales X: Net Revenue RM 20,000
+  Sales Y: Net Revenue RM 15,000
+  New_Team_Total = RM 35,000
+
+Mentor_Reward = 35,000 × 0.005 = RM 175
+
+Leader A 同时还孵化了 Leader C:
+  Leader C 团队 Net Revenue = RM 40,000
+  额外 Mentor_Reward = 40,000 × 0.005 = RM 200
+
+Total Mentor_Reward for Leader A = 175 + 200 = RM 375
+```
+
+---
+
+### Step 8: 拔河分润 (Tug-of-War Split)
+
+```
+触发条件: Invoice.createdBy (B) != Client.createdBy (A)
+         且 Client.isOrphan == false
+         即: 非 Owner 为他人客户开单
+
+分润比例表 (Neglect_Index → Owner:Invoicer):
+  Index 0: 100:0   (Owner 全拿，代开人无佣金)
+  Index 1: 50:50
+  Index 2: 40:60
+  Index 3: 30:70
+  Index 4: 20:80
+  Index 5: 10:90
+  Index 6: 0:100   → 触发【主权易主】，Owner 永久变更为代开人 B
+
+应用到佣金:
+  Owner_Comm = Total_Comm × Owner_Share_Ratio
+  Invoicer_Comm = Total_Comm × Invoicer_Share_Ratio
+
+示例 (Index = 3):
+  Base_Comm = RM 1,000
+  Owner (A) gets: 1,000 × 0.30 = RM 300
+  Invoicer (B) gets: 1,000 × 0.70 = RM 700
+```
+
+> 详见第 13 节完整 Tug-of-War 公式。
+
+---
+
+### Step 9: 最终佣金 (Final Payout Aggregation)
+
+```
+Total_Payout = Base_Comm
+             + KAM_Comm
+             + Bounty
+             + Step_Bonus
+             + Leader_Bonus
+             + Mentor_Reward
+             + TugOfWar_Adjustment
+
+其中:
+  TugOfWar_Adjustment 在 Step 8 中已计算 (可为正或负)
+  如果是 Owner 被扣减: TugOfWar_Adjustment 为负
+  如果是 Invoicer 获得额外分润: TugOfWar_Adjustment 为正
+```
+
+**完整计算汇总示例:**
+```
+某 Sales 当月数据:
+  GP_A = RM 8,000, GP_B = RM 3,000
+  个人营收 = RM 55,000
+  A_Ratio = 72%
+  有一位 KAM 老客户 (>180 天)
+  有一位新客户 (达 Tier 1 + Tier 2)
+  无拔河分润调整
+
+Step 0: Net Revenue = RM 55,000
+Step 1: GP_A = RM 8,000, GP_B = RM 3,000
+Step 2: Base_Comm = (8,000 × 0.20) + (3,000 × 0.15) = 1,600 + 450 = RM 2,050
+Step 3: KAM_Comm = (8,000 × 0.05) + (3,000 × 0.03) = 400 + 90 = RM 490
+Step 4: Bounty = 50 + 50 = RM 100
+Step 5: Step_Bonus = RM 1,000 (Gold, A_Ratio 72% 通过)
+Step 6: Leader_Bonus = RM 0 (此员工为 Sales，非 Leader)
+Step 7: Mentor_Reward = RM 0 (无孵化记录)
+Step 8: TugOfWar_Adj = RM 0 (无拔河事件)
+
+Total_Payout = 2,050 + 490 + 100 + 1,000 + 0 + 0 + 0 = RM 3,640
+```
+
+---
+
+### 进度条公式 (Progress Bar Formula)
+
+```
+Current Tier = highest tier where Personal_Revenue >= Tier.threshold
+Next Tier = tier immediately above Current Tier
+
+Progress % = (Personal_Revenue - Current_Tier.threshold)
+           / (Next_Tier.threshold - Current_Tier.threshold)
+           × 100
+
+特殊情况:
+  IF Current_Tier == Diamond (最高级):
+    Progress % = 100%
+    不显示下一目标（拒绝展示满级目标）
+```
+
+**示例:**
+```
+个人营收: RM 35,000
+Current Tier = Silver (threshold = RM 20,000)
+Next Tier = Gold (threshold = RM 50,000)
+
+Progress % = (35,000 - 20,000) / (50,000 - 20,000) × 100
+           = 15,000 / 30,000 × 100
+           = 50%
+
+显示: [Silver ████████░░░░░░░░ Gold] 50%
+```
+
+---
+
+## 13. 拔河引擎 (Tug-of-War / Neglect Index) 完整公式
+
+### 功能描述
+
+拔河引擎是客户归属权的动态博弈机制。当 Owner (A) 长期不服务客户，而其他 Sales (B) 持续代为开单时，系统通过 Neglect Index 逐步将佣金份额从 A 转移到 B，直至 Index 达到 6 时强制转移客户 Owner。Owner 也可通过亲自服务来执行"服务债赎回"，逐步挽回利润大头。
+
+### 13.1 Neglect Index 状态机 (State Machine)
+
+```
+初始值: Client.neglectIndex = 0
+
+递增条件 (Increment):
+  当 Invoice.createdBy (B) != Client.createdBy (A) 时:
+    Client.neglectIndex = MIN(Client.neglectIndex + 1, 6)
+    // 每次非 Owner 开单，Index +1，上限 6
+
+递减条件 (Decrement / 服务债赎回):
+  当 Invoice.createdBy (A) == Client.createdBy (A) 时:
+    且 Client.neglectIndex > 0:
+      Client.neglectIndex = MAX(Client.neglectIndex - 1, 0)
+      // Owner 亲自补单，Index -1，下限 0
+      // 按当前劣势比例分润（因为 Index 先 -1 再算分润）
+
+强制转移 (Force Transfer / 主权易主):
+  当 Client.neglectIndex == 6:
+    Client.createdBy = B (最后一个代开单的 Sales)
+    Client.neglectIndex = 0  // 重置
+    // 客户 Owner 永久变更为代开单人 B
+    // 当次 Invoice 佣金 100% 归 B
+```
+
+### 13.2 Revenue Split Ratio Table (分润比例表)
+
+```
+Neglect_Index | Owner (A) Share | Invoicer (B) Share | 说明
+-------------|----------------|-------------------|------
+     0        |     100%       |       0%          | Owner 全权控制
+     1        |      50%       |      50%          | 首次怠慢，平分
+     2        |      40%       |      60%          | Owner 开始失势
+     3        |      30%       |      70%          | 明显偏向代开人
+     4        |      20%       |      80%          | Owner 严重边缘化
+     5        |      10%       |      90%          | Owner 几乎丧失权益
+     6        |       0%       |     100%          | 触发主权易主
+```
+
+### 13.3 分润计算示例
+
+```
+场景 1 — 首次代开单:
+  Client Owner = Sales A, Invoicer = Sales B
+  当前 Neglect_Index = 0 → 代开后变为 1
+  Base_Comm = RM 1,000
+  A gets: 1,000 × 50% = RM 500
+  B gets: 1,000 × 50% = RM 500
+
+场景 2 — 连续代开第三单:
+  当前 Neglect_Index = 2 → 代开后变为 3
+  Base_Comm = RM 1,000
+  A gets: 1,000 × 30% = RM 300
+  B gets: 1,000 × 70% = RM 700
+
+场景 3 — Owner 亲自补单 (服务债赎回):
+  当前 Neglect_Index = 3 → 补单后变为 2
+  Base_Comm = RM 1,000
+  按 Index=2 的比例: A gets 40%, B gets 60%
+  但因为是 Owner 本人开单，B = A:
+  A gets: 1,000 × 100% = RM 1,000 (全部归 Owner)
+  （服务债赎回时，因为开单人就是 Owner，所有佣金归 Owner）
+
+场景 4 — 主权易主:
+  当前 Neglect_Index = 5 → 代开后变为 6
+  强制转移: Client.createdBy = B
+  当次 Invoice: B gets 100%
+  Client.neglectIndex 重置为 0
+  此后 B 成为新 Owner
+```
+
+### 13.4 服务债赎回 (Service Debt Redemption)
+
+```
+定义: Owner 在 Neglect_Index > 0 时亲自为客户开单
+
+执行流程:
+  1. 验证 Invoice.createdBy == Client.createdBy (Owner 本人开单)
+  2. Client.neglectIndex = MAX(0, Client.neglectIndex - 1)
+  3. 当次 Invoice 佣金 100% 归 Owner (因为开单人就是 Owner)
+  4. Index 每次 -1，逐步赎回
+
+策略意义:
+  - Owner 需要连续多次亲自服务才能将 Index 降回 0
+  - 激励 Owner 持续维护客户关系，不可一劳永逸
+  - Index 3 → 需连续 3 次亲自开单才能完全赎回
+```
+
+### 13.5 Supabase Trigger 实现
+
+```sql
+-- Neglect Index 自动更新 Trigger
+CREATE OR REPLACE FUNCTION update_neglect_index()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.created_by != (SELECT created_by FROM clients WHERE id = NEW.client_id) THEN
+    -- 非 Owner 开单: Index +1
+    UPDATE clients
+    SET neglect_index = LEAST(neglect_index + 1, 6)
+    WHERE id = NEW.client_id;
+
+    -- 检查是否达到 6: 强制转移
+    IF (SELECT neglect_index FROM clients WHERE id = NEW.client_id) = 6 THEN
+      UPDATE clients
+      SET created_by = NEW.created_by,
+          neglect_index = 0
+      WHERE id = NEW.client_id;
+    END IF;
+  ELSE
+    -- Owner 亲自开单: Index -1 (服务债赎回)
+    UPDATE clients
+    SET neglect_index = GREATEST(neglect_index - 1, 0)
+    WHERE id = NEW.client_id;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_neglect_index
+AFTER INSERT ON invoices
+FOR EACH ROW
+EXECUTE FUNCTION update_neglect_index();
+```
+
+---
+
+## 14. 公司损益表 (Company P&L Statement)
+
+> **财务底线公式的最终体现:**
+> `Revenue - COGS = Gross Profit - Expenses = Net Profit > 0`
+
+### 完整公式
+
+```
+Gross Revenue (总营收)
+  = Sum of all Invoice.total where status = Paid (不含 Delivery Charge)
+  = Σ (Invoice.total - Invoice.deliveryCharge) for all Paid Invoices
+
+Total COGS (总销售成本)
+  = Sum of (Cost Price × Qty) for all sold items in Paid Invoices
+  = Σ (item.costPrice × item.qty) for each item in each Paid Invoice
+
+Gross Profit (毛利润)
+  = Gross Revenue - Total COGS
+
+Total Expenses (总佣金支出)
+  = Sum of all employee Total_Payouts
+  = Σ (Base_Comm + KAM_Comm + Bounty + Step_Bonus + Leader_Bonus + Mentor_Reward + TugOfWar_Adj)
+
+Net Profit (净利润)
+  = Gross Profit - Total Expenses
+```
+
+### 健康指标
+
+```
+Net Profit 必须始终 > 0
+
+保障机制:
+  1. GP Floor = 0 (熔断机制): 单品毛利永不为负
+  2. 佣金基于 GP 而非 Revenue: 提成永远 < 毛利
+  3. costPrice 仅 Admin 系统级可见: 防止人为操纵
+  4. minSellingPrice 价格底线: 防止低于成本销售
+  5. 3 箱最低起送: 防止微量订单侵蚀利润
+  6. Leader 门槛 RM 50,000: 确保管理层自身业绩足以覆盖团队奖金支出
+  7. 见款发佣: 佣金仅在款项到账后发放，杜绝垫资风险
+```
+
+### P&L Dashboard 数据示例
+
+```
+2026年3月 P&L 报表:
+
+Gross Revenue:     RM 500,000
+- Total COGS:      RM 300,000
+= Gross Profit:    RM 200,000 (毛利率 40%)
+
+- Total Expenses:
+  Base Commission: RM  35,000
+  KAM Commission:  RM   8,000
+  Bounty:          RM   2,500
+  Step Bonus:      RM  12,000
+  Leader Override:  RM   3,500
+  Mentor Reward:    RM   1,200
+  Tug-of-War Adj:  RM     800
+  Total Expenses:  RM  63,000
+
+= Net Profit:      RM 137,000 (净利率 27.4%)
+```
+
+---
+
+## 15. RBAC 权限矩阵 (5 角色)
+
+### 角色定义总览
+
+| 角色 | 定位 | 数据视野 |
+|------|------|---------|
+| Admin | 超级管理员/老板 — 上帝视角、规则制定者、终极风控官 | 100% 全局可见 |
+| HR & Finance | 人事与财务中台 — 资金/物料/数据的守门员 | 全公司数据可见，但不可见绝密进货底价和系统参数 |
+| Leader | 团队领袖 — 带兵打仗的将军 | 本人 + 直属团队成员 |
+| Sales | 一线业务员 — 前线冲锋陷阵的士兵 | 100% 孤岛，仅本人数据 + 公海客户 |
+| Logistics | 物流送货员 — 最后一公里物理执行者 | 极度受限，仅分配给自己的 Active DO |
+
+### 复合权限说明
+
+```
+最终权限 = 基础角色权限 ∪ 模块化权限开关 (permissionSwitches)
+
+示例:
+  Sales 角色 + {allowDelivery: true}
+    = 可以执行物流送货签收任务 (原本仅 Logistics 可操作)
+
+  HR & Finance + {allowSampleApproval: true}
+    = 可以审批 Sample DO 申请
+```
+
+### 综合权限表 (Consolidated Permission Matrix)
+
+| 功能 | Admin | HR & Finance | Leader | Sales | Logistics |
+|------|-------|-------------|--------|-------|-----------|
+| **Dashboard 仪表盘** | | | | | |
+| 查看 P&L 仪表盘 | 全部 | 全部 | 不可 | 不可 | 不可 |
+| 查看团队数据 | 全部 | 全部 | 仅直属 | 不可 | 不可 |
+| 查看个人业绩 | 全部 | 全部 | 本人 | 本人 | 不可 |
+| 竞赛排行榜 | 可见 | 可见 | 可见 | 可见 | 不可 |
+| **Playbook 营销知识库** | | | | | |
+| 上传/编辑资料 | 独占 | 不可 | 不可 | 不可 | 不可 |
+| 查看/下载资料 | 全部 | 全部 | 全部 | 全部 | 不可 |
+| **Product 产品** | | | | | |
+| 查看产品列表 | 全部 | 全部 | 全部 | 全部 | 不可 |
+| 查看成本价 | 独占(系统级) | 不可 | 不可 | 不可 | 不可 |
+| 编辑产品/OCR 导入 | 独占 | 不可 | 不可 | 不可 | 不可 |
+| 查看最低售价 | 可以 | 不可 | 可以 | 不可 | 不可 |
+| 管理供应商绑定 | 独占 | 不可 | 不可 | 不可 | 不可 |
+| **Client 客户** | | | | | |
+| 查看客户列表 | 全部 | 全部 | 本人+团队 | 仅本人 | 不可 |
+| 创建客户 | 可以 | 可以 | 可以 | 可以 | 不可 |
+| 直接编辑客户 | 独占 | 不可 | 不可 | 不可 | 不可 |
+| 请求编辑客户 | — | 审批 | 提交 | 提交 | 不可 |
+| 导出 CSV | 独占 | 不可 | 不可 | 不可 | 不可 |
+| 查看公海 | 可以 | 可以 | 可以 | 可以 | 不可 |
+| Request Sample | 可以 | 审批 | 提交 | 提交 | 不可 |
+| **Invoice 发票** | | | | | |
+| 查看发票 | 全部 | 全部 | 本人+团队 | 仅本人 | 不可 |
+| 创建发票 | 可以 | 可以(代办) | 可以 | 可以 | 不可 |
+| 删除发票 | 独占 | 不可(按钮移除) | 不可(按钮移除) | 不可(按钮移除) | 不可 |
+| 编辑已付款发票 | 审批通过 | 提交 | 提交 | 提交 | 不可 |
+| 标记为 Paid | 可以 | 可以 | 可以 | 可以 | 不可 |
+| 修改促销规则 | 独占 | 不可 | 不可 | 不可 | 不可 |
+| 审批 Auto-PO | 可以 | 可以 | 不可 | 不可 | 不可 |
+| **DO 送货单** | | | | | |
+| 查看 Invoice DO | 全部 | 全部 | 本人+团队 | 仅本人 | 仅分配的 |
+| 查看 Sample DO | 全部 | 全部 | 本人+团队 | 仅本人 | 仅分配的 |
+| 签收 DO | 可以 | 可以 | 可以 | 可以 | 可以 |
+| 审批 Sample DO | 可以 | 可以 | 不可 | 不可 | 不可 |
+| 查看单价/总价 | 可以 | 可以 | 可以 | 可以 | **强制屏蔽** |
+| **HR 人事** | | | | | |
+| 创建员工账户 | 独占 | 不可 | 不可 | 不可 | 不可 |
+| 查看所有员工 | 全部 | 全部 | 仅直属 | 不可 | 不可 |
+| 编辑员工信息 | 独占 | 不可 | 不可 | 不可 | 不可 |
+| 冻结/激活账户 | 可以 | 可以 | 不可 | 不可 | 不可 |
+| 审批裂变晋升 | 独占 | 不可 | 不可 | 不可 | 不可 |
+| 特批 Leader 豁免 | 独占 | 不可 | 不可 | 不可 | 不可 |
+| **Reports 报表** | | | | | |
+| 查看所有报表 | 全部 | 全部 | 不可 | 不可 | 不可 |
+| 查看个人报表 | 全部 | 全部 | 仅个人 | 仅个人 | 不可 |
+| 下载 PDF | 全部 | 全部 | 仅个人 | 仅个人 | 不可 |
+| 触发手动结算 | 独占 | 不可 | 不可 | 不可 | 不可 |
+| 查看 AR Aging | 全部 | 全部 | 不可 | 不可 | 不可 |
+| 复核悬赏/免运费 | 可以 | 可以 | 不可 | 不可 | 不可 |
+| **Settings 设置** | | | | | |
+| 修改佣金规则 | 独占 | 不可 | 不可 | 不可 | 不可 |
+| 管理邮件模板 | 独占 | 不可 | 不可 | 不可 | 不可 |
+| 管理供应商管线 | 独占 | 不可 | 不可 | 不可 | 不可 |
+| 配置邮件路由 | 独占 | 不可 | 不可 | 不可 | 不可 |
+| **安全防线** | | | | | |
+| 受防泄密约束 | 是 | 是 | 是 | 是 | 是 |
+| 打印权限范围 | 全部 | 全部 | 本人+团队 | 仅本人 | 仅分配的DO |
+
+### RBAC 设计原则
+
+1. **最小权限原则:** 每个角色仅拥有完成其工作所需的最低权限
+2. **数据隔离:** Sales 仅见自己数据，Leader 见自己+直属团队，Admin/HR&Finance 见全部
+3. **物理移除策略:** 对于高风险操作（如删除），直接在前端移除按钮而非仅禁用
+4. **审批工作流:** 涉及已锁定数据的修改，必须经过 Admin 审批
+5. **Logistics 信息屏蔽:** 物流角色强制屏蔽所有价格和佣金信息，防止利益冲突
+6. **复合权限灵活性:** 基础角色 + 模块化开关，适配小团队多职能现实需求
+7. **RLS 原生隔离:** Row Level Security 在数据库层面强制执行，无需中间件校验
+
+---
+
+## 16. 安全与反欺诈检查清单
+
+### 16.1 数据防泄密
+
+| 检查项 | 实现方式 | 状态 |
+|--------|---------|------|
+| 右键菜单禁用 | `contextmenu` 事件拦截 | 必须 |
+| PrintScreen 键禁用 | 键盘事件监听拦截 | 必须 |
+| 动态水印 | Canvas 叠加层: 员工姓名+ID+时间戳 | 必须 |
+| 切屏/录屏模糊 | `visibilitychange` + 录屏API检测 → 高斯模糊 | 必须 |
+| CSV 导出限制 | 仅 Admin 角色可导出 | 必须 |
+| 开放注册禁止 | 生产环境无注册入口 | 必须 |
+| Quick Login 移除 | 生产环境无快速登录按钮 | 必须 |
+
+### 16.2 佣金反欺诈
+
+| 检查项 | 实现方式 | 状态 |
+|--------|---------|------|
+| GP Floor = 0 熔断 | `Math.max(0, GP)` — 毛利永不为负 | 必须 |
+| MinSellingPrice 红线 | 后端校验售价 >= minSellingPrice | 必须 |
+| 3 箱最低起送 | 后端纯函数强制拦截，前端无法绕过 | 必须 |
+| SSM 去重查验 | 新客户 SSM 号全库去重，防重复注册骗悬赏 | 必须 |
+| 许可证去重 | 诊所执照号全库去重 | 必须 |
+| Bounty Tier 单次锁定 | 每档悬赏每客户仅可领取一次 | 必须 |
+| 跨月不重复计算 | 严格按 paidDate 归属月份 | 必须 |
+| Paid Invoice 锁定 | Read-Only + 审批工作流 | 必须 |
+| DO 签收永久锁定 | Completed 后不可修改 | 必须 |
+| 见款发佣 | Actual Comm 仅计 Paid Invoice | 必须 |
+
+### 16.3 样品滥用防范
+
+| 检查项 | 实现方式 | 状态 |
+|--------|---------|------|
+| Sample DO 审批制 | HR & Finance 审批后方可出库 | 必须 |
+| Sample 独立核算 | 样品成本归营销费用，不计入销售额 | 必须 |
+| Sample 频次监控 | 同一客户短期内多次拿样触发告警 | 建议 |
+| Sample 与 Invoice 隔离 | Sample DO 不关联 Invoice，不产生佣金 | 必须 |
+
+### 16.4 最低起送绕过防范
+
+| 检查项 | 实现方式 | 状态 |
+|--------|---------|------|
+| 前端校验 | 创建 Invoice 时 UI 校验总箱数 >= 3 | 必须 |
+| 后端校验 (关键) | Supabase RPC / Trigger 层校验 totalBoxes >= 3 | 必须 |
+| API 防篡改 | 直接调用 API 绕过前端的请求被后端拦截返回 400 | 必须 |
+| 审计日志 | 记录所有被拦截的违规开单尝试 | 建议 |
+
+### 16.5 客户数据保护
+
+| 检查项 | 实现方式 | 状态 |
+|--------|---------|------|
+| RLS 数据隔离 | Supabase Row Level Security 原生隔离 | 必须 |
+| 离职客户保护 | 离职员工客户自动进入公海，不丢失 | 必须 |
+| 编辑审批流 | 非 Admin 修改客户必须走审批 | 必须 |
+| 删除按钮移除 | Leader/Sales 前端物理移除 Delete 按钮 | 必须 |
+| 并发防撞号 | PostgreSQL `FOR UPDATE` 行级悲观锁 | 必须 |
+
+---
+
+## 17. 测试矩阵 (Testing Matrix)
+
+> **测试框架:** Vitest — 针对佣金引擎、拔河分润等财务逻辑实施 100% 覆盖率
+
+### 17.1 佣金引擎测试 (Commission Engine Tests)
+
+| 测试编号 | 测试名称 | 测试内容 | 类型 |
+|----------|---------|---------|------|
+| UT-1.1 | Base Commission 计算 | 验证 A/B 类产品基础提成率 20%/15% 计算正确性 | Unit |
+| UT-1.2 | KAM 老客津贴 | 验证 180 天门槛判定及 KAM A+5%/B+3% 提成计算 | Unit |
+| UT-1.3 | Step Bonus 阶梯奖金 | 验证各阶梯档位匹配及 A_Ratio 70% 健康检查降级逻辑 | Unit |
+| UT-1.4 | Leader Override 领袖分红 | 验证 RM 50,000 个人达标门槛 + 团队营收 1% 计算 | Unit |
+| UT-1.5 | Leader 特批豁免 | 验证 Admin 设置 RM 35,000 豁免后的门槛判定 | Unit |
+| UT-1.6 | Leader 生死底线 | 验证连续 2 月不达标触发冻结，达标后重置计数 | Unit |
+| UT-1.7 | Mentor Reward 裂变伯乐奖 | 验证 0.5% 永久提取新团队营收计算 | Unit |
+| UT-1.8 | GP Floor 熔断 | 验证毛利为负时自动归零 (`Math.max(0, GP)`) | Unit |
+| UT-1.9 | Discount 分摊 | 验证折扣按营收比例分摊至 A/B 类 | Unit |
+| UT-1.10 | Revenue Isolation | 验证 Delivery Charge 从 Net Revenue 中正确剥离 | Unit |
+| ST-1.1 | 佣金引擎端到端 | 从 Invoice 创建到最终 Payout 的完整 9 步流程验证 | System |
+
+### 17.2 新客悬赏测试 (Bounty Tests)
+
+| 测试编号 | 测试名称 | 测试内容 | 类型 |
+|----------|---------|---------|------|
+| UT-Bounty-1 | Tier 1 首单破冰 | 验证首单 >= 3 箱触发 RM 50 | Unit |
+| UT-Bounty-2 | Tier 2 90天锁定 | 验证 90 天内累计 >= RM 1,000 触发 RM 50 | Unit |
+| UT-Bounty-3 | Tier 3 180天深耕 | 验证 180 天内累计 >= RM 2,000 触发 RM 100 | Unit |
+| UT-Bounty-4 | Tier 4 365天铁粉 | 验证 365 天内累计 >= RM 6,000 触发 RM 200 | Unit |
+| UT-Bounty-5 | 上限检查 | 验证单客户悬赏不超过 RM 400 | Unit |
+| UT-Bounty-6 | SSM 去重 | 验证重复 SSM 号被拒绝 | Unit |
+| UT-Bounty-7 | 许可证去重 | 验证重复诊所执照号被拒绝 | Unit |
+| UT-Bounty-8 | Tier 单次锁定 | 验证每档奖励每客户仅可领取一次 | Unit |
+
+### 17.3 拔河引擎测试 (Tug-of-War Tests)
+
+| 测试编号 | 测试名称 | 测试内容 | 类型 |
+|----------|---------|---------|------|
+| UT-ToW-1 | Neglect Index 递增 | 验证非 Owner 开单 Index +1 | Unit |
+| UT-ToW-2 | Index 上限 | 验证 Index 不超过 6 | Unit |
+| UT-ToW-3 | 分润比例表 | 验证 Index 0-6 各档分润比例正确 | Unit |
+| UT-ToW-4 | 服务债赎回 | 验证 Owner 补单 Index -1 | Unit |
+| UT-ToW-5 | 主权易主 | 验证 Index 达 6 时 Owner 强制转移 | Unit |
+| UT-ToW-6 | 公海首单夺权 | 验证 Orphan 客户首单后 Owner 过户 | Unit |
+| ST-ToW-1 | 拔河端到端 | 从 Index 0 到主权易主的完整流程 | System |
+
+### 17.4 RBAC & 安全测试
+
+| 测试编号 | 测试名称 | 测试内容 | 类型 |
+|----------|---------|---------|------|
+| UT-2.1 | 角色数据隔离 | Sales 仅可见自己数据，Leader 可见自己+直属团队 | Unit |
+| UT-2.2 | 删除按钮移除 | 验证 Leader/Sales/Logistics 界面无 Delete 按钮 | Unit |
+| UT-2.3 | HR&Finance 视野 | 验证 HR&Finance 可见全部数据但不可见 costPrice | Unit |
+| UT-2.4 | Logistics 价格屏蔽 | 验证 Logistics 角色强制屏蔽单价/总价/提成 | Unit |
+| UT-2.5 | 复合权限开关 | 验证 permissionSwitches 叠加基础角色权限 | Unit |
+| ST-2.1 | 跨角色权限穿透 | 尝试以 Sales 身份访问 Admin API，应返回 403 | System |
+| ST-2.2 | RLS 隔离验证 | 直接查询 Supabase 验证 RLS 策略正确隔离数据 | System |
+
+### 17.5 工作流测试
+
+| 测试编号 | 测试名称 | 测试内容 | 类型 |
+|----------|---------|---------|------|
+| UT-3.1 | Paid Invoice 锁定 | 验证 Paid 后发票变为 Read-Only | Unit |
+| UT-3.2 | Request to Edit 流程 | 验证提交→审批→重算佣金的完整流程 | Unit |
+| UT-3.3 | 3 箱起送拦截 | 验证 totalBoxes < 3 时后端拒绝创建 Invoice | Unit |
+| UT-3.4 | 5 箱西马免运费 | 验证西马客户 >= 5 箱时 deliveryCharge 自动置零 | Unit |
+| UT-3.5 | MinSellingPrice 拦截 | 验证售价低于 minSellingPrice 时被后端拒绝 | Unit |
+| UT-3.6 | Auto-DO 生成 | 验证 Invoice 创建时自动生成对应 DO | Unit |
+| UT-3.7 | Auto-PO 生成 | 验证 Invoice 创建时按供应商自动生成 PO | Unit |
+| ST-3.1 | Invoice-DO 联动 | 验证未关联已签收 DO 的 Invoice 不可标记为 Paid | System |
+| UT-Workflow | DO 签收联动 | 验证 DO 签收后全局状态同步更新 | Unit |
+| ST-3.2 | Sample DO 审批流 | 验证 Sample DO 需 HR&Finance 审批后方可出库 | System |
+
+### 17.6 Cron & 报表测试
+
+| 测试编号 | 测试名称 | 测试内容 | 类型 |
+|----------|---------|---------|------|
+| UT-Cron | Make.com 月度结算 | 验证月初自动扫描、锁定、归档、重置流程 | Unit |
+| UT-PnL | P&L 计算 | 验证 Gross Revenue, COGS, GP, Expenses, Net Profit 计算 | Unit |
+| UT-CrossMonth | 跨月不重复计算 | 验证按 paidDate 归属月份，跨月订单不被两个月各算一次 | Unit |
+| UT-AR | AR Aging 分类 | 验证 0-30/31-60/61-90/90+ 天分类正确 | Unit |
+| UT-Dunning | Auto-Dunning 触发 | 验证 T-7/T+0/T+3/T+7 各节点邮件正确触发 | Unit |
+| ST-Cron | Cron 性能压测 | 100 名员工 PDF + 数据汇总生成 < 5 秒 | System |
+
+### 17.7 AI & 配置测试
+
+| 测试编号 | 测试名称 | 测试内容 | 类型 |
+|----------|---------|---------|------|
+| UT-Config | 佣金参数热更新 | 修改 Settings 中参数后，新计算立即使用新参数 | Unit |
+| ST-OCR | AI OCR 导入 | 上传供应商 PDF → 验证 Gemini 1.5 Flash 识别准确性 → 批量导入验证 | System |
+
+### 17.8 登录 & 账户测试
+
+| 测试编号 | 测试名称 | 测试内容 | 类型 |
+|----------|---------|---------|------|
+| UT-Login | 登录安全 | 验证无开放注册入口，仅 Admin 可创建账户 | Unit |
+| UT-Account | 账户冻结 | 验证 Inactive 账户无法登录，历史数据保留 | Unit |
+| UT-Orphan | 离职公海触发 | 验证员工 Inactive 时客户自动 isOrphan=true | Unit |
+| UT-Spinoff | 裂变晋升 | 验证累计业绩 >= RM 50k 时可申请晋升 Leader | Unit |
+
+### 17.9 并发 & 防撞号测试
+
+| 测试编号 | 测试名称 | 测试内容 | 类型 |
+|----------|---------|---------|------|
+| ST-Concurrent | 并发开单防撞号 | 10 人同时开单，验证 Invoice 编号无重复 | System |
+| ST-FirstBlood | 公海并发夺权 | 2 人同时为同一 Orphan 客户开单，仅第一人成功 | System |
+
+---
+
+## 18. 部署标准 (Deployment Standards)
+
+### 18.1 技术栈总览
+
+| 层级 | 技术选型 | 说明 |
+|------|---------|------|
+| 部署 (Deployment) | **Vercel** + GitHub 私有代码库 | 零成本极速 CI/CD 发布 |
+| 前端 (Frontend) | **Refine.dev** + **React Query** + TailwindCSS | 中后台 CRUD 框架，数据缓存与静默更新 |
+| 数据库 (Database) | Supabase (PostgreSQL) | 实时订阅，Row Level Security |
+| 后端逻辑 | **PostgreSQL Triggers + RPC 存储过程** | 后端零代码化，核心业务逻辑下沉至数据库 |
+| 鉴权 (Auth) | **Row Level Security (RLS)** 原生 | 无中间件，数据库底层原生隔离数据视野 |
+| AI OCR | **Google Gemini 1.5 Flash** | 完全免费视觉接口，自动提取产品信息 |
+| 邮件发送 | Resend API | 动态 HTML 模板，企业域名多身份路由 |
+| 邮件接收 | **Zoho Mail** 免费版 | 单账号多别名机制 |
+| 通讯 | WhatsApp 集成 | 一键跟进，预设话术脚本 |
+| 自动化/Cron | **Make.com** | 每月结算、Auto-Dunning、里程碑关怀 |
+| 测试 | **Vitest** | 佣金引擎/财务逻辑 100% 覆盖率 |
+| CI/CD | **GitHub Actions** | 拦截哨兵: 测试失败 → 强制拦截 Vercel 发布 |
+| 打印引擎 | 原生 A4 无边距打印 | 全系统单据一键打印 |
+| 安全 | 反泄密体系 | 右键禁用/截屏禁用/动态水印/录屏模糊 |
+
+### 18.2 代码架构原则
+
+1. **纯函数分离 (Pure Function Separation):**
+   - 佣金引擎必须实现为纯函数 (Pure Functions)
+   - 输入: Invoice 数据, 客户数据, 佣金参数
+   - 输出: 佣金计算结果
+   - 无副作用 (No Side Effects)，便于 Vitest 单元测试
+   - Tug-of-War 分润引擎同样实现为纯函数
+
+2. **后端零代码化 (Backend-less Architecture):**
+   - 不使用 Serverless Functions (无 Netlify Functions)
+   - 核心业务逻辑下沉至 PostgreSQL Triggers 和 RPC 存储过程
+   - Supabase RLS 在数据库层面原生隔离数据
+   - 前端通过 Supabase Client SDK 直接调用 RPC
+
+3. **模块化设计:**
+   - 每个模块独立封装
+   - 共享类型定义 (TypeScript interfaces)
+   - React Query 管理服务器状态 (替代 Zustand Store)
+   - Refine.dev 提供统一的 CRUD 框架
+
+### 18.3 CI/CD 流程 (GitHub Actions + Vercel)
+
+```
+代码提交 (Push to GitHub Private Repo)
+→ GitHub Actions 自动触发:
+  1. 安装依赖 (npm ci)
+  2. 运行 Lint 检查 (ESLint)
+  3. 运行 Vitest 全部单元测试 (Unit Tests)
+     - 佣金引擎 100% 覆盖率检查
+     - 拔河分润 100% 覆盖率检查
+  4. 运行系统测试 (System Tests)
+  5. 覆盖率报告生成
+→ 测试失败 → **强制拦截 Vercel 发布** (CI/CD Blocking)
+→ 测试通过 → 自动部署至 Vercel
+```
+
+**关键规则:**
+- 任何测试失败都必须阻断部署，不允许跳过
+- GitHub Actions 作为拦截哨兵，失败时 block Vercel deploy
+- 佣金引擎和拔河分润函数要求 100% 测试覆盖率
+
+### 18.4 Make.com 自动化任务
+
+| 任务名称 | 触发时间 | 执行内容 |
+|----------|---------|---------|
+| 月度结算 | 每月 1 日 00:01 (UTC+8) | 调用 Supabase RPC 执行佣金结算、生成报表、重置 Dashboard |
+| Auto-Dunning 每日扫描 | 每日 09:00 (UTC+8) | 扫描 Active Invoice + Credit Terms → 触发催款邮件 |
+| 里程碑关怀 | 每日 08:00 (UTC+8) | 扫描入职周年/生日 → 发送 care@ 祝贺邮件 |
+
+### 18.5 环境变量管理
+
+```
+必须通过环境变量管理的配置 (Vercel Environment Variables):
+- SUPABASE_URL          — Supabase 项目 URL
+- SUPABASE_ANON_KEY     — Supabase 匿名密钥 (用于前端)
+- SUPABASE_SERVICE_KEY   — Supabase 服务端密钥 (仅 Make.com)
+- RESEND_API_KEY         — Resend 邮件服务 API Key
+- GEMINI_API_KEY         — Google Gemini 1.5 Flash API Key (免费)
+- WHATSAPP_API_TOKEN     — WhatsApp 集成令牌
+- MAKE_WEBHOOK_SECRET    — Make.com Webhook 签名密钥
+```
+
+**严禁硬编码 (No Hardcoding):** 所有密钥和服务配置必须通过环境变量注入，不可出现在代码库中。
+
+### 18.6 Vercel 部署配置
+
+| 配置项 | 值 |
+|--------|---|
+| Framework Preset | Vite (Refine.dev) |
+| Build Command | `npm run build` |
+| Output Directory | `dist/` |
+| Node.js Version | 18.x |
+| Install Command | `npm ci` |
+
+### 18.7 Supabase 数据库配置
+
+```
+必须配置的 Triggers:
+  - trg_neglect_index       — Neglect Index 自动更新 (INSERT on invoices)
+  - trg_orphan_on_inactive  — 员工离职触发公海孤儿 (UPDATE on employees)
+  - trg_first_blood_claim   — 公海首单夺权 (INSERT on invoices)
+  - trg_invoice_numbering   — 防并发撞号 (INSERT on invoices)
+
+必须配置的 RPC 存储过程:
+  - rpc_monthly_settlement  — 月度佣金结算
+  - rpc_calculate_commission — 单人佣金计算
+  - rpc_ar_aging_report     — AR Aging 报表生成
+  - rpc_create_invoice      — 创建 Invoice (含促销校验 + Auto-DO + Auto-PO)
+
+必须配置的 RLS 策略:
+  - 每张表按角色配置 SELECT/INSERT/UPDATE/DELETE 策略
+  - Sales: 仅可访问 created_by = auth.uid() 的数据
+  - Leader: 可访问直属团队 (leaderId = auth.uid()) 的数据
+  - HR & Finance: 可访问全部数据，但 costPrice 列使用列级安全
+  - Logistics: 仅可访问 assigned_to = auth.uid() 的 DO 数据
+  - Admin: 全部数据无限制
+```
+
+---
+
+> **文档版本:** v10 Ultimate (Merged)
+> **合并来源:** v9 Final + v8.8 Ultimate
+> **生成日期:** 2026-04-23
+> **系统导航顺序:** Home → Playbook → Product Catalogue → Clients → Invoice → Delivery Order → HR → Reports → Settings
+> **财务底线:** `Revenue - COGS = Gross Profit - Expenses = Net Profit > 0`
