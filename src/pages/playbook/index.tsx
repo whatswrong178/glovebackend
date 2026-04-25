@@ -389,7 +389,7 @@ export function PlaybookPage() {
     queryOptions: { cacheTime: 0, staleTime: 0 },
   } as Parameters<typeof useList>[0]);
 
-  const allMaterials = (data?.data ?? []) as PlaybookMaterial[];
+  const allMaterials = (data?.data ?? []) as unknown as PlaybookMaterial[];
 
   // Category tree
   const categoryTree = useMemo(() => {
