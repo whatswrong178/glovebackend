@@ -33,7 +33,7 @@ export function ProductEditPage() {
     pagination: { current: 1, pageSize: 200 },
     sorters:    [{ field: "name", order: "asc" }],
     meta:       { select: "id,name" },
-    filters:    [{ field: "name", operator: "neq", value: "[Unknown Supplier]" }],
+    filters:    [{ field: "name", operator: "ne", value: "[Unknown Supplier]" }],
   });
 
   const suppliers = suppliersData?.data ?? [];

@@ -8,6 +8,7 @@
 
 import React, { useState } from "react";
 import { useList, useDelete, useGetIdentity, useNavigation } from "@refinedev/core";
+import type { CrudFilters } from "@refinedev/core";
 import type { Product } from "../../types/product";
 import { CATEGORY_META } from "../../types/product";
 import type { StaffRole } from "../../types/staff";
@@ -37,7 +38,7 @@ export function ProductListPage() {
 
   const { mutate: deleteProduct } = useDelete();
 
-  const filters: Parameters<typeof useList>[0]["filters"] = [];
+  const filters: CrudFilters = [];
   if (catFilter) filters.push({ field: "category", operator: "eq", value: catFilter });
   if (search.trim()) {
     filters.push({

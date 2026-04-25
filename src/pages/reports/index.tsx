@@ -10,7 +10,8 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { useGetIdentity } from "@refinedev/core";
-import { useSupabaseClient } from "@refinedev/supabase";
+import { supabaseClient } from "../../supabaseClient";
+type SupabaseClientType = typeof supabaseClient;
 import type { StaffRole } from "../../types/staff";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -110,7 +111,7 @@ const BUCKET_BAR: Record<string, string> = {
 // ─────────────────────────────────────────────────────────────────────────────
 // AR Aging Tab
 // ─────────────────────────────────────────────────────────────────────────────
-function ARAgingTab({ supabase }: { supabase: ReturnType<typeof useSupabaseClient> }) {
+function ARAgingTab({ supabase }: { supabase: SupabaseClientType }) {
   const [data,       setData]       = useState<ARAgingResult | null>(null);
   const [loading,    setLoading]    = useState(false);
   const [error,      setError]      = useState("");
@@ -327,7 +328,7 @@ function OrgTreeRender({ nodes, parentId }: { nodes: OrgNode[]; parentId: string
   );
 }
 
-function OrgChartTab({ supabase }: { supabase: ReturnType<typeof useSupabaseClient> }) {
+function OrgChartTab({ supabase }: { supabase: SupabaseClientType }) {
   const [data,    setData]    = useState<OrgTreeResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error,   setError]   = useState("");
@@ -390,7 +391,7 @@ function OrgChartTab({ supabase }: { supabase: ReturnType<typeof useSupabaseClie
 // ─────────────────────────────────────────────────────────────────────────────
 // P&L Tab
 // ─────────────────────────────────────────────────────────────────────────────
-function PLTab({ supabase }: { supabase: ReturnType<typeof useSupabaseClient> }) {
+function PLTab({ supabase }: { supabase: SupabaseClientType }) {
   const now   = new Date();
   const [year,    setYear]    = useState(now.getFullYear());
   const [month,   setMonth]   = useState(now.getMonth() + 1);
@@ -554,7 +555,7 @@ type ReportTab = "ar" | "org" | "pl";
 
 export function ReportsPage() {
   const { data: identity } = useGetIdentity<{ id: string; name: string; role: StaffRole }>();
-  const supabase = useSupabaseClient();
+  const supabase = supabaseClient;
 
   const isAdmin = identity?.role === "Admin";
   const isHR    = identity?.role === "HR";

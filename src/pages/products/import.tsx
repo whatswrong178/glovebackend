@@ -14,7 +14,7 @@
 
 import React, { useState, useCallback, useRef } from "react";
 import { useCreateMany, useList, useNavigation, useGetIdentity } from "@refinedev/core";
-import { useSupabaseClient } from "@refinedev/supabase";
+import { supabaseClient } from "../../supabaseClient";
 import type { ExtractedProduct, ProductCategory } from "../../types/product";
 import { CATEGORY_META, validatePriceOrder } from "../../types/product";
 import type { Supplier } from "../../types/product";
@@ -49,7 +49,7 @@ function ConfidenceBadge({ level }: { level: "high" | "medium" | "low" }) {
 
 export function ProductImportPage() {
   const { list }   = useNavigation();
-  const supabase   = useSupabaseClient();
+  const supabase   = supabaseClient;
   const { data: identity } = useGetIdentity<{ id: string; role: StaffRole }>();
   const isAdmin = identity?.role === "Admin";
 
@@ -60,7 +60,7 @@ export function ProductImportPage() {
     pagination: { current: 1, pageSize: 200 },
     sorters:    [{ field: "name", order: "asc" }],
     meta:       { select: "id,name" },
-    filters:    [{ field: "name", operator: "neq", value: "[Unknown Supplier]" }],
+    filters:    [{ field: "name", operator: "ne", value: "[Unknown Supplier]" }],
   });
   const suppliers = suppliersData?.data ?? [];
 
