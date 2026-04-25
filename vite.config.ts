@@ -15,21 +15,8 @@ export default defineConfig({
     open: true,
   },
   build: {
-    // Warn if any chunk exceeds 800 kB
-    chunkSizeWarningLimit: 800,
-    rollupOptions: {
-      output: {
-        // Split large vendor chunks for better caching
-        manualChunks: {
-          "react-vendor": ["react", "react-dom", "react-router-dom"],
-          "refine-vendor": [
-            "@refinedev/core",
-            "@refinedev/supabase",
-            "@refinedev/react-router-v6",
-          ],
-          "chart-vendor": ["recharts", "react-d3-tree"],
-        },
-      },
-    },
+    // Let Vite handle code splitting automatically — manual chunks caused
+    // circular chunk: react-vendor ↔ refine-vendor → React undefined at runtime
+    chunkSizeWarningLimit: 1000,
   },
 });
