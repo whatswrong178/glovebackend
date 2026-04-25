@@ -14,6 +14,7 @@
 
 import React, { useState, useMemo } from "react";
 import { useList, useGetIdentity, useNavigation } from "@refinedev/core";
+import type { CrudFilters } from "@refinedev/core";
 import { supabaseClient } from "../../supabaseClient";
 import type { InvoiceLineItem, CreateInvoiceResult } from "../../types/invoice";
 import type { Client } from "../../types/client";

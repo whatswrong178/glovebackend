@@ -41,7 +41,7 @@ export function HRListPage() {
 
   const [search,        setSearch]        = useState("");
   const [roleFilter,    setRoleFilter]    = useState<StaffRole | "">("");
-  const [statusFilter,  setStatusFilter]  = useState<StaffStatus | "Active">("Active");
+  const [statusFilter,  setStatusFilter]  = useState<StaffStatus | "">("Active");
   const [currentPage,   setCurrentPage]   = useState(1);
   const [offboardingId, setOffboardingId] = useState<string | null>(null);
 

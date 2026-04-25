@@ -368,7 +368,7 @@ function EditModal({ material, onClose, categories }: EditModalProps) {
 
 export function PlaybookPage() {
   const { data: identity } = useGetIdentity<{ id: string; name: string; role: StaffRole }>();
-  const supabase            = useSupabaseClient();
+  const supabase            = supabaseClient;
   const { mutate: deleteMaterial } = useDelete();
 
   const isAdmin = identity?.role === "Admin";
@@ -387,7 +387,7 @@ export function PlaybookPage() {
     sorters:    [{ field: "category", order: "asc" }, { field: "title", order: "asc" }],
     meta:       { select: "id,title,category,subcategory,file_url,type,uploaded_by,created_at" },
     queryOptions: { cacheTime: 0, staleTime: 0 },
-  } as Parameters<typeof useList>[0]);
+  });
 
   const allMaterials = (data?.data ?? []) as unknown as PlaybookMaterial[];
 
