@@ -4,6 +4,7 @@
  */
 import React, { useState } from "react";
 import { useLogin } from "@refinedev/core";
+import { useCompanySettings } from "../../context/CompanySettingsContext";
 
 interface LoginFormValues {
   email:    string;
@@ -12,6 +13,7 @@ interface LoginFormValues {
 
 export function LoginPage() {
   const { mutate: login, isLoading } = useLogin<LoginFormValues>();
+  const { settings } = useCompanySettings();
   const [email,    setEmail]    = useState("");
   const [password, setPassword] = useState("");
   const [error,    setError]    = useState<string | null>(null);
@@ -33,9 +35,19 @@ export function LoginPage() {
   return (
     <div className="min-h-screen bg-brand-900 flex items-center justify-center p-4">
       <div className="w-full max-w-sm">
-        {/* Logo */}
+        {/* Logo / Company branding */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-white tracking-tight">MediGlove</h1>
+          {settings.logo_url ? (
+            <img
+              src={settings.logo_url}
+              alt={settings.company_name}
+              className="h-14 w-auto object-contain mx-auto mb-3"
+              onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+            />
+          ) : null}
+          <h1 className="text-3xl font-bold text-white tracking-tight">
+            {settings.company_name}
+          </h1>
           <p className="mt-1 text-brand-300 text-sm">Supply Chain ERP</p>
         </div>
 
@@ -106,7 +118,7 @@ export function LoginPage() {
         </div>
 
         <p className="mt-6 text-center text-xs text-brand-400">
-          Access restricted to authorised MediGlove staff only.
+          Access restricted to authorised {settings.company_name} staff only.
         </p>
       </div>
     </div>

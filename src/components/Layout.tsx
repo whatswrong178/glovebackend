@@ -5,6 +5,7 @@
 import React, { type ReactNode } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useGetIdentity, useLogout } from "@refinedev/core";
+import { useCompanySettings } from "../context/CompanySettingsContext";
 
 interface StaffIdentity {
   id:        string;
@@ -44,21 +45,35 @@ interface LayoutProps {
 }
 
 export default function Layout({ children }: LayoutProps) {
-  const { data: identity } = useGetIdentity<StaffIdentity>();
-  const { mutate: logout }  = useLogout();
-  const navigate            = useNavigate();
+  const { data: identity }    = useGetIdentity<StaffIdentity>();
+  const { mutate: logout }    = useLogout();
+  const navigate              = useNavigate();
+  const { settings }          = useCompanySettings();
 
-  const userRole = identity?.role ?? "Sales";
+  const userRole   = identity?.role ?? "Sales";
   const visibleNav = NAV_ITEMS.filter((item) => item.minRoles.includes(userRole));
 
   return (
     <div className="flex h-screen bg-surface overflow-hidden">
       {/* ── Sidebar ──────────────────────────────────────────────────────── */}
       <aside className="w-60 flex flex-col bg-brand-900 text-white shrink-0">
-        {/* Logo */}
-        <div className="flex items-center gap-2 px-5 py-4 border-b border-brand-800">
-          <span className="text-xl font-bold tracking-tight">MediGlove</span>
-          <span className="text-xs bg-brand-700 rounded px-1.5 py-0.5 font-medium">ERP</span>
+        {/* Logo / Company name */}
+        <div className="flex items-center gap-2 px-4 py-3 border-b border-brand-800 min-h-[60px]">
+          {settings.logo_url ? (
+            <img
+              src={settings.logo_url}
+              alt={settings.company_name}
+              className="h-9 w-auto object-contain"
+              onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+            />
+          ) : (
+            <>
+              <span className="text-lg font-bold tracking-tight truncate">
+                {settings.company_name}
+              </span>
+              <span className="text-xs bg-brand-700 rounded px-1.5 py-0.5 font-medium shrink-0">ERP</span>
+            </>
+          )}
         </div>
 
         {/* Navigation */}

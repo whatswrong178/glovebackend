@@ -12,6 +12,7 @@ import { supabaseClient } from "./supabaseClient";
 import { authProvider } from "./authProvider";
 import { SecurityShield } from "./components/SecurityShield";
 import Layout from "./components/Layout";
+import { CompanySettingsProvider } from "./context/CompanySettingsContext";
 
 // ── Page imports ──────────────────────────────────────────────────────────────
 import { DashboardPage }      from "./pages/dashboard";
@@ -40,6 +41,7 @@ import { LoginPage }          from "./pages/auth/login";
 // ─────────────────────────────────────────────────────────────────────────────
 export default function App() {
   return (
+    <CompanySettingsProvider>
     <BrowserRouter>
         <Refine
           dataProvider={dataProvider(supabaseClient)}
@@ -177,5 +179,6 @@ export default function App() {
           </SecurityShield>
         </Refine>
     </BrowserRouter>
+    </CompanySettingsProvider>
   );
 }

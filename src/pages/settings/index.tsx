@@ -9,19 +9,43 @@
 //   4. Email Templates — HTML template editor with variable toolbar
 // ══════════════════════════════════════════════════════════════════════════════
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useCallback } from "react";
 import {
   useList,
   useCreate,
   useUpdate,
   useDelete,
   useGetIdentity,
+  useOne,
 } from "@refinedev/core";
 import type { StaffRole } from "../../types/staff";
+import { supabaseClient } from "../../supabaseClient";
+import { useCompanySettings } from "../../context/CompanySettingsContext";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
 // ─────────────────────────────────────────────────────────────────────────────
+const COMPANY_SINGLETON_ID = "00000000-0000-0000-0000-000000000001";
+
+interface CompanySettings {
+  id:              string;
+  company_name:    string;
+  registration_no: string | null;
+  gst_no:          string | null;
+  address_line1:   string | null;
+  address_line2:   string | null;
+  city:            string | null;
+  postcode:        string | null;
+  state:           string | null;
+  country:         string;
+  phone:           string | null;
+  fax:             string | null;
+  email:           string | null;
+  website:         string | null;
+  logo_url:        string | null;
+  updated_at:      string;
+}
+
 interface SystemParam {
   key:        string;   // PRIMARY KEY in DB
   value:      string;   // JSONB stored as string
@@ -81,7 +105,7 @@ interface EmailTemplate {
   updated_at: string;
 }
 
-type SettingsTab = "params" | "suppliers" | "routing" | "templates";
+type SettingsTab = "company" | "params" | "suppliers" | "routing" | "templates";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Param group definitions (T-09.1)
@@ -118,6 +142,235 @@ const PARAM_GROUPS: { label: string; keys: string[] }[] = [
     keys: ["a_ratio_threshold", "ladder_matrix"],
   },
 ];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Tab 0: Company Profile
+// ─────────────────────────────────────────────────────────────────────────────
+function CField({ label, value, onChange, type = "text", placeholder = "" }: {
+  label: string; value: string; onChange: (v: string) => void;
+  type?: string; placeholder?: string;
+}) {
+  return (
+    <div>
+      <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1">{label}</label>
+      <input
+        type={type}
+        value={value}
+        placeholder={placeholder}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2
+                   focus:outline-none focus:ring-2 focus:ring-blue-500"
+      />
+    </div>
+  );
+}
+
+function CompanyProfileTab() {
+  const { refetchSettings } = useCompanySettings();
+  const { data, isLoading, refetch } = useOne<CompanySettings>({
+    resource: "company_settings",
+    id:       COMPANY_SINGLETON_ID,
+  });
+  const { mutate: updateCompany } = useUpdate();
+
+  const [form,        setForm]        = useState<Partial<CompanySettings>>({});
+  const [saving,      setSaving]      = useState(false);
+  const [saved,       setSaved]       = useState(false);
+  const [logoUploading, setLogoUploading] = useState(false);
+  const [logoError,   setLogoError]   = useState("");
+  const fileInputRef  = useRef<HTMLInputElement>(null);
+
+  // Initialise form from fetched data (only once)
+  const record = data?.data;
+  const initialised = useRef(false);
+  if (record && !initialised.current) {
+    initialised.current = true;
+    setForm({
+      company_name:    record.company_name    ?? "",
+      registration_no: record.registration_no ?? "",
+      gst_no:          record.gst_no          ?? "",
+      address_line1:   record.address_line1   ?? "",
+      address_line2:   record.address_line2   ?? "",
+      city:            record.city            ?? "",
+      postcode:        record.postcode        ?? "",
+      state:           record.state           ?? "",
+      country:         record.country         ?? "Malaysia",
+      phone:           record.phone           ?? "",
+      fax:             record.fax             ?? "",
+      email:           record.email           ?? "",
+      website:         record.website         ?? "",
+      logo_url:        record.logo_url        ?? "",
+    });
+  }
+
+  const set = (field: keyof CompanySettings) => (v: string) => {
+    setSaved(false);
+    setForm(prev => ({ ...prev, [field]: v }));
+  };
+
+  const handleSave = () => {
+    setSaving(true);
+    updateCompany(
+      { resource: "company_settings", id: COMPANY_SINGLETON_ID, values: form },
+      {
+        onSuccess: () => { setSaving(false); setSaved(true); refetch(); refetchSettings(); },
+        onError:   () => setSaving(false),
+      }
+    );
+  };
+
+  const handleLogoUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) { setLogoError("Logo must be under 2 MB"); return; }
+    if (!file.type.startsWith("image/")) { setLogoError("File must be an image"); return; }
+
+    setLogoError("");
+    setLogoUploading(true);
+
+    const ext      = file.name.split(".").pop();
+    const path     = `logo/company-logo.${ext}`;
+    const { error } = await supabaseClient.storage
+      .from("company-assets")
+      .upload(path, file, { upsert: true, contentType: file.type });
+
+    if (error) {
+      setLogoError(error.message.includes("not found")
+        ? 'Bucket "company-assets" not found. Create it in Supabase Dashboard → Storage → New Bucket (Public: ON).'
+        : error.message);
+      setLogoUploading(false);
+      return;
+    }
+
+    const { data: urlData } = supabaseClient.storage
+      .from("company-assets")
+      .getPublicUrl(path);
+
+    // Bust cache with timestamp
+    const publicUrl = `${urlData.publicUrl}?t=${Date.now()}`;
+    set("logo_url")(publicUrl);
+    setSaved(false);
+    setLogoUploading(false);
+  }, []);
+
+  if (isLoading) return <div className="flex items-center justify-center h-48 text-sm text-gray-400">Loading…</div>;
+
+  const logoUrl = form.logo_url ?? record?.logo_url ?? "";
+
+  return (
+    <div className="space-y-6 max-w-3xl">
+      <div className="bg-blue-50 border border-blue-100 rounded-lg px-4 py-3 text-xs text-blue-700">
+        This information is used on all printed documents — invoices, delivery orders, and receipts.
+      </div>
+
+      {/* Logo upload */}
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 space-y-4">
+        <h3 className="text-sm font-bold text-gray-900">Company Logo</h3>
+        <div className="flex items-start gap-5">
+          {/* Preview */}
+          <div className="w-32 h-20 border border-gray-200 rounded-lg bg-gray-50 flex items-center justify-center overflow-hidden flex-shrink-0">
+            {logoUrl
+              ? <img src={logoUrl} alt="Logo" className="max-w-full max-h-full object-contain p-1" />
+              : <span className="text-xs text-gray-400 text-center px-2">No logo uploaded</span>
+            }
+          </div>
+          <div className="flex-1 space-y-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleLogoUpload}
+              className="hidden"
+            />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={logoUploading}
+              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700
+                         rounded-lg transition-colors disabled:opacity-50"
+            >
+              {logoUploading ? "Uploading…" : "Upload Logo"}
+            </button>
+            <p className="text-xs text-gray-400">PNG or SVG recommended. Max 2 MB. Displayed on letterhead at ~120×48 px.</p>
+            {logoError && <p className="text-xs text-red-500">{logoError}</p>}
+            {logoUrl && (
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={logoUrl}
+                  onChange={(e) => set("logo_url")(e.target.value)}
+                  placeholder="Or paste a public image URL"
+                  className="flex-1 text-xs border border-gray-200 rounded px-2 py-1 text-gray-500 focus:outline-none"
+                />
+              </div>
+            )}
+            {!logoUrl && (
+              <input
+                type="text"
+                value={form.logo_url ?? ""}
+                onChange={(e) => set("logo_url")(e.target.value)}
+                placeholder="Or paste a public image URL"
+                className="w-full text-xs border border-gray-200 rounded px-2 py-1 text-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-400"
+              />
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Identity */}
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 space-y-4">
+        <h3 className="text-sm font-bold text-gray-900">Company Identity</h3>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="col-span-2">
+            <CField label="Company Name *"  value={form.company_name    ?? ""} onChange={set("company_name")} placeholder="MediGlove Sdn Bhd" />
+          </div>
+          <CField label="SSM / CCM Registration No." value={form.registration_no ?? ""} onChange={set("registration_no")} placeholder="1234567-X" />
+          <CField label="GST / SST No."               value={form.gst_no          ?? ""} onChange={set("gst_no")}          placeholder="Leave blank if exempt" />
+        </div>
+      </div>
+
+      {/* Address */}
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 space-y-4">
+        <h3 className="text-sm font-bold text-gray-900">Registered Address</h3>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="col-span-2">
+            <CField label="Address Line 1"  value={form.address_line1 ?? ""} onChange={set("address_line1")} placeholder="No. 1, Jalan ..." />
+          </div>
+          <div className="col-span-2">
+            <CField label="Address Line 2"  value={form.address_line2 ?? ""} onChange={set("address_line2")} placeholder="Taman / Kompleks ..." />
+          </div>
+          <CField label="Postcode"  value={form.postcode ?? ""} onChange={set("postcode")} placeholder="50000" />
+          <CField label="City"      value={form.city     ?? ""} onChange={set("city")}     placeholder="Kuala Lumpur" />
+          <CField label="State"     value={form.state    ?? ""} onChange={set("state")}    placeholder="Wilayah Persekutuan" />
+          <CField label="Country"   value={form.country  ?? "Malaysia"} onChange={set("country")} placeholder="Malaysia" />
+        </div>
+      </div>
+
+      {/* Contact */}
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 space-y-4">
+        <h3 className="text-sm font-bold text-gray-900">Contact Details</h3>
+        <div className="grid grid-cols-2 gap-4">
+          <CField label="Phone"    value={form.phone   ?? ""} onChange={set("phone")}   type="tel"   placeholder="+603-XXXX XXXX" />
+          <CField label="Fax"      value={form.fax     ?? ""} onChange={set("fax")}     type="tel"   placeholder="+603-XXXX XXXX" />
+          <CField label="Email"    value={form.email   ?? ""} onChange={set("email")}   type="email" placeholder="info@mediglove.com" />
+          <CField label="Website"  value={form.website ?? ""} onChange={set("website")} type="url"   placeholder="https://mediglove.com" />
+        </div>
+      </div>
+
+      {/* Save */}
+      <div className="flex items-center justify-end gap-3">
+        {saved && <span className="text-sm text-emerald-600 font-medium">✓ Saved</span>}
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="px-5 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700
+                     rounded-lg transition-colors disabled:opacity-50"
+        >
+          {saving ? "Saving…" : "Save Company Profile"}
+        </button>
+      </div>
+    </div>
+  );
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tab 1: System Params
@@ -788,7 +1041,7 @@ function EmailTemplatesTab() {
 export function SettingsPage() {
   const { data: identity } = useGetIdentity<{ id: string; name: string; role: StaffRole }>();
   const isAdmin = identity?.role === "Admin";
-  const [tab, setTab] = useState<SettingsTab>("params");
+  const [tab, setTab] = useState<SettingsTab>("company");
 
   if (!isAdmin) {
     return (
@@ -799,6 +1052,7 @@ export function SettingsPage() {
   }
 
   const tabs: { id: SettingsTab; label: string }[] = [
+    { id: "company",   label: "🏢 Company Profile"  },
     { id: "params",    label: "⚙️ System Params"    },
     { id: "suppliers", label: "🏭 Suppliers"         },
     { id: "routing",   label: "📨 Email Routing"     },
@@ -831,6 +1085,7 @@ export function SettingsPage() {
       </div>
 
       <div className={tab === "templates" ? "min-h-[600px]" : ""}>
+        {tab === "company"   && <CompanyProfileTab  />}
         {tab === "params"    && <SystemParamsTab    />}
         {tab === "suppliers" && <SuppliersTab       />}
         {tab === "routing"   && <EmailRoutingTab    />}
