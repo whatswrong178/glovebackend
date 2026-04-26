@@ -79,7 +79,7 @@ export function CompanySettingsProvider({ children }: { children: ReactNode }) {
       .single();
 
     if (!error && data) {
-      setSettings(data as CompanySettingsData);
+      setSettings(data as unknown as CompanySettingsData);
     }
     setIsLoading(false);
   }, []);
