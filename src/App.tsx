@@ -41,8 +41,6 @@ import { LoginPage }          from "./pages/auth/login";
 export default function App() {
   return (
     <BrowserRouter>
-      {/* T-01.2: Anti-leak shield wraps entire app */}
-      <SecurityShield>
         <Refine
           dataProvider={dataProvider(supabaseClient)}
           liveProvider={liveProvider(supabaseClient)}
@@ -112,6 +110,9 @@ export default function App() {
             projectId: "mediglove-erp",
           }}
         >
+          {/* T-01.2: SecurityShield must be inside <Refine> so useGetIdentity
+              has access to Refine's QueryClientProvider */}
+          <SecurityShield>
           <Routes>
             {/* ── Authenticated routes ─────────────────────────── */}
             <Route
@@ -168,8 +169,8 @@ export default function App() {
 
           <UnsavedChangesNotifier />
           <DocumentTitleHandler />
+          </SecurityShield>
         </Refine>
-      </SecurityShield>
     </BrowserRouter>
   );
 }
