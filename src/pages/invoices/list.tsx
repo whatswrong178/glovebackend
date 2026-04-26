@@ -84,7 +84,7 @@ export function InvoiceListPage() {
 
     try {
       // Parallel fetch: invoice header + client details + line items
-      const [{ data: inv }, { data: items }] = await Promise.all([
+      const [{ data: invRaw }, { data: itemsRaw }] = await Promise.all([
         supabaseClient
           .from("invoices")
           .select(
@@ -101,7 +101,7 @@ export function InvoiceListPage() {
           .eq("invoice_id", invoiceId),
       ]);
 
-      if (!inv) {
+      if (!invRaw) {
         alert("Failed to load invoice data for printing.");
         return;
       }
@@ -123,9 +123,11 @@ export function InvoiceListPage() {
         product: { name: string; sku: string } | null;
       };
 
-      const client  = inv.client as RichClient | null;
-      const creator = (inv as { creator?: { name: string } }).creator;
-      const lineItems = (items ?? []) as ItemRow[];
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const inv      = invRaw as unknown as any;
+      const lineItems = (itemsRaw ?? []) as unknown as ItemRow[];
+      const client   = inv.client as RichClient | null;
+      const creator  = inv.creator as { name: string } | null;
 
       // Calculate subtotal before discount + delivery
       const subtotal = lineItems.reduce(

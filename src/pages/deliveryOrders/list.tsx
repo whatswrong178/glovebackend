@@ -412,7 +412,7 @@ export function DOListPage() {
           .from("invoice_items")
           .select("qty,selling_price,unit,product:products!product_id(name,sku)")
           .eq("invoice_id", do_.invoice_id);
-        lineItems = (items ?? []) as ItemRow[];
+        lineItems = (items ?? []) as unknown as ItemRow[];
       }
 
       const docDate = new Date(do_.created_at).toLocaleDateString("en-MY", {
