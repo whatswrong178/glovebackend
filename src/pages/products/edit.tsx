@@ -4,23 +4,60 @@
 //
 // Identical form to create.tsx but pre-populated via useOne.
 // Admin-only. SKU is read-only after creation (immutable identifier).
+// Includes margin analysis panel — same auto-detect logic as create.tsx.
 // ══════════════════════════════════════════════════════════════════════════════
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useOne, useUpdate, useList, useNavigation } from "@refinedev/core";
 import { useParams } from "react-router-dom";
 import type { Product, ProductFormValues, ProductCategory } from "../../types/product";
 import { validatePriceOrder } from "../../types/product";
 import type { Supplier } from "../../types/product";
 
+// ── Category auto-detection ────────────────────────────────────────────────
+// Rule: gross margin = (min_selling - cost) / min_selling
+// ≥ 25% → Category A (supports 20% commission tier)
+// < 25% → Category B (15% commission tier)
+const CAT_A_MARGIN_THRESHOLD = 0.25;
+
+interface MarginAnalysis {
+  grossMargin:       number;
+  markup:            number;
+  suggestedCategory: ProductCategory;
+  commissionAtMin:   number;
+  profitAfterComm:   number;
+  isViable:          boolean;
+}
+
+function analyseMargin(cost: number, minSell: number): MarginAnalysis | null {
+  if (!cost || !minSell || cost <= 0 || minSell <= cost) return null;
+  const grossMargin     = (minSell - cost) / minSell;
+  const markup          = (minSell - cost) / cost;
+  const suggestedCategory: ProductCategory = grossMargin >= CAT_A_MARGIN_THRESHOLD ? "A" : "B";
+  const commRate        = suggestedCategory === "A" ? 0.20 : 0.15;
+  const commissionAtMin = minSell * commRate;
+  const profitAfterComm = minSell - cost - commissionAtMin;
+  return {
+    grossMargin,
+    markup,
+    suggestedCategory,
+    commissionAtMin,
+    profitAfterComm,
+    isViable: profitAfterComm > 0,
+  };
+}
+
 export function ProductEditPage() {
   const { id }             = useParams<{ id: string }>();
   const { list }           = useNavigation();
   const { mutate: updateProduct, isLoading: isSaving } = useUpdate();
 
-  const [form,      setForm]      = useState<ProductFormValues | null>(null);
-  const [errors,    setErrors]    = useState<Partial<Record<keyof ProductFormValues | "_price", string>>>({});
-  const [initDone,  setInitDone]  = useState(false);
+  const [form,               setForm]               = useState<ProductFormValues | null>(null);
+  const [errors,             setErrors]             = useState<Partial<Record<keyof ProductFormValues | "_price", string>>>({});
+  const [initDone,           setInitDone]           = useState(false);
+  // Track manual category override (same pattern as create.tsx)
+  // Starts false — auto-detect activates when user edits prices after load.
+  const [categoryOverridden, setCategoryOverridden] = useState(false);
 
   const { data: productData, isLoading: productLoading } = useOne<Product>({
     resource: "products",
@@ -56,6 +93,14 @@ export function ProductEditPage() {
     }
   }, [productData, initDone]);
 
+  // Compute margin analysis whenever cost or min_selling changes
+  const margin = useMemo(() => {
+    if (!form) return null;
+    const cost    = parseFloat(form.cost_price);
+    const minSell = parseFloat(form.min_selling_price);
+    return analyseMargin(cost, minSell);
+  }, [form?.cost_price, form?.min_selling_price]);
+
   if (productLoading || !form) {
     return (
       <div className="flex items-center justify-center h-48 text-sm text-gray-400">
@@ -67,7 +112,30 @@ export function ProductEditPage() {
   const set = (field: keyof ProductFormValues) => (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
-    setForm((prev) => prev ? { ...prev, [field]: e.target.value } : prev);
+    const value = e.target.value;
+
+    // If user manually changes category, mark as overridden
+    if (field === "category") {
+      setCategoryOverridden(true);
+      setForm((prev) => prev ? { ...prev, category: value as ProductCategory } : prev);
+      setErrors((prev) => ({ ...prev, category: undefined }));
+      return;
+    }
+
+    setForm((prev) => {
+      if (!prev) return prev;
+      const next = { ...prev, [field]: value };
+
+      // Auto-detect category from prices (unless user has overridden)
+      if (!categoryOverridden && (field === "cost_price" || field === "min_selling_price")) {
+        const cost    = parseFloat(field === "cost_price" ? value : prev.cost_price);
+        const minSell = parseFloat(field === "min_selling_price" ? value : prev.min_selling_price);
+        const analysis = analyseMargin(cost, minSell);
+        if (analysis) next.category = analysis.suggestedCategory;
+      }
+
+      return next;
+    });
     setErrors((prev) => ({ ...prev, [field]: undefined, _price: undefined }));
   };
 
@@ -191,20 +259,41 @@ export function ProductEditPage() {
           {errors.supplier_id && <p className="text-xs text-red-500 mt-1">{errors.supplier_id}</p>}
         </div>
 
-        {/* Category */}
+        {/* Category — auto-detected on price change, manually overridable */}
         <div>
-          <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1">
-            Category <span className="text-red-500">*</span>
-          </label>
+          <div className="flex items-center justify-between mb-1">
+            <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+              Category <span className="text-red-500">*</span>
+            </label>
+            {categoryOverridden && (
+              <button
+                type="button"
+                onClick={() => {
+                  setCategoryOverridden(false);
+                  if (margin) setForm(p => p ? { ...p, category: margin.suggestedCategory } : p);
+                }}
+                className="text-xs text-blue-500 hover:text-blue-700 underline"
+              >
+                Reset to auto-detect
+              </button>
+            )}
+          </div>
           <select
             value={form.category}
             onChange={set("category")}
-            className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2
-                       focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+            className={`w-full text-sm border rounded-lg px-3 py-2
+                       focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white
+                       ${categoryOverridden ? "border-amber-400" : "border-gray-300"}`}
           >
             <option value="A">Category A — 20% commission tier</option>
             <option value="B">Category B — 15% commission tier</option>
           </select>
+          {categoryOverridden && (
+            <p className="text-xs text-amber-600 mt-1">⚠ Manual override — auto-detect disabled</p>
+          )}
+          {!categoryOverridden && !margin && (
+            <p className="text-xs text-gray-400 mt-1">Edit cost price or min selling price to re-run auto-detect.</p>
+          )}
         </div>
 
         {/* Prices */}
@@ -262,7 +351,87 @@ export function ProductEditPage() {
           </div>
         </div>
 
-        {form.cost_price && form.min_selling_price && form.suggested_price && !errors._price && (
+        {/* Margin analysis panel */}
+        {margin && (
+          <div className={`rounded-xl border p-4 text-sm space-y-3
+            ${margin.suggestedCategory === "A"
+              ? "bg-blue-50 border-blue-200"
+              : "bg-orange-50 border-orange-200"}`}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className={`text-lg font-black
+                  ${margin.suggestedCategory === "A" ? "text-blue-700" : "text-orange-700"}`}>
+                  Category {margin.suggestedCategory}
+                </span>
+                <span className={`text-xs font-semibold px-2 py-0.5 rounded-full
+                  ${margin.suggestedCategory === "A"
+                    ? "bg-blue-200 text-blue-800"
+                    : "bg-orange-200 text-orange-800"}`}>
+                  {margin.suggestedCategory === "A" ? "20% commission" : "15% commission"}
+                </span>
+                {categoryOverridden && form.category !== margin.suggestedCategory && (
+                  <span className="text-xs text-amber-600 font-medium">
+                    (suggested — overridden to {form.category})
+                  </span>
+                )}
+              </div>
+              {!margin.isViable && (
+                <span className="text-xs font-bold text-red-600 bg-red-100 px-2 py-0.5 rounded-full">
+                  ⚠ Margin too thin
+                </span>
+              )}
+            </div>
+
+            {/* Metrics grid */}
+            <div className="grid grid-cols-4 gap-3">
+              <div className="bg-white/60 rounded-lg p-3 text-center">
+                <p className="text-xs text-gray-500 mb-0.5">Gross Margin</p>
+                <p className={`text-lg font-bold
+                  ${margin.grossMargin >= CAT_A_MARGIN_THRESHOLD ? "text-blue-700" : "text-orange-700"}`}>
+                  {(margin.grossMargin * 100).toFixed(1)}%
+                </p>
+                <p className="text-xs text-gray-400">threshold {(CAT_A_MARGIN_THRESHOLD * 100).toFixed(0)}%</p>
+              </div>
+
+              <div className="bg-white/60 rounded-lg p-3 text-center">
+                <p className="text-xs text-gray-500 mb-0.5">Markup</p>
+                <p className="text-lg font-bold text-gray-800">
+                  {(margin.markup * 100).toFixed(1)}%
+                </p>
+                <p className="text-xs text-gray-400">over cost</p>
+              </div>
+
+              <div className="bg-white/60 rounded-lg p-3 text-center">
+                <p className="text-xs text-gray-500 mb-0.5">Commission (min)</p>
+                <p className="text-lg font-bold text-gray-800">
+                  RM {margin.commissionAtMin.toFixed(2)}
+                </p>
+                <p className="text-xs text-gray-400">per unit sold</p>
+              </div>
+
+              <div className="bg-white/60 rounded-lg p-3 text-center">
+                <p className="text-xs text-gray-500 mb-0.5">Profit after comm.</p>
+                <p className={`text-lg font-bold
+                  ${margin.profitAfterComm > 0 ? "text-emerald-700" : "text-red-600"}`}>
+                  RM {margin.profitAfterComm.toFixed(2)}
+                </p>
+                <p className="text-xs text-gray-400">at min price</p>
+              </div>
+            </div>
+
+            {/* Reason */}
+            <p className={`text-xs ${margin.suggestedCategory === "A" ? "text-blue-700" : "text-orange-700"}`}>
+              {margin.suggestedCategory === "A"
+                ? `✓ ${(margin.grossMargin * 100).toFixed(1)}% gross margin ≥ ${(CAT_A_MARGIN_THRESHOLD * 100).toFixed(0)}% threshold → Category A auto-selected.`
+                : `↓ ${(margin.grossMargin * 100).toFixed(1)}% gross margin < ${(CAT_A_MARGIN_THRESHOLD * 100).toFixed(0)}% threshold → Category B auto-selected.`}
+              {!margin.isViable && " ⚠ Profit is negative at min selling price — review pricing."}
+            </p>
+          </div>
+        )}
+
+        {!margin && form.cost_price && form.min_selling_price && form.suggested_price && !errors._price && (
           <div className="bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-2 text-xs text-emerald-700">
             ✓ Price order valid: RM {parseFloat(form.cost_price).toFixed(2)} ≤ RM {parseFloat(form.min_selling_price).toFixed(2)} ≤ RM {parseFloat(form.suggested_price).toFixed(2)}
           </div>
