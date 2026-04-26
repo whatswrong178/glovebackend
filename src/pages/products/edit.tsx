@@ -35,8 +35,11 @@ function analyseMargin(cost: number, minSell: number): MarginAnalysis | null {
   const markup          = (minSell - cost) / cost;
   const suggestedCategory: ProductCategory = grossMargin >= CAT_A_MARGIN_THRESHOLD ? "A" : "B";
   const commRate        = suggestedCategory === "A" ? 0.20 : 0.15;
-  const commissionAtMin = minSell * commRate;
-  const profitAfterComm = minSell - cost - commissionAtMin;
+  // Commission is calculated on GROSS PROFIT (matches calculateBaseCommission.ts engine):
+  // GP = sellingPrice − costPrice; commission = GP × rate
+  const gp              = minSell - cost;
+  const commissionAtMin = gp * commRate;
+  const profitAfterComm = gp - commissionAtMin; // = gp × (1 − commRate)
   return {
     grossMargin,
     markup,
@@ -62,7 +65,7 @@ export function ProductEditPage() {
   const { data: productData, isLoading: productLoading } = useOne<Product>({
     resource: "products",
     id:       id!,
-    meta:     { select: "id,name,sku,supplier_id,category,cost_price,min_selling_price,suggested_price,description" },
+    meta:     { select: "id,name,sku,supplier_id,category,cost_price,min_selling_price,suggested_price,units_per_carton,description" },
   });
 
   const { data: suppliersData, isLoading: suppliersLoading } = useList<Supplier>({
@@ -87,6 +90,7 @@ export function ProductEditPage() {
         cost_price:        p.cost_price != null ? String(p.cost_price) : "",
         min_selling_price: String(p.min_selling_price),
         suggested_price:   String(p.suggested_price),
+        units_per_carton:  String(p.units_per_carton ?? 1),
         description:       p.description ?? "",
       });
       setInitDone(true);
@@ -177,6 +181,7 @@ export function ProductEditPage() {
           cost_price:        parseFloat(form.cost_price),
           min_selling_price: parseFloat(form.min_selling_price),
           suggested_price:   parseFloat(form.suggested_price),
+          units_per_carton:  Math.max(1, parseInt(form.units_per_carton, 10) || 1),
           description:       form.description.trim() || null,
           // SKU is NOT updated — immutable after creation
         },
@@ -436,6 +441,26 @@ export function ProductEditPage() {
             ✓ Price order valid: RM {parseFloat(form.cost_price).toFixed(2)} ≤ RM {parseFloat(form.min_selling_price).toFixed(2)} ≤ RM {parseFloat(form.suggested_price).toFixed(2)}
           </div>
         )}
+
+        {/* Units Per Carton */}
+        <div>
+          <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1">
+            Units Per Carton <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="number"
+            min="1"
+            step="1"
+            value={form.units_per_carton}
+            onChange={set("units_per_carton")}
+            className="w-32 text-sm border border-gray-300 rounded-lg px-3 py-2
+                       focus:outline-none focus:ring-2 focus:ring-blue-500 tabular-nums"
+          />
+          <p className="text-xs text-gray-400 mt-1">
+            How many boxes / packs / cans fit in one carton. Used to auto-calculate
+            per-unit price on invoices when unit is changed from Carton.
+          </p>
+        </div>
 
         {/* Description */}
         <div>

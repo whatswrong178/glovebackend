@@ -44,6 +44,7 @@ export interface ProductFormValues {
   cost_price:        string; // string for <input type="number">
   min_selling_price: string;
   suggested_price:   string;
+  units_per_carton:  string; // string for <input type="number">; DB stores INTEGER ≥ 1
   description:       string;
 }
 
