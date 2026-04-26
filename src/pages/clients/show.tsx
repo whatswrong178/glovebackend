@@ -176,11 +176,13 @@ export function ClientShowPage() {
   const { edit, list } = useNavigation();
   const supabase = supabaseClient;
   const { data: identity } = useGetIdentity<{ id: string; name: string; role: StaffRole }>();
-  const isAdmin = identity?.role === "Admin";
-  const isHR    = identity?.role === "HR";
+  const isAdmin  = identity?.role === "Admin";
+  const isHR     = identity?.role === "HR";
   const isLeader = identity?.role === "Leader";
+  const isSales  = identity?.role === "Sales";
   const canReview = isAdmin || isHR;
-  const canRequestSample = isAdmin || isHR || isLeader;
+  // Spec: Admin, HR, Leader, and Sales can all submit a Sample DO request
+  const canRequestSample = isAdmin || isHR || isLeader || isSales;
 
   const [activeTab,     setActiveTab]     = useState<ShowTab>("overview");
   const [reviewNote,    setReviewNote]    = useState("");

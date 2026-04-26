@@ -2,18 +2,21 @@
 // src/pages/hr/create.tsx — Create Staff (Admin / HR only)
 // MediGlove ERP · EPIC-02 / T-02.1
 //
-// Note on auth_user_id:
-//   Creating the Supabase Auth user (email invite) is a separate Admin SDK
-//   operation done via Edge Function or Dashboard. This form only creates
-//   the staff record; auth_user_id can be linked later via the Edit page
-//   once the Auth user accepts their invite.
+// Flow:
+//   1. Insert staff row via Refine useCreate (Supabase RLS-safe)
+//   2. Call Edge Function create-staff-user to:
+//      a. Create Supabase Auth user (service role)
+//      b. Link auth_user_id on the staff row
+//      c. Email credentials to the new staff member
+//   3. Show result banner, then navigate to staff list
 // ══════════════════════════════════════════════════════════════════════════════
 
-import React from "react";
+import React, { useState } from "react";
 import { useCreate, useList, useNavigation, useGetIdentity } from "@refinedev/core";
 import { useForm } from "react-hook-form";
 import type { Staff, StaffRole, StaffFormValues } from "../../types/staff";
 import { ROLE_META } from "../../types/staff";
+import { supabaseClient } from "../../supabaseClient";
 
 const DEPARTMENTS = [
   "Sales",
@@ -25,10 +28,17 @@ const DEPARTMENTS = [
   "IT",
 ];
 
+type CredentialStatus =
+  | { state: "idle" }
+  | { state: "sending" }
+  | { state: "success"; emailSent: boolean; warning?: string }
+  | { state: "error"; message: string };
+
 export function HRCreatePage() {
   const { data: identity } = useGetIdentity<{ role: StaffRole }>();
   const { list }           = useNavigation();
-  const { mutate: createStaff, isLoading } = useCreate<Staff>();
+  const { mutate: createStaff, isLoading: isCreating } = useCreate<Staff>();
+  const [credStatus, setCredStatus] = useState<CredentialStatus>({ state: "idle" });
 
   // Fetch all active staff who could be leaders (role = Leader or Admin)
   const { data: leaderOptions } = useList<Staff>({
@@ -57,9 +67,10 @@ export function HRCreatePage() {
 
   const watchedRole = watch("role");
   const isAdmin     = identity?.role === "Admin";
+  const isBusy      = isCreating || credStatus.state === "sending";
 
+  // ── Submit handler ──────────────────────────────────────────────────────────
   const onSubmit = (values: StaffFormValues) => {
-    // Convert commission percent string to decimal (e.g. "3.50" → 0.035)
     const commissionDecimal = values.commission_rate_override
       ? parseFloat(values.commission_rate_override) / 100
       : null;
@@ -82,7 +93,64 @@ export function HRCreatePage() {
         },
       },
       {
-        onSuccess: () => list("staff"),
+        onSuccess: async (result) => {
+          // Refine v4 + Supabase: created record is at result.data
+          const staffId   = (result.data as Staff).id;
+          const staffName = values.name.trim();
+          const staffEmail = values.email.trim().toLowerCase();
+
+          // Guard: must have a staff ID to provision auth
+          if (!staffId) {
+            list("staff");
+            return;
+          }
+
+          setCredStatus({ state: "sending" });
+
+          try {
+            const { data: efData, error: efErr } = await supabaseClient.functions.invoke(
+              "create-staff-user",
+              {
+                body: {
+                  staff_id: staffId,
+                  email:    staffEmail,
+                  name:     staffName,
+                },
+              }
+            );
+
+            if (efErr) {
+              setCredStatus({
+                state:   "error",
+                message: efErr.message ?? "Edge Function invocation failed.",
+              });
+              return; // Stay on page so admin sees the error
+            }
+
+            const payload = efData as {
+              auth_user_id:  string;
+              email_sent:    boolean;
+              email_warning?: string;
+            };
+
+            setCredStatus({
+              state:     "success",
+              emailSent: payload.email_sent,
+              warning:   payload.email_warning,
+            });
+
+            // Navigate after a short pause so the banner is visible
+            setTimeout(() => list("staff"), 2200);
+
+          } catch (err: unknown) {
+            const msg = err instanceof Error ? err.message : String(err);
+            setCredStatus({ state: "error", message: msg });
+          }
+        },
+        onError: () => {
+          // Staff row creation itself failed — stay on page, Refine will show the error
+          setCredStatus({ state: "idle" });
+        },
       }
     );
   };
@@ -111,6 +179,65 @@ export function HRCreatePage() {
         <h1 className="text-xl font-bold text-gray-900">New Staff Member</h1>
       </div>
 
+      {/* ── Credential status banner ─────────────────────────────────────── */}
+      {credStatus.state === "sending" && (
+        <div className="flex items-center gap-3 bg-blue-50 border border-blue-200
+                        rounded-lg px-4 py-3 text-sm text-blue-700">
+          <svg className="animate-spin h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none">
+            <circle className="opacity-25" cx="12" cy="12" r="10"
+                    stroke="currentColor" strokeWidth="4"/>
+            <path className="opacity-75" fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+          </svg>
+          <span>Creating login account and sending credentials…</span>
+        </div>
+      )}
+
+      {credStatus.state === "success" && (
+        <div className="space-y-2">
+          <div className="flex items-start gap-2 bg-green-50 border border-green-200
+                          rounded-lg px-4 py-3 text-sm text-green-800">
+            <span className="shrink-0 text-base">✅</span>
+            <div>
+              <p className="font-semibold">Staff account created successfully.</p>
+              {credStatus.emailSent ? (
+                <p className="text-xs mt-0.5 text-green-700">
+                  Login credentials have been emailed to the new staff member.
+                </p>
+              ) : (
+                <p className="text-xs mt-0.5 text-amber-700">
+                  Account created but email was not sent — admin must share credentials manually.
+                </p>
+              )}
+              <p className="text-xs mt-0.5 text-green-600">Redirecting to staff list…</p>
+            </div>
+          </div>
+          {credStatus.warning && (
+            <div className="flex items-start gap-2 bg-amber-50 border border-amber-200
+                            rounded-lg px-4 py-3 text-xs text-amber-800">
+              <span className="shrink-0">⚠️</span>
+              <span>{credStatus.warning}</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {credStatus.state === "error" && (
+        <div className="flex items-start gap-2 bg-red-50 border border-red-200
+                        rounded-lg px-4 py-3 text-sm text-red-800">
+          <span className="shrink-0 text-base">❌</span>
+          <div>
+            <p className="font-semibold">Failed to create login credentials.</p>
+            <p className="text-xs mt-0.5 text-red-700">{credStatus.message}</p>
+            <p className="text-xs mt-1 text-red-600">
+              The staff record was saved. You can retry by editing the staff member
+              and using the "Create Login" action, or create the auth account manually
+              in the Supabase dashboard.
+            </p>
+          </div>
+        </div>
+      )}
+
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
 
         {/* ── Personal Information ─────────────────────────────────────── */}
@@ -127,13 +254,19 @@ export function HRCreatePage() {
               type="text"
               placeholder="e.g. Ahmad Fariz"
               className={inputCls(!!errors.name)}
+              disabled={isBusy}
             />
             {errors.name && <p className={errCls}>{errors.name.message}</p>}
           </div>
 
           {/* Email */}
           <div>
-            <label className={labelCls}>Email <span className="text-red-500">*</span></label>
+            <label className={labelCls}>
+              Email <span className="text-red-500">*</span>
+              <span className="ml-1 font-normal text-gray-400">
+                — used as login username
+              </span>
+            </label>
             <input
               {...register("email", {
                 required: "Email is required",
@@ -142,6 +275,7 @@ export function HRCreatePage() {
               type="email"
               placeholder="e.g. ahmad@mediglove.com"
               className={inputCls(!!errors.email)}
+              disabled={isBusy}
             />
             {errors.email && <p className={errCls}>{errors.email.message}</p>}
           </div>
@@ -154,6 +288,7 @@ export function HRCreatePage() {
               type="tel"
               placeholder="e.g. +60 12-345 6789"
               className={inputCls(false)}
+              disabled={isBusy}
             />
           </div>
 
@@ -164,6 +299,7 @@ export function HRCreatePage() {
               {...register("hire_date")}
               type="date"
               className={inputCls(false)}
+              disabled={isBusy}
             />
           </div>
         </div>
@@ -180,6 +316,7 @@ export function HRCreatePage() {
             <select
               {...register("role", { required: true })}
               className={inputCls(false)}
+              disabled={isBusy}
             >
               {(Object.keys(ROLE_META) as StaffRole[]).map((r) => (
                 <option key={r} value={r}>{ROLE_META[r].label}</option>
@@ -192,7 +329,7 @@ export function HRCreatePage() {
             )}
           </div>
 
-          {/* Department — MANDATORY per T-02.1 */}
+          {/* Department */}
           <div>
             <label className={labelCls}>
               Department <span className="text-red-500">*</span>
@@ -200,6 +337,7 @@ export function HRCreatePage() {
             <select
               {...register("department", { required: "Department is required" })}
               className={inputCls(!!errors.department)}
+              disabled={isBusy}
             >
               <option value="">— Select department —</option>
               {DEPARTMENTS.map((d) => <option key={d} value={d}>{d}</option>)}
@@ -207,7 +345,7 @@ export function HRCreatePage() {
             {errors.department && <p className={errCls}>{errors.department.message}</p>}
           </div>
 
-          {/* Job Title — MANDATORY per T-02.1 */}
+          {/* Job Title */}
           <div>
             <label className={labelCls}>
               Job Title <span className="text-red-500">*</span>
@@ -217,6 +355,7 @@ export function HRCreatePage() {
               type="text"
               placeholder="e.g. Senior Sales Executive"
               className={inputCls(!!errors.job_title)}
+              disabled={isBusy}
             />
             {errors.job_title && <p className={errCls}>{errors.job_title.message}</p>}
           </div>
@@ -228,6 +367,7 @@ export function HRCreatePage() {
               <select
                 {...register("leader_id")}
                 className={inputCls(false)}
+                disabled={isBusy}
               >
                 <option value="">— No leader assigned —</option>
                 {(leaderOptions?.data ?? []).map((l) => (
@@ -245,6 +385,7 @@ export function HRCreatePage() {
             <select
               {...register("status")}
               className={inputCls(false)}
+              disabled={isBusy}
             >
               <option value="Active">Active</option>
               <option value="Inactive">Inactive</option>
@@ -256,7 +397,10 @@ export function HRCreatePage() {
         {isAdmin && (
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 space-y-4">
             <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide border-b border-gray-100 pb-2">
-              Compensation <span className="text-xs text-gray-400 font-normal normal-case">(Admin only — hidden from other roles)</span>
+              Compensation{" "}
+              <span className="text-xs text-gray-400 font-normal normal-case">
+                (Admin only — hidden from other roles)
+              </span>
             </h2>
 
             {/* Base Salary */}
@@ -269,6 +413,7 @@ export function HRCreatePage() {
                 step="0.01"
                 placeholder="e.g. 3500.00"
                 className={inputCls(false)}
+                disabled={isBusy}
               />
             </div>
 
@@ -283,8 +428,8 @@ export function HRCreatePage() {
               <div className="relative">
                 <input
                   {...register("commission_rate_override", {
-                    min: { value: 0,   message: "Cannot be negative"    },
-                    max: { value: 100, message: "Cannot exceed 100%"    },
+                    min: { value: 0,   message: "Cannot be negative" },
+                    max: { value: 100, message: "Cannot exceed 100%" },
                   })}
                   type="number"
                   min="0"
@@ -292,6 +437,7 @@ export function HRCreatePage() {
                   step="0.01"
                   placeholder="e.g. 3.50"
                   className={`${inputCls(!!errors.commission_rate_override)} pr-8`}
+                  disabled={isBusy}
                 />
                 <span className="absolute right-3 top-2 text-sm text-gray-400">%</span>
               </div>
@@ -302,24 +448,40 @@ export function HRCreatePage() {
           </div>
         )}
 
+        {/* Credential info note */}
+        <div className="flex items-start gap-2 bg-blue-50 border border-blue-200
+                        rounded-lg px-4 py-3 text-xs text-blue-700">
+          <span className="shrink-0">ℹ️</span>
+          <span>
+            A login account will be created automatically using the email above.
+            A temporary password will be generated and emailed to the new staff member.
+          </span>
+        </div>
+
         {/* ── Actions ─────────────────────────────────────────────────── */}
         <div className="flex items-center gap-3 justify-end pt-2">
           <button
             type="button"
             onClick={() => list("staff")}
+            disabled={isBusy}
             className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg
-                       hover:bg-gray-50 transition-colors"
+                       hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed
+                       transition-colors"
           >
             Cancel
           </button>
           <button
             type="submit"
-            disabled={isLoading}
+            disabled={isBusy}
             className="px-5 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg
                        hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed
                        transition-colors"
           >
-            {isLoading ? "Saving…" : "Create Staff"}
+            {isCreating
+              ? "Saving…"
+              : credStatus.state === "sending"
+              ? "Setting up login…"
+              : "Create Staff & Send Credentials"}
           </button>
         </div>
       </form>

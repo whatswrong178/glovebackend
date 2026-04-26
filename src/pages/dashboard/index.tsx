@@ -1,29 +1,68 @@
 /**
- * DashboardPage — Overview KPI tiles
- * Skeleton-first: shows pulse loaders while data fetches.
- * Actual charts (Recharts PnL compass, leaderboard) implemented in EPIC-08.
+ * DashboardPage — real-time KPI tiles via get_dashboard_kpis() RPC
+ * MediGlove ERP · EPIC-08
  */
-import React from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useGetIdentity } from "@refinedev/core";
+import { supabaseClient } from "../../supabaseClient";
 
 interface StaffIdentity { name: string; role: string; }
 
+interface DashboardKpis {
+  active_invoices:   number;
+  est_commission:    number;
+  actual_commission: number;
+  public_pool:       number;
+}
+
 function KpiCard({
-  label, value, sub, color,
-}: { label: string; value: string; sub?: string; color: string }) {
+  label, value, sub, color, loading,
+}: {
+  label:   string;
+  value:   string;
+  sub?:    string;
+  color:   string;
+  loading: boolean;
+}) {
   return (
     <div className={`rounded-xl border-l-4 bg-white shadow-sm p-5 ${color}`}>
       <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">{label}</p>
-      <p className="mt-1 text-2xl font-bold text-gray-900">{value}</p>
+      {loading ? (
+        <div className="skeleton h-8 w-28 mt-1 rounded" />
+      ) : (
+        <p className="mt-1 text-2xl font-bold text-gray-900">{value}</p>
+      )}
       {sub && <p className="mt-0.5 text-xs text-gray-400">{sub}</p>}
     </div>
   );
 }
 
-export function DashboardPage() {
-  const { data: identity, isLoading } = useGetIdentity<StaffIdentity>();
+const fmt = (n: number) =>
+  n.toLocaleString("en-MY", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-  if (isLoading) {
+export function DashboardPage() {
+  const { data: identity, isLoading: idLoading } = useGetIdentity<StaffIdentity>();
+  const [kpis,    setKpis]    = useState<DashboardKpis | null>(null);
+  const [kpiLoad, setKpiLoad] = useState(true);
+
+  const fetchKpis = useCallback(async () => {
+    setKpiLoad(true);
+    try {
+      const { data, error } = await supabaseClient.rpc("get_dashboard_kpis");
+      if (!error && data) setKpis(data as DashboardKpis);
+    } finally {
+      setKpiLoad(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchKpis();
+    // Auto-refresh every 60s
+    const interval = setInterval(fetchKpis, 60_000);
+    return () => clearInterval(interval);
+  }, [fetchKpis]);
+
+  if (idLoading) {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         {Array.from({ length: 4 }).map((_, i) => (
@@ -35,45 +74,76 @@ export function DashboardPage() {
 
   return (
     <div className="space-y-6">
+
       {/* Greeting */}
-      <div>
-        <h1 className="text-xl font-bold text-gray-900">
-          Good {getGreeting()}, {identity?.name?.split(" ")[0]} 👋
-        </h1>
-        <p className="text-sm text-gray-500 mt-0.5">
-          Here's your {new Date().toLocaleDateString("en-MY", { weekday:"long", month:"long", day:"numeric" })} overview.
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-bold text-gray-900">
+            Good {getGreeting()}, {identity?.name?.split(" ")[0]} 👋
+          </h1>
+          <p className="text-sm text-gray-500 mt-0.5">
+            Here's your{" "}
+            {new Date().toLocaleDateString("en-MY", {
+              weekday: "long",
+              month:   "long",
+              day:     "numeric",
+            })}{" "}
+            overview.
+          </p>
+        </div>
+        <button
+          onClick={fetchKpis}
+          disabled={kpiLoad}
+          className="text-xs text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-40"
+          title="Refresh KPIs"
+        >
+          ↻ Refresh
+        </button>
       </div>
 
       {/* KPI row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <KpiCard
           label="Est. Commission"
-          value="RM —"
+          value={kpis ? `RM ${fmt(kpis.est_commission)}` : "RM —"}
           sub="Pending invoice payments"
           color="border-warning"
+          loading={kpiLoad}
         />
         <KpiCard
           label="Actual Commission"
-          value="RM —"
+          value={kpis ? `RM ${fmt(kpis.actual_commission)}` : "RM —"}
           sub="Confirmed receipts this month"
           color="border-success"
+          loading={kpiLoad}
         />
         <KpiCard
           label="Active Invoices"
-          value="—"
+          value={kpis ? String(kpis.active_invoices) : "—"}
           sub="Awaiting payment"
           color="border-brand-500"
+          loading={kpiLoad}
         />
         <KpiCard
           label="Public Pool"
-          value="—"
+          value={kpis ? String(kpis.public_pool) : "—"}
           sub="Orphan clients available"
           color="border-danger"
+          loading={kpiLoad}
         />
       </div>
 
-      {/* Placeholder for charts (EPIC-08) */}
+      {/* Commission policy note */}
+      <div className="flex items-start gap-2 bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 text-xs text-gray-500">
+        <span className="shrink-0">🔒</span>
+        <span>
+          <strong>见款发佣则 (Paid-then-commission)</strong>: Estimated commissions are display-only.
+          Actual payouts are computed exclusively from invoices with{" "}
+          <strong>status = Paid</strong>. The system code-level blocks advance salary against unpaid AR.
+        </span>
+      </div>
+
+      {/* Placeholder charts (EPIC-08) */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
         <div className="bg-white rounded-xl shadow-sm p-5 border border-gray-100">
           <p className="text-sm font-semibold text-gray-700 mb-3">Monthly GMV Trend</p>

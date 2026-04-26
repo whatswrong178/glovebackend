@@ -40,6 +40,7 @@ export interface InvoiceLineItem {
   product_name:        string;
   sku:                 string;
   qty:                 number;
+  unit:                string;         // e.g. Carton, Box, Pack, Can, Piece
   selling_price:       string;         // string for input control
   min_selling_price:   number;
   suggested_price:     number;

@@ -6,6 +6,9 @@
 //         Logistics sees only assigned_logistics_id = self.
 // T-07.2: Inline e-POD modal — Canvas signature + camera photo (both mandatory).
 //         submit_epod RPC → status=Delivered, lock row permanently.
+//
+// Print: per-row 🖨 button → DeliveryOrder or SampleDO print.
+//        Logistics role: showPricing=false (amounts hidden).
 // ══════════════════════════════════════════════════════════════════════════════
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
@@ -13,6 +16,9 @@ import type { CrudFilters } from "@refinedev/core";
 import { useList, useUpdate, useGetIdentity } from "@refinedev/core";
 import { supabaseClient } from "../../supabaseClient";
 import type { StaffRole } from "../../types/staff";
+import { PrintLayout } from "../../components/PrintLayout";
+import type { PrintDocData, PrintDocType } from "../../components/PrintLayout";
+import { usePrint } from "../../lib/print/usePrint";
 
 type DOType   = "Invoice" | "Sample";
 type DOStatus = "Pending" | "In Transit" | "Delivered" | "Cancelled";
@@ -38,6 +44,12 @@ type RichDO = DeliveryOrder & {
   assignee?: { name: string } | null;
   invoice?:  { invoice_no: string } | null;
 };
+
+interface PrintJob {
+  doc:          PrintDocData;
+  type:         PrintDocType;
+  showPricing:  boolean;
+}
 
 // ── StatusBadge ──────────────────────────────────────────────────────────────
 function StatusBadge({ status }: { status: DOStatus }) {
@@ -102,7 +114,6 @@ function SignaturePad({
     ctx.lineTo(pos.x, pos.y);
     ctx.stroke();
     lastPos.current = pos;
-    // Notify parent with current base64
     onCapture(canvas.toDataURL("image/png"));
   };
 
@@ -120,7 +131,6 @@ function SignaturePad({
     onClear();
   };
 
-  // Draw background
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -184,7 +194,6 @@ function EPODModal({
   const [error,           setError]           = useState<string>("");
   const fileRef = useRef<HTMLInputElement>(null);
 
-  // Request geolocation on mount
   useEffect(() => {
     if (!navigator.geolocation) {
       setGeoError("Geolocation not supported — coordinates will be null.");
@@ -231,33 +240,22 @@ function EPODModal({
   };
 
   return (
-    /* Backdrop */
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-
-        {/* Modal header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <div>
             <h2 className="text-lg font-bold text-gray-900">e-POD Submission</h2>
             <p className="text-xs text-gray-500 mt-0.5">DO No. {doRecord.do_no} — {doRecord.client?.name ?? "—"}</p>
           </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 text-xl leading-none"
-          >
-            ✕
-          </button>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none">✕</button>
         </div>
 
         <div className="px-6 py-5 space-y-6">
-
-          {/* Signature Pad */}
           <SignaturePad
             onCapture={(b64) => setSignatureBase64(b64)}
             onClear={() => setSignatureBase64(null)}
           />
 
-          {/* Camera Photo */}
           <div className="space-y-2">
             <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
               Delivery Photo <span className="text-red-500">*</span>
@@ -292,7 +290,6 @@ function EPODModal({
             )}
           </div>
 
-          {/* Geolocation status */}
           <div className="text-xs text-gray-400">
             {geoError
               ? `⚠ ${geoError}`
@@ -301,14 +298,12 @@ function EPODModal({
               : "📍 Acquiring location…"}
           </div>
 
-          {/* Error */}
           {error && (
             <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm text-red-700">
               ⚠ {error}
             </div>
           )}
 
-          {/* Validation checklist */}
           <div className="bg-gray-50 rounded-lg px-4 py-3 space-y-1 text-xs">
             <div className={signatureBase64 ? "text-emerald-600" : "text-gray-400"}>
               {signatureBase64 ? "✓" : "○"} Signature captured
@@ -319,7 +314,6 @@ function EPODModal({
           </div>
         </div>
 
-        {/* Modal footer */}
         <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100">
           <button
             type="button"
@@ -353,28 +347,147 @@ export function DOListPage() {
   const isLogistics = identity?.role === "Logistics";
   const canSeeAll   = isAdmin || isHR;
   const canApprove  = isAdmin || isHR;
+  // Logistics role cannot see financial amounts
+  const showPricing = !isLogistics;
 
   const [tab,          setTab]          = useState<DOType>("Invoice");
   const [statusFilter, setStatusFilter] = useState<DOStatus | "">("");
   const [page,         setPage]         = useState(1);
   const [epodTarget,   setEpodTarget]   = useState<RichDO | null>(null);
+  const [printLoading, setPrintLoading] = useState<string | null>(null); // do ID
+  const [printJob,     setPrintJob]     = useState<PrintJob | null>(null);
   const PAGE_SIZE = 25;
 
   const { mutate: updateDO } = useUpdate();
 
+  // ── Print hook ──────────────────────────────────────────────────────────
+  const { printRef, triggerPrint, isPrinting } = usePrint({
+    onAfterPrint: () => setPrintJob(null),
+  });
+
+  // Trigger print after React renders the hidden PrintLayout
+  useEffect(() => {
+    if (!printJob) return;
+    const rafId = requestAnimationFrame(() => {
+      triggerPrint();
+    });
+    return () => cancelAnimationFrame(rafId);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [printJob]);
+
+  // ── Print handler ────────────────────────────────────────────────────────
+  const handlePrint = useCallback(async (do_: RichDO) => {
+    if (printLoading) return;
+    setPrintLoading(do_.id);
+
+    try {
+      // Fetch client details
+      const { data: clientData } = await supabaseClient
+        .from("clients")
+        .select("name,ssm_no,region,contact_person,contact_email,contact_phone")
+        .eq("id", do_.client_id)
+        .single();
+
+      type ClientRow = {
+        name: string;
+        ssm_no: string | null;
+        region: string | null;
+        contact_person: string | null;
+        contact_email: string | null;
+        contact_phone: string | null;
+      };
+      const client = clientData as ClientRow | null;
+
+      // Fetch invoice items (only for Invoice-type DOs)
+      type ItemRow = {
+        qty: number;
+        selling_price: number;
+        unit: string;
+        product: { name: string; sku: string } | null;
+      };
+
+      let lineItems: ItemRow[] = [];
+      if (do_.type === "Invoice" && do_.invoice_id) {
+        const { data: items } = await supabaseClient
+          .from("invoice_items")
+          .select("qty,selling_price,unit,product:products!product_id(name,sku)")
+          .eq("invoice_id", do_.invoice_id);
+        lineItems = (items ?? []) as ItemRow[];
+      }
+
+      const docDate = new Date(do_.created_at).toLocaleDateString("en-MY", {
+        day: "2-digit", month: "long", year: "numeric",
+      });
+
+      const printType: PrintDocType = do_.type === "Sample" ? "SampleDO" : "DeliveryOrder";
+
+      const docData: PrintDocData = {
+        docNumber:  do_.do_no,
+        date:       docDate,
+        status:     do_.status,
+        currency:   "MYR",
+        isSample:   do_.type === "Sample",
+
+        parties: [
+          {
+            label:   "Deliver To",
+            name:    client?.name ?? "—",
+            ssm:     client?.ssm_no ?? undefined,
+            address: client?.region ?? undefined,
+            contact: client?.contact_person ?? undefined,
+            email:   client?.contact_email ?? undefined,
+          },
+          ...(do_.invoice?.invoice_no
+            ? [{ label: "Invoice Ref", name: do_.invoice.invoice_no }]
+            : []),
+          ...(do_.assignee?.name
+            ? [{ label: "Assigned Driver", name: do_.assignee.name }]
+            : []),
+        ],
+
+        items: lineItems.map((it, idx) => ({
+          no:          idx + 1,
+          description: `${it.product?.name ?? "Unknown Product"} (${it.unit})`,
+          sku:         it.product?.sku ?? undefined,
+          qty:         it.qty,
+          unitPrice:   showPricing ? it.selling_price : undefined,
+          amount:      showPricing ? it.qty * it.selling_price : undefined,
+        })),
+
+        ...(showPricing && lineItems.length > 0
+          ? {
+              subtotal: lineItems.reduce((s, it) => s + it.qty * it.selling_price, 0),
+            }
+          : {}),
+
+        notes: do_.delivered_at
+          ? `Delivered on ${new Date(do_.delivered_at).toLocaleDateString("en-MY", { day: "2-digit", month: "long", year: "numeric" })}`
+          : undefined,
+
+        signatureBase64: do_.signature_base64 ?? undefined,
+      };
+
+      setPrintJob({ doc: docData, type: printType, showPricing });
+
+    } catch (err) {
+      console.error("[DOList] Print fetch failed:", err);
+      alert("Failed to load delivery order for printing. Please try again.");
+    } finally {
+      setPrintLoading(null);
+    }
+  }, [printLoading, showPricing]);
+
+  // ── List filters ──────────────────────────────────────────────────────────
   const baseFilters: CrudFilters = [
     { field: "type", operator: "eq", value: tab },
   ];
   if (statusFilter) {
     baseFilters.push({ field: "status", operator: "eq", value: statusFilter });
   }
-  // T-07.1: Logistics RLS — only own assigned DOs
   if (isLogistics && identity?.id && !canSeeAll) {
     baseFilters.push({ field: "assigned_logistics_id", operator: "eq", value: identity.id });
   }
 
-  // T-07.1: Physical exclusion of financial fields for Logistics
-  // Admin/HR/Sales: full select. Logistics: exclude total_amount, discount, invoice amount fields.
   const selectFields = isLogistics && !canSeeAll
     ? "id,do_no,type,status,invoice_id,client_id,assigned_logistics_id,delivered_at,created_at,signature_base64,photo_url,client:clients!client_id(name),assignee:staff!assigned_logistics_id(name),invoice:invoices!invoice_id(invoice_no)"
     : "id,do_no,type,status,invoice_id,client_id,assigned_logistics_id,delivered_at,created_at,signature_base64,photo_url,client:clients!client_id(name),creator:staff!created_by(name),assignee:staff!assigned_logistics_id(name),invoice:invoices!invoice_id(invoice_no)";
@@ -412,6 +525,21 @@ export function DOListPage() {
 
   return (
     <div className="space-y-4">
+
+      {/* ── Hidden print area ────────────────────────────────────────────── */}
+      {printJob && (
+        <div
+          aria-hidden="true"
+          style={{ position: "fixed", left: "-9999px", top: 0, overflow: "hidden" }}
+        >
+          <PrintLayout
+            ref={printRef}
+            doc={printJob.doc}
+            type={printJob.type}
+            showPricing={printJob.showPricing}
+          />
+        </div>
+      )}
 
       {/* ePOD Modal */}
       {epodTarget && (
@@ -501,6 +629,7 @@ export function DOListPage() {
                   const isCancelled  = do_.status === "Cancelled";
                   const isLocked     = isDelivered || isCancelled;
                   const canAdvance   = !isLocked && (canSeeAll || isLogistics);
+                  const isLoadingThis = printLoading === do_.id;
 
                   return (
                     <tr key={do_.id} className="hover:bg-gray-50 transition-colors">
@@ -521,15 +650,24 @@ export function DOListPage() {
                           day: "2-digit", month: "short", year: "numeric",
                         })}
                       </td>
-                      {/* POD indicator */}
                       <td className="px-4 py-3">
                         {do_.signature_base64
                           ? <span className="text-xs text-emerald-600 font-medium">✓ Signed</span>
                           : <span className="text-xs text-gray-300">—</span>}
                       </td>
-                      {/* Actions */}
                       <td className="px-4 py-3 text-right space-x-2 whitespace-nowrap">
-                        {/* Pending → In Transit (Admin/HR direct update) */}
+
+                        {/* 🖨 Print — always available */}
+                        <button
+                          onClick={() => handlePrint(do_)}
+                          disabled={!!printLoading || isPrinting}
+                          className="text-xs text-gray-500 hover:text-gray-800 font-medium
+                                     disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                          title="Print delivery order"
+                        >
+                          {isLoadingThis ? "…" : "🖨"}
+                        </button>
+
                         {do_.status === "Pending" && canSeeAll && (
                           <button
                             onClick={() => handleSimpleStatusChange(do_.id, "In Transit")}
@@ -538,7 +676,6 @@ export function DOListPage() {
                             → In Transit
                           </button>
                         )}
-                        {/* In Transit → Delivered via ePOD (Logistics or Admin) */}
                         {do_.status === "In Transit" && canAdvance && (
                           <button
                             onClick={() => setEpodTarget(do_)}
@@ -548,7 +685,6 @@ export function DOListPage() {
                             📋 e-POD
                           </button>
                         )}
-                        {/* Cancel (Admin/HR only, Pending only) */}
                         {do_.status === "Pending" && canApprove && (
                           <button
                             onClick={() => handleSimpleStatusChange(do_.id, "Cancelled")}
@@ -557,7 +693,6 @@ export function DOListPage() {
                             Cancel
                           </button>
                         )}
-                        {/* Delivered: locked read-only */}
                         {isDelivered && (
                           <span className="text-xs text-gray-400">🔒 Locked</span>
                         )}

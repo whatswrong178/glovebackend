@@ -10,9 +10,13 @@
 -- ══════════════════════════════════════════════════════════════════════════════
 
 -- ── 1. Fix suppliers RLS ─────────────────────────────────────────────────────
+-- Drop ALL previously created policies to avoid "already exists" conflict
 
-DROP POLICY IF EXISTS suppliers_admin_all  ON suppliers;
-DROP POLICY IF EXISTS suppliers_staff_read ON suppliers;
+DROP POLICY IF EXISTS suppliers_admin_all         ON suppliers;
+DROP POLICY IF EXISTS suppliers_staff_read        ON suppliers;
+DROP POLICY IF EXISTS suppliers_hr_read           ON suppliers;
+DROP POLICY IF EXISTS suppliers_sales_leader_read ON suppliers;
+DROP POLICY IF EXISTS suppliers_logistics_read    ON suppliers;
 
 -- All policies from migration 002 that were correct — restore them
 -- Admin: full CRUD via helper function (correct)
@@ -33,8 +37,8 @@ CREATE POLICY suppliers_sales_leader_read ON suppliers
 
 -- ── 2. company_settings — allow anon SELECT (login page branding) ─────────────
 
--- Drop old authenticated-only read policy
-DROP POLICY IF EXISTS company_settings_staff_read ON company_settings;
+DROP POLICY IF EXISTS company_settings_staff_read  ON company_settings;
+DROP POLICY IF EXISTS company_settings_public_read ON company_settings;
 
 -- Allow all roles (anon + authenticated) to SELECT
 CREATE POLICY company_settings_public_read ON company_settings
