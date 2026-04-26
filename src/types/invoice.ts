@@ -42,8 +42,9 @@ export interface InvoiceLineItem {
   qty:                 number;
   unit:                string;         // e.g. Carton, Box, Pack, Can, Piece
   selling_price:       string;         // string for input control
-  min_selling_price:   number;
-  suggested_price:     number;
+  min_selling_price:   number;         // per Carton (from products table)
+  suggested_price:     number;         // per Carton (from products table)
+  units_per_carton:    number;         // used to auto-calc price when unit ≠ Carton
   _error?:             string;
 }
 

@@ -113,7 +113,7 @@ const BUCKET_BAR: Record<string, string> = {
 // ─────────────────────────────────────────────────────────────────────────────
 function ARAgingTab({ supabase }: { supabase: SupabaseClientType }) {
   const [data,       setData]       = useState<ARAgingResult | null>(null);
-  const [loading,    setLoading]    = useState(false);
+  const [loading,    setLoading]    = useState(true);   // true to prevent blank flash on mount
   const [error,      setError]      = useState("");
   const [expanded,   setExpanded]   = useState<Record<string, boolean>>({});
 
@@ -145,7 +145,11 @@ function ARAgingTab({ supabase }: { supabase: SupabaseClientType }) {
       <button onClick={load} className="ml-4 underline text-red-600">Retry</button>
     </div>
   );
-  if (!data)   return null;
+  if (!data)   return (
+    <div className="flex items-center justify-center h-48 text-sm text-gray-400">
+      No AR aging data available yet.
+    </div>
+  );
 
   return (
     <div className="space-y-6">
@@ -330,7 +334,7 @@ function OrgTreeRender({ nodes, parentId }: { nodes: OrgNode[]; parentId: string
 
 function OrgChartTab({ supabase }: { supabase: SupabaseClientType }) {
   const [data,    setData]    = useState<OrgTreeResult | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);  // true to prevent blank flash on mount
   const [error,   setError]   = useState("");
 
   const load = useCallback(async () => {
@@ -356,7 +360,11 @@ function OrgChartTab({ supabase }: { supabase: SupabaseClientType }) {
       <button onClick={load} className="ml-4 underline">Retry</button>
     </div>
   );
-  if (!data) return null;
+  if (!data) return (
+    <div className="flex items-center justify-center h-48 text-sm text-gray-400">
+      No org chart data available yet.
+    </div>
+  );
 
   const roots = buildTree(data.nodes, null);
 
@@ -554,13 +562,22 @@ function PLTab({ supabase }: { supabase: SupabaseClientType }) {
 type ReportTab = "ar" | "org" | "pl";
 
 export function ReportsPage() {
-  const { data: identity } = useGetIdentity<{ id: string; name: string; role: StaffRole }>();
+  const { data: identity, isLoading: identityLoading } = useGetIdentity<{ id: string; name: string; role: StaffRole }>();
   const supabase = supabaseClient;
 
   const isAdmin = identity?.role === "Admin";
   const isHR    = identity?.role === "HR";
 
   const [tab, setTab] = useState<ReportTab>("ar");
+
+  // Wait for identity before showing access-denied — avoids false blank on load
+  if (identityLoading) {
+    return (
+      <div className="flex items-center justify-center h-48">
+        <p className="text-sm text-gray-400">Loading…</p>
+      </div>
+    );
+  }
 
   if (!isAdmin && !isHR) {
     return (

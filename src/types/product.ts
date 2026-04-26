@@ -15,6 +15,7 @@ export interface Product {
   cost_price:        number | null; // null for non-Admin (masked by products_safe_view)
   min_selling_price: number;
   suggested_price:   number;
+  units_per_carton:  number;         // how many sub-units (Box/Pack/etc.) per Carton
   description:       string | null;
   created_at:        string;
   updated_at:        string;

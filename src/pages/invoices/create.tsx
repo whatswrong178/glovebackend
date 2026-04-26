@@ -32,6 +32,7 @@ interface ProductOption {
   sku:               string;
   min_selling_price: number;
   suggested_price:   number;
+  units_per_carton:  number;
 }
 
 export function InvoiceCreatePage() {
@@ -79,7 +80,7 @@ export function InvoiceCreatePage() {
     resource:   "products_safe_view",
     pagination: { current: 1, pageSize: 500 },
     sorters:    [{ field: "name", order: "asc" }],
-    meta:       { select: "id,name,sku,min_selling_price,suggested_price" },
+    meta:       { select: "id,name,sku,min_selling_price,suggested_price,units_per_carton" },
   });
 
   const { data: staffData } = useList<Staff>({
@@ -146,6 +147,7 @@ export function InvoiceCreatePage() {
         selling_price:     String(p.suggested_price),
         min_selling_price: p.min_selling_price,
         suggested_price:   p.suggested_price,
+        units_per_carton:  p.units_per_carton ?? 1,
       },
     ]);
     setProductSearch("");
@@ -164,6 +166,17 @@ export function InvoiceCreatePage() {
         li.qty = Math.max(1, parseInt(value) || 1);
       } else if (field === "unit") {
         li.unit = value;
+        // Auto-calculate selling price per unit based on units_per_carton
+        const upc = li.units_per_carton ?? 1;
+        const pricePerUnit = value === "Carton"
+          ? li.suggested_price
+          : li.suggested_price / upc;
+        const minPerUnit = value === "Carton"
+          ? li.min_selling_price
+          : li.min_selling_price / upc;
+        li.selling_price  = pricePerUnit.toFixed(2);
+        li.min_selling_price = minPerUnit;  // track per-unit min for validation
+        li._error = undefined;
       } else {
         li.selling_price = value;
         const sp = parseFloat(value);
