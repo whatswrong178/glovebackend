@@ -1,4 +1,4 @@
-import { Refine } from "@refinedev/core";
+import { Refine, Authenticated } from "@refinedev/core";
 import { dataProvider, liveProvider } from "@refinedev/supabase";
 import routerBindings, {
   NavigateToResource,
@@ -117,9 +117,14 @@ export default function App() {
             {/* ── Authenticated routes ─────────────────────────── */}
             <Route
               element={
-                <Layout>
-                  <Outlet />
-                </Layout>
+                <Authenticated
+                  key="authenticated-routes"
+                  fallback={<CatchAllNavigate to="/login" />}
+                >
+                  <Layout>
+                    <Outlet />
+                  </Layout>
+                </Authenticated>
               }
             >
               <Route index element={<DashboardPage />} />

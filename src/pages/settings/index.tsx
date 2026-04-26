@@ -23,11 +23,37 @@ import type { StaffRole } from "../../types/staff";
 // Types
 // ─────────────────────────────────────────────────────────────────────────────
 interface SystemParam {
-  id:          string;
-  param_key:   string;
-  param_value: string;
-  description: string;
+  key:        string;   // PRIMARY KEY in DB
+  value:      string;   // JSONB stored as string
+  updated_at: string;
 }
+
+// Static descriptions (DB has no description column)
+const PARAM_DESCRIPTIONS: Record<string, string> = {
+  commission_rate_a:         "Category A product commission rate (e.g. 0.20 = 20%)",
+  commission_rate_b:         "Category B product commission rate (e.g. 0.15 = 15%)",
+  kam_bonus_rate_a:          "KAM bonus rate for Category A products",
+  kam_bonus_rate_b:          "KAM bonus rate for Category B products",
+  kam_threshold_days:        "Days without invoice before KAM bonus stops (default: 180)",
+  leader_standard_threshold: "Leader standard monthly GMV threshold (default: RM 50,000)",
+  leader_minimum_threshold:  "Leader minimum monthly GMV — admin-exemption floor (default: RM 35,000)",
+  leader_mgmt_pct:           "Leader management override % of team revenue",
+  leader_death_line_months:  "Consecutive failing months before leader is frozen (default: 2)",
+  mentor_reward_rate:        "Mentor permanent reward rate on mentee team revenue (default: 0.005 = 0.5%)",
+  spinoff_legacy_pct:        "Spinoff legacy commission percentage",
+  min_order_boxes:           "Minimum boxes per order (default: 3)",
+  free_shipping_boxes:       "Boxes required for free delivery in West Malaysia (default: 5)",
+  a_ratio_threshold:         "A-class GMV ratio health threshold for Step Bonus (default: 0.70 = 70%)",
+  ladder_matrix:             "JSON array of step bonus tiers: [{tier, threshold, reward}]",
+  bounty_first_order:        "Bounty Tier 1 reward for first order ≥ min_order_boxes (RM)",
+  bounty_90d_amount:         "Bounty Tier 2: cumulative GMV target within 90 days (RM)",
+  bounty_90d_reward:         "Bounty Tier 2: reward amount (RM)",
+  bounty_180d_amount:        "Bounty Tier 3: cumulative GMV target within 180 days (RM)",
+  bounty_180d_reward:        "Bounty Tier 3: reward amount (RM)",
+  bounty_365d_amount:        "Bounty Tier 4: cumulative GMV target within 365 days (RM)",
+  bounty_365d_reward:        "Bounty Tier 4: reward amount (RM)",
+  bounty_max:                "Maximum cumulative bounty per new client (RM)",
+};
 
 interface Supplier {
   id:             string;
@@ -63,36 +89,33 @@ type SettingsTab = "params" | "suppliers" | "routing" | "templates";
 const PARAM_GROUPS: { label: string; keys: string[] }[] = [
   {
     label: "Commission Rates",
-    keys: ["COMMISSION_RATE_A", "COMMISSION_RATE_B", "KAM_BONUS_A", "KAM_BONUS_B", "KAM_THRESHOLD_DAYS"],
+    keys: ["commission_rate_a", "commission_rate_b", "kam_bonus_rate_a", "kam_bonus_rate_b", "kam_threshold_days"],
   },
   {
     label: "Leader Thresholds",
-    keys: [
-      "LEADER_REVENUE_THRESHOLD", "LEADER_EXEMPTION_THRESHOLD",
-      "LEADER_BONUS_RATE", "LEADER_DEATH_LINE_MONTHS",
-    ],
+    keys: ["leader_standard_threshold", "leader_minimum_threshold", "leader_mgmt_pct", "leader_death_line_months"],
   },
   {
     label: "Mentor & Spinoff",
-    keys: ["MENTOR_REWARD_RATE", "SPINOFF_THRESHOLD"],
+    keys: ["mentor_reward_rate", "spinoff_legacy_pct"],
   },
   {
-    label: "Bounty Tiers",
+    label: "Bounty",
     keys: [
-      "BOUNTY_TIER1_BOXES", "BOUNTY_TIER1_AMOUNT",
-      "BOUNTY_TIER2_DAYS", "BOUNTY_TIER2_GMV", "BOUNTY_TIER2_AMOUNT",
-      "BOUNTY_TIER3_DAYS", "BOUNTY_TIER3_GMV", "BOUNTY_TIER3_AMOUNT",
-      "BOUNTY_TIER4_DAYS", "BOUNTY_TIER4_GMV", "BOUNTY_TIER4_AMOUNT",
-      "BOUNTY_MAX",
+      "bounty_first_order",
+      "bounty_90d_amount",  "bounty_90d_reward",
+      "bounty_180d_amount", "bounty_180d_reward",
+      "bounty_365d_amount", "bounty_365d_reward",
+      "bounty_max",
     ],
   },
   {
     label: "Order Rules",
-    keys: ["MIN_ORDER_BOXES", "FREE_DELIVERY_BOXES"],
+    keys: ["min_order_boxes", "free_shipping_boxes"],
   },
   {
     label: "Step Bonus",
-    keys: ["A_RATIO_THRESHOLD", "LADDER_MATRIX"],
+    keys: ["a_ratio_threshold", "ladder_matrix"],
   },
 ];
 
@@ -103,17 +126,23 @@ function SystemParamsTab() {
   const { data, isLoading, refetch } = useList<SystemParam>({
     resource:   "system_params",
     pagination: { current: 1, pageSize: 200 },
-    sorters:    [{ field: "param_key", order: "asc" }],
+    sorters:    [{ field: "key", order: "asc" }],
+    // DB primary key is `key` (text), not `id` — alias it so Refine is happy
+    meta:       { select: "key, value, updated_at" },
   });
   const { mutate: updateParam } = useUpdate();
 
   const params  = data?.data ?? [];
-  const byKey   = Object.fromEntries(params.map(p => [p.param_key, p]));
+  // Refine maps the aliased `key` column; cast to access it
+  const byKey   = Object.fromEntries(
+    params.map(p => [(p as unknown as Record<string, string>).key ?? (p as unknown as Record<string, string>).id, p])
+  );
   const [drafts, setDrafts]   = useState<Record<string, string>>({});
   const [saving, setSaving]   = useState<Record<string, boolean>>({});
   const [saved,  setSaved]    = useState<Record<string, boolean>>({});
 
-  const getValue = (key: string) => drafts[key] ?? byKey[key]?.param_value ?? "";
+  const getValue = (key: string) =>
+    drafts[key] ?? (byKey[key] as unknown as Record<string, string>)?.value ?? "";
 
   const handleSave = (key: string) => {
     const p = byKey[key];
@@ -122,8 +151,8 @@ function SystemParamsTab() {
     updateParam(
       {
         resource: "system_params",
-        id:       p.id,
-        values:   { param_value: drafts[key] ?? p.param_value },
+        id:       key,          // PK is the key string itself
+        values:   { value: drafts[key] ?? (p as unknown as Record<string, string>).value },
       },
       {
         onSuccess: () => {
@@ -138,7 +167,8 @@ function SystemParamsTab() {
     );
   };
 
-  const isDirty = (key: string) => key in drafts && drafts[key] !== byKey[key]?.param_value;
+  const isDirty = (key: string) =>
+    key in drafts && drafts[key] !== (byKey[key] as unknown as Record<string, string>)?.value;
 
   if (isLoading) return <div className="flex items-center justify-center h-48 text-sm text-gray-400">Loading…</div>;
 
@@ -152,7 +182,7 @@ function SystemParamsTab() {
       {PARAM_GROUPS.map((group) => {
         const groupParams = group.keys
           .map(k => byKey[k])
-          .filter(Boolean) as SystemParam[];
+          .filter(Boolean) as unknown as Array<Record<string, string>>;
 
         if (groupParams.length === 0) return null;
 
@@ -163,18 +193,19 @@ function SystemParamsTab() {
             </div>
             <div className="divide-y divide-gray-50">
               {groupParams.map((p) => {
-                const isJson    = p.param_key === "LADDER_MATRIX";
-                const dirty     = isDirty(p.param_key);
-                const isSaving  = saving[p.param_key];
-                const isSaved   = saved[p.param_key];
+                const pk        = p.key ?? p.id;   // actual DB key string
+                const isJson    = pk === "ladder_matrix";
+                const dirty     = isDirty(pk);
+                const isSaving  = saving[pk];
+                const isSaved   = saved[pk];
 
                 return (
-                  <div key={p.param_key} className="px-5 py-4">
+                  <div key={pk} className="px-5 py-4">
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <label className="text-xs font-semibold text-gray-700 font-mono">
-                            {p.param_key}
+                            {pk}
                           </label>
                           {dirty && (
                             <span className="text-xs text-amber-600 font-medium">● unsaved</span>
@@ -183,11 +214,11 @@ function SystemParamsTab() {
                             <span className="text-xs text-emerald-600 font-medium">✓ saved</span>
                           )}
                         </div>
-                        <p className="text-xs text-gray-400 mt-0.5">{p.description}</p>
+                        <p className="text-xs text-gray-400 mt-0.5">{PARAM_DESCRIPTIONS[pk] ?? ""}</p>
                         {isJson ? (
                           <textarea
-                            value={getValue(p.param_key)}
-                            onChange={(e) => setDrafts(prev => ({ ...prev, [p.param_key]: e.target.value }))}
+                            value={getValue(pk)}
+                            onChange={(e) => setDrafts(prev => ({ ...prev, [pk]: e.target.value }))}
                             rows={6}
                             className="mt-2 w-full text-xs font-mono border border-gray-300 rounded-lg px-3 py-2
                                        focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
@@ -195,15 +226,15 @@ function SystemParamsTab() {
                         ) : (
                           <input
                             type="text"
-                            value={getValue(p.param_key)}
-                            onChange={(e) => setDrafts(prev => ({ ...prev, [p.param_key]: e.target.value }))}
+                            value={getValue(pk)}
+                            onChange={(e) => setDrafts(prev => ({ ...prev, [pk]: e.target.value }))}
                             className="mt-2 w-full text-sm border border-gray-300 rounded-lg px-3 py-2
                                        focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono"
                           />
                         )}
                       </div>
                       <button
-                        onClick={() => handleSave(p.param_key)}
+                        onClick={() => handleSave(pk)}
                         disabled={!dirty || isSaving}
                         className="mt-6 px-3 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700
                                    rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex-shrink-0"
@@ -225,6 +256,26 @@ function SystemParamsTab() {
 // ─────────────────────────────────────────────────────────────────────────────
 // Tab 2: Suppliers (T-09.2)
 // ─────────────────────────────────────────────────────────────────────────────
+
+// MUST be defined at module level — defining inside SuppliersTab causes React
+// to remount on every parent re-render → input loses focus after each keypress.
+function SupplierField({ label, value, onChange }: {
+  label: string; value: string; onChange: (v: string) => void;
+}) {
+  return (
+    <div>
+      <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1">{label}</label>
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2
+                   focus:outline-none focus:ring-2 focus:ring-blue-500"
+      />
+    </div>
+  );
+}
+
 const EMPTY_SUPPLIER = {
   name: "", email: "", contact_person: "", contact_phone: "", address: "", is_active: true,
 };
@@ -281,21 +332,6 @@ function SuppliersTab() {
     deleteSupplier({ resource: "suppliers", id }, { onSuccess: () => refetch() });
   };
 
-  const Field = ({ label, field, value, onChange }: {
-    label: string; field: string; value: string; onChange: (v: string) => void;
-  }) => (
-    <div>
-      <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1">{label}</label>
-      <input
-        type="text"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2
-                   focus:outline-none focus:ring-2 focus:ring-blue-500"
-      />
-    </div>
-  );
-
   if (isLoading) return <div className="flex items-center justify-center h-48 text-sm text-gray-400">Loading…</div>;
 
   return (
@@ -327,10 +363,10 @@ function SuppliersTab() {
         <div className="bg-white rounded-xl border border-blue-200 shadow-sm p-5 space-y-4">
           <h3 className="text-sm font-bold text-gray-900">New Supplier</h3>
           <div className="grid grid-cols-2 gap-4">
-            <Field label="Name *"          field="name"           value={form.name}           onChange={v => setForm(f => ({ ...f, name: v }))} />
-            <Field label="Contact Person"  field="contact_person" value={form.contact_person} onChange={v => setForm(f => ({ ...f, contact_person: v }))} />
-            <Field label="Email"           field="email"          value={form.email}           onChange={v => setForm(f => ({ ...f, email: v }))} />
-            <Field label="Phone"           field="contact_phone"  value={form.contact_phone}  onChange={v => setForm(f => ({ ...f, contact_phone: v }))} />
+            <SupplierField label="Name *"          value={form.name}           onChange={v => setForm(f => ({ ...f, name: v }))} />
+            <SupplierField label="Contact Person"  value={form.contact_person} onChange={v => setForm(f => ({ ...f, contact_person: v }))} />
+            <SupplierField label="Email"           value={form.email}           onChange={v => setForm(f => ({ ...f, email: v }))} />
+            <SupplierField label="Phone"           value={form.contact_phone}  onChange={v => setForm(f => ({ ...f, contact_phone: v }))} />
           </div>
           <div>
             <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1">Address</label>
