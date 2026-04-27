@@ -8,7 +8,7 @@
 // Sales/Leader: see own invoices only (created_by = self).
 // HR/Admin: see all invoices.
 //
-// Print: per-row 🖨 button fetches full invoice + items + client → PrintLayout
+// Print UX: click Invoice No. → preview modal → Print button → window.print()
 // ══════════════════════════════════════════════════════════════════════════════
 
 import React, { useState, useEffect } from "react";
@@ -18,7 +18,7 @@ import type { Invoice, InvoiceStatus } from "../../types/invoice";
 import type { StaffRole } from "../../types/staff";
 import { supabaseClient } from "../../supabaseClient";
 import { PrintLayout } from "../../components/PrintLayout";
-import type { PrintDocData } from "../../components/PrintLayout";
+import type { PrintDocData, CompanyInfo } from "../../components/PrintLayout";
 import { usePrint } from "../../lib/print/usePrint";
 
 type Tab = "active" | "completed";
@@ -28,6 +28,7 @@ interface PrintJob {
   type: "Invoice";
 }
 
+// ── Status badge ──────────────────────────────────────────────────────────────
 function StatusBadge({ status }: { status: InvoiceStatus }) {
   const styles: Record<InvoiceStatus, string> = {
     Active:    "bg-blue-100 text-blue-800",
@@ -41,49 +42,223 @@ function StatusBadge({ status }: { status: InvoiceStatus }) {
   );
 }
 
+// ── Print Preview Modal ───────────────────────────────────────────────────────
+interface PreviewModalProps {
+  job:      PrintJob;
+  onClose:  () => void;
+  onPrint:  () => void;
+}
+
+function PrintPreviewModal({ job, onClose, onPrint }: PreviewModalProps) {
+  const { doc } = job;
+  const fmt = (n: number) =>
+    n.toLocaleString("en-MY", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  return (
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[92vh] flex flex-col">
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+          <div>
+            <h2 className="text-lg font-bold text-gray-900">Print Preview</h2>
+            <p className="text-xs text-gray-500 mt-0.5 font-mono">TAX INVOICE · {doc.docNumber}</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 text-2xl leading-none font-light"
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* Document summary */}
+        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
+
+          {/* Key info grid */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-gray-50 rounded-xl px-4 py-3 space-y-1">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Client</p>
+              <p className="text-sm font-semibold text-gray-900">
+                {doc.parties[0]?.name ?? "—"}
+              </p>
+              {doc.parties[0]?.email && (
+                <p className="text-xs text-gray-500">{doc.parties[0].email}</p>
+              )}
+            </div>
+            <div className="bg-gray-50 rounded-xl px-4 py-3 space-y-1">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Date / Status</p>
+              <p className="text-sm font-semibold text-gray-900">{doc.date}</p>
+              {doc.status && <StatusBadge status={doc.status as InvoiceStatus} />}
+            </div>
+          </div>
+
+          {/* Items table */}
+          <div>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+              Line Items ({doc.items.length})
+            </p>
+            <div className="border border-gray-100 rounded-xl overflow-hidden">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-gray-50 border-b border-gray-100">
+                    <th className="text-left px-4 py-2 text-xs font-semibold text-gray-500">Description</th>
+                    <th className="text-right px-4 py-2 text-xs font-semibold text-gray-500">Qty</th>
+                    <th className="text-right px-4 py-2 text-xs font-semibold text-gray-500">Unit Price</th>
+                    <th className="text-right px-4 py-2 text-xs font-semibold text-gray-500">Amount</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {doc.items.map((item) => (
+                    <tr key={item.no}>
+                      <td className="px-4 py-2 text-gray-800">{item.description}</td>
+                      <td className="px-4 py-2 text-right tabular-nums text-gray-700">{item.qty}</td>
+                      <td className="px-4 py-2 text-right tabular-nums text-gray-700">
+                        {item.unitPrice != null ? fmt(item.unitPrice) : "—"}
+                      </td>
+                      <td className="px-4 py-2 text-right tabular-nums font-medium text-gray-900">
+                        {item.amount != null ? fmt(item.amount) : "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Totals */}
+          <div className="flex justify-end">
+            <div className="space-y-1 min-w-[220px]">
+              {doc.subtotal != null && (
+                <div className="flex justify-between text-sm text-gray-600">
+                  <span>Subtotal</span>
+                  <span className="tabular-nums">MYR {fmt(doc.subtotal)}</span>
+                </div>
+              )}
+              {doc.discount != null && doc.discount > 0 && (
+                <div className="flex justify-between text-sm text-red-600">
+                  <span>Discount</span>
+                  <span className="tabular-nums">({fmt(doc.discount)})</span>
+                </div>
+              )}
+              {doc.deliveryCharge != null && (
+                <div className="flex justify-between text-sm text-gray-600">
+                  <span>Delivery</span>
+                  <span className="tabular-nums">
+                    {doc.deliveryCharge === 0
+                      ? <span className="text-emerald-600 font-medium">FREE</span>
+                      : `MYR ${fmt(doc.deliveryCharge)}`}
+                  </span>
+                </div>
+              )}
+              {doc.total != null && (
+                <div className="flex justify-between text-base font-bold text-gray-900 border-t border-gray-200 pt-2 mt-2">
+                  <span>Total (MYR)</span>
+                  <span className="tabular-nums">{fmt(doc.total)}</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Notes / Terms */}
+          {(doc.notes || doc.terms) && (
+            <div className="bg-amber-50 border border-amber-100 rounded-xl px-4 py-3 text-xs text-amber-800 space-y-1">
+              {doc.notes  && <p><span className="font-semibold">Notes:</span> {doc.notes}</p>}
+              {doc.terms  && <p><span className="font-semibold">Terms:</span> {doc.terms}</p>}
+            </div>
+          )}
+        </div>
+
+        {/* Footer actions */}
+        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100 bg-gray-50 rounded-b-2xl">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-sm text-gray-600 border border-gray-200 rounded-lg
+                       hover:bg-white transition-colors"
+          >
+            Close
+          </button>
+          <button
+            onClick={onPrint}
+            className="px-5 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700
+                       rounded-lg transition-colors flex items-center gap-2"
+          >
+            🖨 Print Invoice
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── InvoiceListPage ───────────────────────────────────────────────────────────
 export function InvoiceListPage() {
   const { push } = useNavigation();
   const { data: identity } = useGetIdentity<{ id: string; name: string; role: StaffRole }>();
 
-  const isAdmin    = identity?.role === "Admin";
-  const isHR       = identity?.role === "HR";
-  const canSeeAll  = isAdmin || isHR;
-  const canDelete  = isAdmin;
+  const isAdmin     = identity?.role === "Admin";
+  const isHR        = identity?.role === "HR";
+  const canSeeAll   = isAdmin || isHR;
+  const canDelete   = isAdmin;
   const canMarkPaid = isAdmin || isHR;
 
   const [tab,          setTab]          = useState<Tab>("active");
   const [search,       setSearch]       = useState("");
   const [page,         setPage]         = useState(1);
-  const [printLoading, setPrintLoading] = useState<string | null>(null); // invoice ID
-  const [printJob,     setPrintJob]     = useState<PrintJob | null>(null);
+  const [previewLoading, setPreviewLoading] = useState<string | null>(null); // invoice ID being fetched
+  const [previewJob,   setPreviewJob]   = useState<PrintJob | null>(null);   // modal open
+  const [printJob,     setPrintJob]     = useState<PrintJob | null>(null);   // triggers window.print()
+  const [companyInfo,  setCompanyInfo]  = useState<CompanyInfo>({ name: "MediGlove Supply Sdn. Bhd." });
   const PAGE_SIZE = 25;
 
   const { mutate: deleteInvoice } = useDelete();
   const { mutate: updateInvoice } = useUpdate();
+
+  // ── Fetch company settings once on mount ─────────────────────────────────
+  useEffect(() => {
+    supabaseClient
+      .from("company_settings")
+      .select("company_name,registration_no,address_line1,address_line2,city,postcode,state,phone,email,website,logo_url")
+      .single()
+      .then(({ data }) => {
+        if (!data) return;
+        const addrParts = [
+          data.address_line1,
+          data.address_line2,
+          [data.postcode, data.city].filter(Boolean).join(" "),
+          data.state,
+        ].filter(Boolean);
+        setCompanyInfo({
+          name:    data.company_name ?? "MediGlove Supply Sdn. Bhd.",
+          regNo:   data.registration_no ?? undefined,
+          address: addrParts.join(", ") || undefined,
+          phone:   data.phone   ?? undefined,
+          email:   data.email   ?? undefined,
+          website: data.website ?? undefined,
+          logoUrl: data.logo_url ?? undefined,
+        });
+      });
+  }, []);
 
   // ── Print hook ────────────────────────────────────────────────────────────
   const { printRef, triggerPrint, isPrinting } = usePrint({
     onAfterPrint: () => setPrintJob(null),
   });
 
-  // When printJob is set, give React one animation frame to render PrintLayout,
-  // then fire window.print()
+  // When printJob is set → one RAF to let React render PrintLayout → fire window.print()
   useEffect(() => {
     if (!printJob) return;
-    const rafId = requestAnimationFrame(() => {
-      triggerPrint();
-    });
+    const rafId = requestAnimationFrame(() => { triggerPrint(); });
     return () => cancelAnimationFrame(rafId);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [printJob]);
 
-  // ── Fetch handler (called on print button click) ──────────────────────────
-  const handlePrint = async (invoiceId: string, invoiceNo: string) => {
-    if (printLoading) return;
-    setPrintLoading(invoiceId);
+  // ── Fetch handler — called when invoice number is clicked ─────────────────
+  const handlePreview = async (invoiceId: string) => {
+    if (previewLoading) return;
+    setPreviewLoading(invoiceId);
 
     try {
-      // Parallel fetch: invoice header + client details + line items
       const [{ data: invRaw }, { data: itemsRaw }] = await Promise.all([
         supabaseClient
           .from("invoices")
@@ -102,38 +277,26 @@ export function InvoiceListPage() {
       ]);
 
       if (!invRaw) {
-        alert("Failed to load invoice data for printing.");
+        alert("Failed to load invoice data.");
         return;
       }
 
       type RichClient = {
-        name: string;
-        ssm_no: string | null;
-        region: string | null;
-        contact_person: string | null;
-        contact_email: string | null;
-        contact_phone: string | null;
-        credit_terms: string | null;
+        name: string; ssm_no: string | null; region: string | null;
+        contact_person: string | null; contact_email: string | null;
+        contact_phone: string | null; credit_terms: string | null;
       };
-
       type ItemRow = {
-        qty: number;
-        selling_price: number;
-        unit: string;
+        qty: number; selling_price: number; unit: string;
         product: { name: string; sku: string } | null;
       };
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const inv      = invRaw as unknown as any;
+      const inv       = invRaw as unknown as any;
       const lineItems = (itemsRaw ?? []) as unknown as ItemRow[];
-      const client   = inv.client as RichClient | null;
-      const creator  = inv.creator as { name: string } | null;
+      const client    = inv.client as RichClient | null;
 
-      // Calculate subtotal before discount + delivery
-      const subtotal = lineItems.reduce(
-        (sum, it) => sum + it.qty * it.selling_price,
-        0
-      );
+      const subtotal = lineItems.reduce((s, it) => s + it.qty * it.selling_price, 0);
 
       const docDate = new Date(inv.created_at).toLocaleDateString("en-MY", {
         day: "2-digit", month: "long", year: "numeric",
@@ -155,28 +318,22 @@ export function InvoiceListPage() {
             contact: client?.contact_person ?? undefined,
             email:   client?.contact_email ?? undefined,
           },
-          ...(inv.is_joint_order
-            ? [{ label: "Type", name: "Joint Order" }]
-            : []),
+          ...(inv.is_joint_order ? [{ label: "Type", name: "Joint Order" }] : []),
         ],
 
         items: lineItems.map((it, idx) => ({
           no:          idx + 1,
-          description: it.product?.name ?? "Unknown Product",
-          sku:         it.product?.sku  ?? undefined,
+          description: `${it.product?.name ?? "Unknown Product"} (${it.unit})`,
+          sku:         it.product?.sku ?? undefined,
           qty:         it.qty,
           unitPrice:   it.selling_price,
           amount:      it.qty * it.selling_price,
-          // Append unit to description
-        })).map((item, idx) => ({
-          ...item,
-          description: `${item.description} (${lineItems[idx].unit})`,
         })),
 
-        subtotal:        subtotal,
-        discount:        inv.discount ?? 0,
-        deliveryCharge:  inv.delivery_charge ?? 0,
-        total:           inv.total_amount,
+        subtotal,
+        discount:       inv.discount ?? 0,
+        deliveryCharge: inv.delivery_charge ?? 0,
+        total:          inv.total_amount,
 
         notes: inv.paid_at
           ? `Paid on ${new Date(inv.paid_at).toLocaleDateString("en-MY", { day: "2-digit", month: "long", year: "numeric" })}`
@@ -185,14 +342,13 @@ export function InvoiceListPage() {
         terms: client?.credit_terms ?? undefined,
       };
 
-      setPrintJob({ doc: docData, type: "Invoice" });
+      setPreviewJob({ doc: docData, type: "Invoice" });
 
     } catch (err) {
-      console.error("[InvoiceList] Print fetch failed:", err);
-      alert("Failed to load invoice for printing. Please try again.");
+      console.error("[InvoiceList] Preview fetch failed:", err);
+      alert("Failed to load invoice. Please try again.");
     } finally {
-      setPrintLoading(null);
-      void invoiceNo; // suppress unused warning
+      setPreviewLoading(null);
     }
   };
 
@@ -214,10 +370,7 @@ export function InvoiceListPage() {
   }
 
   const { data, isLoading, refetch } = useList<
-    Invoice & {
-      client?:  { name: string };
-      creator?: { name: string };
-    }
+    Invoice & { client?: { name: string }; creator?: { name: string } }
   >({
     resource:   "invoices",
     pagination: { current: page, pageSize: PAGE_SIZE },
@@ -262,19 +415,20 @@ export function InvoiceListPage() {
   return (
     <div className="space-y-4">
 
-      {/* ── Hidden print area (off-screen in normal view, visible during print) */}
+      {/* Hidden print area */}
       {printJob && (
-        <div
-          aria-hidden="true"
-          style={{ position: "fixed", left: "-9999px", top: 0, overflow: "hidden" }}
-        >
-          <PrintLayout
-            ref={printRef}
-            doc={printJob.doc}
-            type={printJob.type}
-            showPricing
-          />
+        <div aria-hidden="true" style={{ position: "fixed", left: "-9999px", top: 0, overflow: "hidden" }}>
+          <PrintLayout ref={printRef} doc={printJob.doc} type={printJob.type} showPricing company={companyInfo} />
         </div>
+      )}
+
+      {/* Preview modal */}
+      {previewJob && (
+        <PrintPreviewModal
+          job={previewJob}
+          onClose={() => setPreviewJob(null)}
+          onPrint={() => { const job = previewJob; setPreviewJob(null); setPrintJob(job); }}
+        />
       )}
 
       {/* Header */}
@@ -285,8 +439,7 @@ export function InvoiceListPage() {
         </div>
         <button
           onClick={() => push("/invoices/create")}
-          className="px-3 py-2 text-sm font-medium bg-blue-600 text-white rounded-lg
-                     hover:bg-blue-700 transition-colors"
+          className="px-3 py-2 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
         >
           + New Invoice
         </button>
@@ -299,9 +452,7 @@ export function InvoiceListPage() {
             key={t}
             onClick={() => { setTab(t); setPage(1); }}
             className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-              tab === t
-                ? "border-blue-600 text-blue-700"
-                : "border-transparent text-gray-500 hover:text-gray-700"
+              tab === t ? "border-blue-600 text-blue-700" : "border-transparent text-gray-500 hover:text-gray-700"
             }`}
           >
             {t === "active" ? "Active" : "Completed"}
@@ -321,8 +472,7 @@ export function InvoiceListPage() {
         placeholder="Search by invoice number…"
         value={search}
         onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-        className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2
-                   focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
       />
 
       {/* Table */}
@@ -352,19 +502,26 @@ export function InvoiceListPage() {
                 {invoices.map((inv) => {
                   type RichInvoice = Invoice & { client?: { name: string }; creator?: { name: string } };
                   const rich = inv as RichInvoice;
-                  const isLoadingThis = printLoading === inv.id;
+                  const isLoadingThis = previewLoading === inv.id;
 
                   return (
                     <tr key={inv.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-4 py-3 font-mono text-gray-900 text-xs">{inv.invoice_no}</td>
+                      <td className="px-4 py-3">
+                        <button
+                          onClick={() => handlePreview(inv.id)}
+                          disabled={!!previewLoading || isPrinting}
+                          className="font-mono text-blue-600 hover:text-blue-800 hover:underline text-xs font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                          title="Click to preview & print"
+                        >
+                          {isLoadingThis ? <span className="text-gray-400">Loading…</span> : inv.invoice_no}
+                        </button>
+                      </td>
                       <td className="px-4 py-3 text-gray-700">{rich.client?.name ?? "—"}</td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1">
                           <StatusBadge status={inv.status} />
                           {inv.is_joint_order && (
-                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700">
-                              Joint
-                            </span>
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700">Joint</span>
                           )}
                         </div>
                       </td>
@@ -376,45 +533,22 @@ export function InvoiceListPage() {
                         <td className="px-4 py-3 text-gray-500 text-xs">{rich.creator?.name ?? "—"}</td>
                       )}
                       <td className="px-4 py-3 text-gray-500 text-xs">
-                        {new Date(inv.created_at).toLocaleDateString("en-MY", {
-                          day: "2-digit", month: "short", year: "numeric",
-                        })}
+                        {new Date(inv.created_at).toLocaleDateString("en-MY", { day: "2-digit", month: "short", year: "numeric" })}
                       </td>
                       <td className="px-4 py-3 text-right">
                         <div className="flex items-center justify-end gap-2">
-
-                          {/* 🖨 Print — always available */}
-                          <button
-                            onClick={() => handlePrint(inv.id, inv.invoice_no)}
-                            disabled={!!printLoading || isPrinting}
-                            className="text-xs text-gray-500 hover:text-gray-800 font-medium
-                                       disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                            title="Print invoice"
-                          >
-                            {isLoadingThis ? "…" : "🖨"}
-                          </button>
-
                           {inv.status === "Active" && canMarkPaid && (
-                            <button
-                              onClick={() => handleMarkPaid(inv)}
-                              className="text-xs text-emerald-600 hover:text-emerald-800 font-medium"
-                            >
+                            <button onClick={() => handleMarkPaid(inv)} className="text-xs text-emerald-600 hover:text-emerald-800 font-medium">
                               Mark Paid
                             </button>
                           )}
                           {inv.status === "Active" && canMarkPaid && (
-                            <button
-                              onClick={() => handleMarkCancelled(inv)}
-                              className="text-xs text-orange-500 hover:text-orange-700 font-medium"
-                            >
+                            <button onClick={() => handleMarkCancelled(inv)} className="text-xs text-orange-500 hover:text-orange-700 font-medium">
                               Cancel
                             </button>
                           )}
                           {canDelete && (
-                            <button
-                              onClick={() => handleDelete(inv.id, inv.invoice_no)}
-                              className="text-xs text-red-500 hover:text-red-700 font-medium"
-                            >
+                            <button onClick={() => handleDelete(inv.id, inv.invoice_no)} className="text-xs text-red-500 hover:text-red-700 font-medium">
                               Delete
                             </button>
                           )}
@@ -437,16 +571,14 @@ export function InvoiceListPage() {
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1}
-              className="px-3 py-1 border border-gray-200 rounded-lg hover:bg-gray-50
-                         disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="px-3 py-1 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               ← Prev
             </button>
             <button
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
-              className="px-3 py-1 border border-gray-200 rounded-lg hover:bg-gray-50
-                         disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="px-3 py-1 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               Next →
             </button>

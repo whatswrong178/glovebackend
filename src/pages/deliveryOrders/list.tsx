@@ -7,8 +7,8 @@
 // T-07.2: Inline e-POD modal — Canvas signature + camera photo (both mandatory).
 //         submit_epod RPC → status=Delivered, lock row permanently.
 //
-// Print: per-row 🖨 button → DeliveryOrder or SampleDO print.
-//        Logistics role: showPricing=false (amounts hidden).
+// Print UX: click DO No. → preview modal → Print button → window.print()
+// DO NEVER shows prices — only qty and unit (per business rule).
 // ══════════════════════════════════════════════════════════════════════════════
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
@@ -17,7 +17,7 @@ import { useList, useUpdate, useGetIdentity } from "@refinedev/core";
 import { supabaseClient } from "../../supabaseClient";
 import type { StaffRole } from "../../types/staff";
 import { PrintLayout } from "../../components/PrintLayout";
-import type { PrintDocData, PrintDocType } from "../../components/PrintLayout";
+import type { PrintDocData, PrintDocType, CompanyInfo } from "../../components/PrintLayout";
 import { usePrint } from "../../lib/print/usePrint";
 
 type DOType   = "Invoice" | "Sample";
@@ -46,9 +46,8 @@ type RichDO = DeliveryOrder & {
 };
 
 interface PrintJob {
-  doc:          PrintDocData;
-  type:         PrintDocType;
-  showPricing:  boolean;
+  doc:  PrintDocData;
+  type: PrintDocType;
 }
 
 // ── StatusBadge ──────────────────────────────────────────────────────────────
@@ -81,10 +80,7 @@ function SignaturePad({
   const getPos = (e: React.MouseEvent | React.TouchEvent, canvas: HTMLCanvasElement) => {
     const rect = canvas.getBoundingClientRect();
     if ("touches" in e) {
-      return {
-        x: e.touches[0].clientX - rect.left,
-        y: e.touches[0].clientY - rect.top,
-      };
+      return { x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top };
     }
     return { x: (e as React.MouseEvent).clientX - rect.left, y: (e as React.MouseEvent).clientY - rect.top };
   };
@@ -146,11 +142,7 @@ function SignaturePad({
         <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
           Recipient Signature <span className="text-red-500">*</span>
         </span>
-        <button
-          type="button"
-          onClick={clear}
-          className="text-xs text-gray-400 hover:text-gray-600 underline"
-        >
+        <button type="button" onClick={clear} className="text-xs text-gray-400 hover:text-gray-600 underline">
           Clear
         </button>
       </div>
@@ -200,10 +192,7 @@ function EPODModal({
       return;
     }
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setGeoLat(pos.coords.latitude);
-        setGeoLng(pos.coords.longitude);
-      },
+      (pos) => { setGeoLat(pos.coords.latitude); setGeoLng(pos.coords.longitude); },
       () => setGeoError("Location access denied — coordinates will be null.")
     );
   }, []);
@@ -339,6 +328,131 @@ function EPODModal({
   );
 }
 
+// ── DO Print Preview Modal ────────────────────────────────────────────────────
+interface DOPreviewModalProps {
+  job:     PrintJob;
+  onClose: () => void;
+  onPrint: () => void;
+}
+
+function DOPrintPreviewModal({ job, onClose, onPrint }: DOPreviewModalProps) {
+  const { doc, type } = job;
+  const docLabel      = type === "SampleDO" ? "SAMPLE DELIVERY ORDER" : "DELIVERY ORDER";
+
+  return (
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[92vh] flex flex-col">
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+          <div>
+            <h2 className="text-lg font-bold text-gray-900">Print Preview</h2>
+            <p className="text-xs text-gray-500 mt-0.5 font-mono">{docLabel} · {doc.docNumber}</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 text-2xl leading-none font-light"
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* Document summary */}
+        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
+
+          {/* Info grid */}
+          <div className="grid grid-cols-2 gap-4">
+            {doc.parties.filter(p => ["Deliver To"].includes(p.label)).map((party, i) => (
+              <div key={i} className="bg-gray-50 rounded-xl px-4 py-3 space-y-1">
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">{party.label}</p>
+                <p className="text-sm font-semibold text-gray-900">{party.name}</p>
+                {party.address && <p className="text-xs text-gray-500">{party.address}</p>}
+                {party.contact && <p className="text-xs text-gray-500">Attn: {party.contact}</p>}
+              </div>
+            ))}
+            <div className="bg-gray-50 rounded-xl px-4 py-3 space-y-1">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Date / Status</p>
+              <p className="text-sm font-semibold text-gray-900">{doc.date}</p>
+              {doc.status && <StatusBadge status={doc.status as DOStatus} />}
+            </div>
+          </div>
+
+          {/* Ref info (Invoice ref, driver) */}
+          {doc.parties.filter(p => !["Deliver To"].includes(p.label)).length > 0 && (
+            <div className="flex flex-wrap gap-3">
+              {doc.parties.filter(p => !["Deliver To"].includes(p.label)).map((p, i) => (
+                <div key={i} className="bg-blue-50 rounded-lg px-3 py-2 text-xs">
+                  <span className="font-semibold text-blue-700">{p.label}: </span>
+                  <span className="text-blue-900">{p.name}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Items table — qty and description only, NO prices */}
+          <div>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+              Items ({doc.items.length}) — Qty &amp; Unit Only
+            </p>
+            <div className="border border-gray-100 rounded-xl overflow-hidden">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-gray-50 border-b border-gray-100">
+                    <th className="text-left px-4 py-2 text-xs font-semibold text-gray-500">No.</th>
+                    <th className="text-left px-4 py-2 text-xs font-semibold text-gray-500">Description</th>
+                    <th className="text-right px-4 py-2 text-xs font-semibold text-gray-500">Qty</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {doc.items.map((item) => (
+                    <tr key={item.no}>
+                      <td className="px-4 py-2 text-gray-400 text-xs">{item.no}</td>
+                      <td className="px-4 py-2 text-gray-800">{item.description}</td>
+                      <td className="px-4 py-2 text-right tabular-nums font-semibold text-gray-900">{item.qty}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Notes */}
+          {doc.notes && (
+            <div className="bg-amber-50 border border-amber-100 rounded-xl px-4 py-3 text-xs text-amber-800">
+              <span className="font-semibold">Notes:</span> {doc.notes}
+            </div>
+          )}
+
+          {/* Signature indicator */}
+          {doc.signatureBase64 && (
+            <div className="bg-emerald-50 border border-emerald-100 rounded-xl px-4 py-3 text-xs text-emerald-700 font-medium">
+              ✓ e-POD signature captured — will appear on printed document
+            </div>
+          )}
+        </div>
+
+        {/* Footer actions */}
+        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100 bg-gray-50 rounded-b-2xl">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-sm text-gray-600 border border-gray-200 rounded-lg
+                       hover:bg-white transition-colors"
+          >
+            Close
+          </button>
+          <button
+            onClick={onPrint}
+            className="px-5 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700
+                       rounded-lg transition-colors flex items-center gap-2"
+          >
+            🖨 Print DO
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── DOListPage ───────────────────────────────────────────────────────────────
 export function DOListPage() {
   const { data: identity } = useGetIdentity<{ id: string; name: string; role: StaffRole }>();
@@ -347,41 +461,63 @@ export function DOListPage() {
   const isLogistics = identity?.role === "Logistics";
   const canSeeAll   = isAdmin || isHR;
   const canApprove  = isAdmin || isHR;
-  // Logistics role cannot see financial amounts
-  const showPricing = !isLogistics;
 
-  const [tab,          setTab]          = useState<DOType>("Invoice");
-  const [statusFilter, setStatusFilter] = useState<DOStatus | "">("");
-  const [page,         setPage]         = useState(1);
-  const [epodTarget,   setEpodTarget]   = useState<RichDO | null>(null);
-  const [printLoading, setPrintLoading] = useState<string | null>(null); // do ID
-  const [printJob,     setPrintJob]     = useState<PrintJob | null>(null);
+  const [tab,            setTab]            = useState<DOType>("Invoice");
+  const [statusFilter,   setStatusFilter]   = useState<DOStatus | "">("");
+  const [page,           setPage]           = useState(1);
+  const [epodTarget,     setEpodTarget]     = useState<RichDO | null>(null);
+  const [previewLoading, setPreviewLoading] = useState<string | null>(null); // do ID being fetched
+  const [previewJob,     setPreviewJob]     = useState<PrintJob | null>(null); // modal open
+  const [printJob,       setPrintJob]       = useState<PrintJob | null>(null); // triggers window.print()
+  const [companyInfo,    setCompanyInfo]    = useState<CompanyInfo>({ name: "MediGlove Supply Sdn. Bhd." });
   const PAGE_SIZE = 25;
 
   const { mutate: updateDO } = useUpdate();
+
+  // ── Fetch company settings once on mount ─────────────────────────────────
+  useEffect(() => {
+    supabaseClient
+      .from("company_settings")
+      .select("company_name,registration_no,address_line1,address_line2,city,postcode,state,phone,email,website,logo_url")
+      .single()
+      .then(({ data }) => {
+        if (!data) return;
+        const addrParts = [
+          data.address_line1,
+          data.address_line2,
+          [data.postcode, data.city].filter(Boolean).join(" "),
+          data.state,
+        ].filter(Boolean);
+        setCompanyInfo({
+          name:    data.company_name ?? "MediGlove Supply Sdn. Bhd.",
+          regNo:   data.registration_no ?? undefined,
+          address: addrParts.join(", ") || undefined,
+          phone:   data.phone   ?? undefined,
+          email:   data.email   ?? undefined,
+          website: data.website ?? undefined,
+          logoUrl: data.logo_url ?? undefined,
+        });
+      });
+  }, []);
 
   // ── Print hook ──────────────────────────────────────────────────────────
   const { printRef, triggerPrint, isPrinting } = usePrint({
     onAfterPrint: () => setPrintJob(null),
   });
 
-  // Trigger print after React renders the hidden PrintLayout
   useEffect(() => {
     if (!printJob) return;
-    const rafId = requestAnimationFrame(() => {
-      triggerPrint();
-    });
+    const rafId = requestAnimationFrame(() => { triggerPrint(); });
     return () => cancelAnimationFrame(rafId);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [printJob]);
 
-  // ── Print handler ────────────────────────────────────────────────────────
-  const handlePrint = useCallback(async (do_: RichDO) => {
-    if (printLoading) return;
-    setPrintLoading(do_.id);
+  // ── Preview handler — called when DO number is clicked ───────────────────
+  const handlePreview = useCallback(async (do_: RichDO) => {
+    if (previewLoading) return;
+    setPreviewLoading(do_.id);
 
     try {
-      // Fetch client details
       const { data: clientData } = await supabaseClient
         .from("clients")
         .select("name,ssm_no,region,contact_person,contact_email,contact_phone")
@@ -389,20 +525,13 @@ export function DOListPage() {
         .single();
 
       type ClientRow = {
-        name: string;
-        ssm_no: string | null;
-        region: string | null;
-        contact_person: string | null;
-        contact_email: string | null;
-        contact_phone: string | null;
+        name: string; ssm_no: string | null; region: string | null;
+        contact_person: string | null; contact_email: string | null; contact_phone: string | null;
       };
       const client = clientData as ClientRow | null;
 
-      // Fetch invoice items (only for Invoice-type DOs)
       type ItemRow = {
-        qty: number;
-        selling_price: number;
-        unit: string;
+        qty: number; selling_price: number; unit: string;
         product: { name: string; sku: string } | null;
       };
 
@@ -422,11 +551,11 @@ export function DOListPage() {
       const printType: PrintDocType = do_.type === "Sample" ? "SampleDO" : "DeliveryOrder";
 
       const docData: PrintDocData = {
-        docNumber:  do_.do_no,
-        date:       docDate,
-        status:     do_.status,
-        currency:   "MYR",
-        isSample:   do_.type === "Sample",
+        docNumber: do_.do_no,
+        date:      docDate,
+        status:    do_.status,
+        currency:  "MYR",
+        isSample:  do_.type === "Sample",
 
         parties: [
           {
@@ -445,20 +574,14 @@ export function DOListPage() {
             : []),
         ],
 
+        // DO: NEVER show prices — only description (with unit) + qty
         items: lineItems.map((it, idx) => ({
           no:          idx + 1,
           description: `${it.product?.name ?? "Unknown Product"} (${it.unit})`,
           sku:         it.product?.sku ?? undefined,
           qty:         it.qty,
-          unitPrice:   showPricing ? it.selling_price : undefined,
-          amount:      showPricing ? it.qty * it.selling_price : undefined,
+          // unitPrice and amount intentionally omitted for DO
         })),
-
-        ...(showPricing && lineItems.length > 0
-          ? {
-              subtotal: lineItems.reduce((s, it) => s + it.qty * it.selling_price, 0),
-            }
-          : {}),
 
         notes: do_.delivered_at
           ? `Delivered on ${new Date(do_.delivered_at).toLocaleDateString("en-MY", { day: "2-digit", month: "long", year: "numeric" })}`
@@ -467,15 +590,15 @@ export function DOListPage() {
         signatureBase64: do_.signature_base64 ?? undefined,
       };
 
-      setPrintJob({ doc: docData, type: printType, showPricing });
+      setPreviewJob({ doc: docData, type: printType });
 
     } catch (err) {
-      console.error("[DOList] Print fetch failed:", err);
-      alert("Failed to load delivery order for printing. Please try again.");
+      console.error("[DOList] Preview fetch failed:", err);
+      alert("Failed to load delivery order. Please try again.");
     } finally {
-      setPrintLoading(null);
+      setPreviewLoading(null);
     }
-  }, [printLoading, showPricing]);
+  }, [previewLoading]);
 
   // ── List filters ──────────────────────────────────────────────────────────
   const baseFilters: CrudFilters = [
@@ -526,28 +649,25 @@ export function DOListPage() {
   return (
     <div className="space-y-4">
 
-      {/* ── Hidden print area ────────────────────────────────────────────── */}
+      {/* Hidden print area */}
       {printJob && (
-        <div
-          aria-hidden="true"
-          style={{ position: "fixed", left: "-9999px", top: 0, overflow: "hidden" }}
-        >
-          <PrintLayout
-            ref={printRef}
-            doc={printJob.doc}
-            type={printJob.type}
-            showPricing={printJob.showPricing}
-          />
+        <div aria-hidden="true" style={{ position: "fixed", left: "-9999px", top: 0, overflow: "hidden" }}>
+          <PrintLayout ref={printRef} doc={printJob.doc} type={printJob.type} showPricing={false} company={companyInfo} />
         </div>
+      )}
+
+      {/* Preview modal */}
+      {previewJob && (
+        <DOPrintPreviewModal
+          job={previewJob}
+          onClose={() => setPreviewJob(null)}
+          onPrint={() => { const job = previewJob; setPreviewJob(null); setPrintJob(job); }}
+        />
       )}
 
       {/* ePOD Modal */}
       {epodTarget && (
-        <EPODModal
-          do_={epodTarget}
-          onClose={() => setEpodTarget(null)}
-          onSuccess={handleEpodSuccess}
-        />
+        <EPODModal do_={epodTarget} onClose={() => setEpodTarget(null)} onSuccess={handleEpodSuccess} />
       )}
 
       {/* Header */}
@@ -565,9 +685,7 @@ export function DOListPage() {
             key={t}
             onClick={() => { setTab(t); setPage(1); }}
             className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-              tab === t
-                ? "border-blue-600 text-blue-700"
-                : "border-transparent text-gray-500 hover:text-gray-700"
+              tab === t ? "border-blue-600 text-blue-700" : "border-transparent text-gray-500 hover:text-gray-700"
             }`}
           >
             {t === "Invoice" ? "🧾 Invoice DOs" : "🎁 Sample DOs"}
@@ -585,8 +703,7 @@ export function DOListPage() {
       <select
         value={statusFilter}
         onChange={(e) => { setStatusFilter(e.target.value as DOStatus | ""); setPage(1); }}
-        className="text-sm border border-gray-300 rounded-lg px-3 py-2 focus:outline-none
-                   focus:ring-2 focus:ring-blue-500 bg-white"
+        className="text-sm border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
       >
         <option value="">All Statuses</option>
         <option value="Pending">Pending</option>
@@ -625,15 +742,24 @@ export function DOListPage() {
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {orders.map((do_) => {
-                  const isDelivered  = do_.status === "Delivered";
-                  const isCancelled  = do_.status === "Cancelled";
-                  const isLocked     = isDelivered || isCancelled;
-                  const canAdvance   = !isLocked && (canSeeAll || isLogistics);
-                  const isLoadingThis = printLoading === do_.id;
+                  const isDelivered   = do_.status === "Delivered";
+                  const isCancelled   = do_.status === "Cancelled";
+                  const isLocked      = isDelivered || isCancelled;
+                  const canAdvance    = !isLocked && (canSeeAll || isLogistics);
+                  const isLoadingThis = previewLoading === do_.id;
 
                   return (
                     <tr key={do_.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-4 py-3 font-mono text-gray-900 text-xs">{do_.do_no}</td>
+                      <td className="px-4 py-3">
+                        <button
+                          onClick={() => handlePreview(do_)}
+                          disabled={!!previewLoading || isPrinting}
+                          className="font-mono text-blue-600 hover:text-blue-800 hover:underline text-xs font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                          title="Click to preview & print"
+                        >
+                          {isLoadingThis ? <span className="text-gray-400">Loading…</span> : do_.do_no}
+                        </button>
+                      </td>
                       {tab === "Invoice" && (
                         <td className="px-4 py-3 font-mono text-gray-500 text-xs">
                           {do_.invoice?.invoice_no ?? "—"}
@@ -646,9 +772,7 @@ export function DOListPage() {
                         <td className="px-4 py-3 text-gray-500 text-xs">{do_.creator?.name ?? "—"}</td>
                       )}
                       <td className="px-4 py-3 text-gray-500 text-xs">
-                        {new Date(do_.created_at).toLocaleDateString("en-MY", {
-                          day: "2-digit", month: "short", year: "numeric",
-                        })}
+                        {new Date(do_.created_at).toLocaleDateString("en-MY", { day: "2-digit", month: "short", year: "numeric" })}
                       </td>
                       <td className="px-4 py-3">
                         {do_.signature_base64
@@ -656,18 +780,6 @@ export function DOListPage() {
                           : <span className="text-xs text-gray-300">—</span>}
                       </td>
                       <td className="px-4 py-3 text-right space-x-2 whitespace-nowrap">
-
-                        {/* 🖨 Print — always available */}
-                        <button
-                          onClick={() => handlePrint(do_)}
-                          disabled={!!printLoading || isPrinting}
-                          className="text-xs text-gray-500 hover:text-gray-800 font-medium
-                                     disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                          title="Print delivery order"
-                        >
-                          {isLoadingThis ? "…" : "🖨"}
-                        </button>
-
                         {do_.status === "Pending" && canSeeAll && (
                           <button
                             onClick={() => handleSimpleStatusChange(do_.id, "In Transit")}
@@ -679,8 +791,7 @@ export function DOListPage() {
                         {do_.status === "In Transit" && canAdvance && (
                           <button
                             onClick={() => setEpodTarget(do_)}
-                            className="text-xs text-emerald-600 hover:text-emerald-800 font-medium
-                                       border border-emerald-300 rounded px-2 py-0.5"
+                            className="text-xs text-emerald-600 hover:text-emerald-800 font-medium border border-emerald-300 rounded px-2 py-0.5"
                           >
                             📋 e-POD
                           </button>
@@ -693,9 +804,7 @@ export function DOListPage() {
                             Cancel
                           </button>
                         )}
-                        {isDelivered && (
-                          <span className="text-xs text-gray-400">🔒 Locked</span>
-                        )}
+                        {isDelivered && <span className="text-xs text-gray-400">🔒 Locked</span>}
                       </td>
                     </tr>
                   );
@@ -714,16 +823,14 @@ export function DOListPage() {
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1}
-              className="px-3 py-1 border border-gray-200 rounded-lg hover:bg-gray-50
-                         disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="px-3 py-1 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               ← Prev
             </button>
             <button
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
-              className="px-3 py-1 border border-gray-200 rounded-lg hover:bg-gray-50
-                         disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="px-3 py-1 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               Next →
             </button>

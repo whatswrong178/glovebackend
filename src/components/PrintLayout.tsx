@@ -8,7 +8,7 @@
  * Anti-pattern enforced: no jspdf, no canvas2pdf, no third-party libs.
  *
  * Usage:
- *   <PrintLayout ref={printRef} doc={invoiceData} type="Invoice" />
+ *   <PrintLayout ref={printRef} doc={invoiceData} type="Invoice" company={companyInfo} />
  *
  * Then call triggerPrint() from usePrint() to invoke window.print().
  */
@@ -23,8 +23,8 @@ export interface PrintLineItem {
   description:  string;
   sku?:         string;
   qty:          number;
-  unitPrice?:   number;   // hidden for Logistics / PO cost
-  amount?:      number;   // hidden for Logistics
+  unitPrice?:   number;   // hidden for Logistics / DO
+  amount?:      number;   // hidden for Logistics / DO
 }
 
 export interface PrintParty {
@@ -37,40 +37,53 @@ export interface PrintParty {
 }
 
 export interface PrintDocData {
-  docNumber:      string;       // e.g. "240601-0001"
-  date:           string;       // formatted display date
-  dueDate?:       string;
-  status?:        string;
-  currency?:      string;       // default "MYR"
-  parties:        PrintParty[];
-  items:          PrintLineItem[];
-  subtotal?:      number;
-  discount?:      number;
+  docNumber:       string;       // e.g. "240601-0001"
+  date:            string;       // formatted display date
+  dueDate?:        string;
+  status?:         string;
+  currency?:       string;       // default "MYR"
+  parties:         PrintParty[];
+  items:           PrintLineItem[];
+  subtotal?:       number;
+  discount?:       number;
   deliveryCharge?: number;
-  total?:         number;
-  notes?:         string;
-  terms?:         string;
-  isDraft?:       boolean;
-  isSample?:      boolean;
+  total?:          number;
+  notes?:          string;
+  terms?:          string;
+  isDraft?:        boolean;
+  isSample?:       boolean;
   signatureBase64?: string;     // e-POD signature image
 }
 
-// ─── Company constants (replace with env-driven config in EPIC-09) ──────────
-const COMPANY = {
+// ─── Company info (passed from caller, fetched from company_settings) ─────────
+export interface CompanyInfo {
+  name:     string;
+  regNo?:   string;
+  address?: string;
+  phone?:   string;
+  email?:   string;
+  website?: string;
+  logoUrl?: string;
+}
+
+// ─── Fallback constants (used when company prop is not yet loaded) ─────────────
+const COMPANY_FALLBACK: CompanyInfo = {
   name:    "MediGlove Supply Sdn. Bhd.",
-  regNo:   "202X-XXXXXX-X",
-  address: "Unit X, Jalan XX, Taman XX, XXXXX Kuala Lumpur, Malaysia",
-  phone:   "+60 X-XXXX XXXX",
-  email:   "info@yourdomain.com",
-  website: "www.yourdomain.com",
-} as const;
+  regNo:   "",
+  address: "",
+  phone:   "",
+  email:   "",
+  website: "",
+};
 
 // ─── Component ────────────────────────────────────────────────────────────────
 interface PrintLayoutProps {
-  doc:  PrintDocData;
-  type: PrintDocType;
-  /** Show unit prices and amounts (hide for Logistics role) */
+  doc:          PrintDocData;
+  type:         PrintDocType;
+  /** Show unit prices and amounts (false for DO and Logistics role) */
   showPricing?: boolean;
+  /** Company info from company_settings table. Falls back to placeholder if not provided. */
+  company?:     CompanyInfo;
 }
 
 const DOC_LABELS: Record<PrintDocType, string> = {
@@ -82,13 +95,27 @@ const DOC_LABELS: Record<PrintDocType, string> = {
 };
 
 export const PrintLayout = forwardRef<HTMLDivElement, PrintLayoutProps>(
-  ({ doc, type, showPricing = true }, ref) => {
+  ({ doc, type, showPricing = true, company }, ref) => {
+    const co       = company ?? COMPANY_FALLBACK;
     const currency = doc.currency ?? "MYR";
-    const fmt = (n: number) =>
+    const fmt      = (n: number) =>
       n.toLocaleString("en-MY", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+    const hasSku = doc.items.some((i) => i.sku);
+
+    // Build address string (single line for header, multi-line looks bad on print)
+    const companySubLines: string[] = [];
+    if (co.regNo)   companySubLines.push(`Reg No: ${co.regNo}`);
+    if (co.address) companySubLines.push(co.address);
+    const contactParts: string[] = [];
+    if (co.phone)   contactParts.push(`Tel: ${co.phone}`);
+    if (co.email)   contactParts.push(co.email);
+    if (co.website) contactParts.push(co.website);
+    if (contactParts.length > 0) companySubLines.push(contactParts.join("  ·  "));
 
     return (
       <div ref={ref} className="print-area" role="document" aria-label={`${DOC_LABELS[type]} ${doc.docNumber}`}>
+
         {/* Draft / Sample diagonal watermark */}
         {(doc.isDraft || doc.isSample) && (
           <div className="print-watermark-text">
@@ -98,37 +125,51 @@ export const PrintLayout = forwardRef<HTMLDivElement, PrintLayoutProps>(
 
         {/* ── Document Header ──────────────────────────────────── */}
         <div className="print-doc-header">
-          {/* Company block */}
+
+          {/* Company block — logo or name */}
           <div className="company-block">
-            <h1>{COMPANY.name}</h1>
-            <p style={{ fontSize: "7.5pt", color: "#6b7280", lineHeight: 1.6 }}>
-              Reg No: {COMPANY.regNo}<br />
-              {COMPANY.address}<br />
-              Tel: {COMPANY.phone} | {COMPANY.email}
-            </p>
+            {co.logoUrl ? (
+              <img
+                src={co.logoUrl}
+                alt={co.name}
+                style={{ maxHeight: "40pt", maxWidth: "140pt", objectFit: "contain", display: "block", marginBottom: "6pt" }}
+              />
+            ) : (
+              <h1>{co.name}</h1>
+            )}
+            {companySubLines.length > 0 && (
+              <div className="company-sub">
+                {companySubLines.map((line, i) => (
+                  <React.Fragment key={i}>
+                    {line}
+                    {i < companySubLines.length - 1 && <br />}
+                  </React.Fragment>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Doc meta block */}
           <div className="doc-meta">
             <div className="doc-title">{DOC_LABELS[type]}</div>
-            <div className="doc-number"># {doc.docNumber}</div>
-            <table style={{ marginTop: "6pt", fontSize: "8pt", width: "100%" }}>
+            <div className="doc-number">{doc.docNumber}</div>
+            <table style={{ marginTop: "8pt", fontSize: "10pt", width: "100%" }}>
               <tbody>
                 <tr>
-                  <td style={{ color: "#6b7280", paddingRight: "8pt" }}>Date:</td>
-                  <td style={{ textAlign: "right", fontWeight: 600 }}>{doc.date}</td>
+                  <td style={{ color: "#6b7280", paddingRight: "10pt", whiteSpace: "nowrap" }}>Date</td>
+                  <td style={{ textAlign: "right", fontWeight: 700 }}>{doc.date}</td>
                 </tr>
                 {doc.dueDate && (
                   <tr>
-                    <td style={{ color: "#6b7280" }}>Due Date:</td>
-                    <td style={{ textAlign: "right", fontWeight: 600, color: "#dc2626" }}>
+                    <td style={{ color: "#6b7280", whiteSpace: "nowrap" }}>Due Date</td>
+                    <td style={{ textAlign: "right", fontWeight: 700, color: "#dc2626" }}>
                       {doc.dueDate}
                     </td>
                   </tr>
                 )}
                 {doc.status && (
                   <tr>
-                    <td style={{ color: "#6b7280" }}>Status:</td>
+                    <td style={{ color: "#6b7280", whiteSpace: "nowrap" }}>Status</td>
                     <td style={{ textAlign: "right" }}>
                       <span className={`print-badge ${doc.status.toLowerCase()}`}>
                         {doc.status}
@@ -149,21 +190,23 @@ export const PrintLayout = forwardRef<HTMLDivElement, PrintLayoutProps>(
                 <div className="party-label">{party.label}</div>
                 <div className="party-name">{party.name}</div>
                 {party.ssm && (
-                  <div style={{ fontSize: "7.5pt", color: "#6b7280" }}>
+                  <div style={{ fontSize: "9pt", color: "#6b7280", marginTop: "2pt" }}>
                     Reg: {party.ssm}
                   </div>
                 )}
                 {party.address && (
-                  <div style={{ fontSize: "7.5pt", marginTop: "2pt" }}>{party.address}</div>
+                  <div style={{ fontSize: "9pt", marginTop: "3pt", color: "#374151" }}>
+                    {party.address}
+                  </div>
                 )}
                 {party.contact && (
-                  <div style={{ fontSize: "7.5pt", color: "#374151" }}>
-                    Contact: {party.contact}
+                  <div style={{ fontSize: "9pt", color: "#374151", marginTop: "2pt" }}>
+                    Attn: {party.contact}
                   </div>
                 )}
                 {party.email && (
-                  <div style={{ fontSize: "7.5pt", color: "#374151" }}>
-                    Email: {party.email}
+                  <div style={{ fontSize: "9pt", color: "#374151" }}>
+                    {party.email}
                   </div>
                 )}
               </div>
@@ -172,19 +215,19 @@ export const PrintLayout = forwardRef<HTMLDivElement, PrintLayoutProps>(
         )}
 
         {/* ── Line Items Table ─────────────────────────────────── */}
-        <table style={{ marginTop: "8pt" }}>
+        <table style={{ marginTop: "10pt" }}>
           <thead>
             <tr>
-              <th style={{ width: "24pt" }}>No.</th>
+              <th style={{ width: "26pt" }}>No.</th>
               <th>Description</th>
-              {doc.items.some((i) => i.sku) && <th style={{ width: "60pt" }}>SKU</th>}
-              <th className="numeric" style={{ width: "32pt" }}>Qty</th>
+              {hasSku && <th style={{ width: "64pt" }}>SKU</th>}
+              <th className="numeric" style={{ width: "36pt" }}>Qty</th>
               {showPricing && (
                 <>
-                  <th className="numeric" style={{ width: "56pt" }}>
+                  <th className="numeric" style={{ width: "68pt" }}>
                     Unit Price ({currency})
                   </th>
-                  <th className="numeric" style={{ width: "64pt" }}>
+                  <th className="numeric" style={{ width: "72pt" }}>
                     Amount ({currency})
                   </th>
                 </>
@@ -194,20 +237,20 @@ export const PrintLayout = forwardRef<HTMLDivElement, PrintLayoutProps>(
           <tbody>
             {doc.items.map((item) => (
               <tr key={item.no}>
-                <td style={{ color: "#6b7280" }}>{item.no}</td>
-                <td>{item.description}</td>
-                {doc.items.some((i) => i.sku) && (
-                  <td style={{ fontFamily: "monospace", fontSize: "7.5pt", color: "#374151" }}>
+                <td style={{ color: "#6b7280", fontSize: "9.5pt" }}>{item.no}</td>
+                <td style={{ fontWeight: 500 }}>{item.description}</td>
+                {hasSku && (
+                  <td style={{ fontFamily: "monospace", fontSize: "9pt", color: "#374151" }}>
                     {item.sku ?? "—"}
                   </td>
                 )}
-                <td className="numeric">{item.qty}</td>
+                <td className="numeric" style={{ fontWeight: 600 }}>{item.qty}</td>
                 {showPricing && (
                   <>
                     <td className="numeric">
                       {item.unitPrice != null ? fmt(item.unitPrice) : "—"}
                     </td>
-                    <td className="numeric">
+                    <td className="numeric" style={{ fontWeight: 600 }}>
                       {item.amount != null ? fmt(item.amount) : "—"}
                     </td>
                   </>
@@ -216,19 +259,19 @@ export const PrintLayout = forwardRef<HTMLDivElement, PrintLayoutProps>(
             ))}
           </tbody>
 
-          {/* Totals block (Invoice / Receipt only) */}
+          {/* Totals block — Invoice / Receipt only */}
           {showPricing && (doc.subtotal != null || doc.total != null) && (
             <tfoot>
               {doc.subtotal != null && (
                 <tr className="totals-row">
-                  <td colSpan={doc.items.some((i) => i.sku) ? 4 : 3} />
+                  <td colSpan={hasSku ? 4 : 3} style={{ border: "none" }} />
                   <td style={{ textAlign: "right", color: "#6b7280" }}>Subtotal</td>
                   <td className="numeric">{fmt(doc.subtotal)}</td>
                 </tr>
               )}
               {doc.discount != null && doc.discount > 0 && (
                 <tr className="totals-row">
-                  <td colSpan={doc.items.some((i) => i.sku) ? 4 : 3} />
+                  <td colSpan={hasSku ? 4 : 3} style={{ border: "none" }} />
                   <td style={{ textAlign: "right", color: "#6b7280" }}>Discount</td>
                   <td className="numeric" style={{ color: "#dc2626" }}>
                     ({fmt(doc.discount)})
@@ -237,11 +280,11 @@ export const PrintLayout = forwardRef<HTMLDivElement, PrintLayoutProps>(
               )}
               {doc.deliveryCharge != null && (
                 <tr className="totals-row">
-                  <td colSpan={doc.items.some((i) => i.sku) ? 4 : 3} />
+                  <td colSpan={hasSku ? 4 : 3} style={{ border: "none" }} />
                   <td style={{ textAlign: "right", color: "#6b7280" }}>Delivery</td>
                   <td className="numeric">
                     {doc.deliveryCharge === 0 ? (
-                      <span style={{ color: "#16a34a" }}>FREE</span>
+                      <span style={{ color: "#16a34a", fontWeight: 600 }}>FREE</span>
                     ) : (
                       fmt(doc.deliveryCharge)
                     )}
@@ -250,7 +293,7 @@ export const PrintLayout = forwardRef<HTMLDivElement, PrintLayoutProps>(
               )}
               {doc.total != null && (
                 <tr className="grand-total">
-                  <td colSpan={doc.items.some((i) => i.sku) ? 4 : 3} />
+                  <td colSpan={hasSku ? 4 : 3} style={{ border: "none" }} />
                   <td style={{ textAlign: "right" }}>
                     TOTAL ({currency})
                   </td>
@@ -263,15 +306,15 @@ export const PrintLayout = forwardRef<HTMLDivElement, PrintLayoutProps>(
 
         {/* ── Notes / Terms ────────────────────────────────────── */}
         {(doc.notes || doc.terms) && (
-          <div style={{ marginTop: "10pt", fontSize: "7.5pt" }}>
+          <div style={{ marginTop: "12pt", fontSize: "9.5pt", borderTop: "0.4pt solid #e5e7eb", paddingTop: "8pt" }}>
             {doc.notes && (
               <div style={{ marginBottom: "4pt" }}>
-                <span style={{ fontWeight: 600 }}>Notes: </span>{doc.notes}
+                <span style={{ fontWeight: 700 }}>Notes: </span>{doc.notes}
               </div>
             )}
             {doc.terms && (
               <div style={{ color: "#6b7280" }}>
-                <span style={{ fontWeight: 600 }}>Payment Terms: </span>{doc.terms}
+                <span style={{ fontWeight: 700 }}>Payment Terms: </span>{doc.terms}
               </div>
             )}
           </div>
@@ -279,16 +322,16 @@ export const PrintLayout = forwardRef<HTMLDivElement, PrintLayoutProps>(
 
         {/* ── e-POD Signature (Delivery Order only) ───────────── */}
         {doc.signatureBase64 && (
-          <div style={{ marginTop: "10pt", borderTop: "0.4pt solid #d1d5db", paddingTop: "6pt" }}>
-            <div style={{ fontSize: "7.5pt", fontWeight: 600, marginBottom: "3pt" }}>
+          <div style={{ marginTop: "12pt", borderTop: "0.4pt solid #d1d5db", paddingTop: "8pt" }}>
+            <div style={{ fontSize: "9pt", fontWeight: 700, marginBottom: "4pt" }}>
               Recipient Signature (e-POD)
             </div>
             <img
               src={doc.signatureBase64}
               alt="Recipient Signature"
-              style={{ height: "40pt", border: "0.4pt solid #d1d5db", display: "block" }}
+              style={{ height: "44pt", border: "0.6pt solid #d1d5db", display: "block", borderRadius: "2pt" }}
             />
-            <div style={{ fontSize: "7pt", color: "#6b7280", marginTop: "2pt" }}>
+            <div style={{ fontSize: "8pt", color: "#6b7280", marginTop: "3pt" }}>
               Electronically captured at time of delivery. Date: {doc.date}
             </div>
           </div>
@@ -299,36 +342,34 @@ export const PrintLayout = forwardRef<HTMLDivElement, PrintLayoutProps>(
           <div className="print-signature-grid">
             <div className="sig-block">
               Prepared By
-              <div style={{ marginTop: "2pt", fontWeight: 600, fontSize: "8pt" }}>
-                {COMPANY.name}
+              <div style={{ marginTop: "3pt", fontWeight: 700, fontSize: "9.5pt" }}>
+                {co.name}
               </div>
             </div>
             <div className="sig-block">
-              Authorised By
+              Authorised Signature
             </div>
             <div className="sig-block">
               Received By
-              {type === "DeliveryOrder" || type === "SampleDO" ? (
-                <div style={{ marginTop: "2pt", fontSize: "7pt", color: "#9ca3af" }}>
-                  Signature & Chop
+              {(type === "DeliveryOrder" || type === "SampleDO") && (
+                <div style={{ marginTop: "3pt", fontSize: "8pt", color: "#9ca3af" }}>
+                  Signature &amp; Company Chop
                 </div>
-              ) : null}
+              )}
             </div>
           </div>
 
-          <div style={{
-            marginTop: "10pt",
-            textAlign: "center",
-            fontSize: "7pt",
-            color: "#9ca3af",
-            borderTop: "0.4pt solid #e5e7eb",
-            paddingTop: "4pt"
-          }}>
+          <div style={{ marginTop: "12pt", textAlign: "center", fontSize: "8pt", color: "#9ca3af", borderTop: "0.4pt solid #e5e7eb", paddingTop: "5pt" }}>
             This is a computer-generated document. No signature is required unless stated above.
-            <br />
-            {COMPANY.name} | {COMPANY.phone} | {COMPANY.email} | {COMPANY.website}
+            {(co.name || co.phone || co.email) && (
+              <>
+                <br />
+                {[co.name, co.phone, co.email, co.website].filter(Boolean).join("  ·  ")}
+              </>
+            )}
           </div>
         </div>
+
       </div>
     );
   }
