@@ -207,13 +207,14 @@ function PrintPreviewModal({ job, company, onClose, onPrint }: PreviewModalProps
 
 // ── Admin Edit Invoice Modal ──────────────────────────────────────────────────
 interface EditableItem {
-  invoice_item_id?: string;
-  product_id:       string;
-  product_name:     string;
-  sku:              string;
-  qty:              number;
-  unit:             string;
-  selling_price:    string;
+  invoice_item_id?:    string;
+  product_id:          string;
+  product_name:        string;
+  sku:                 string;
+  qty:                 number;
+  unit:                string;
+  selling_price:       string;
+  cost_price_snapshot: number;   // preserved from original invoice_item — immutable
 }
 
 interface EditModalProps {
@@ -236,19 +237,24 @@ function EditInvoiceModal({ invoice, onClose, onSaved }: EditModalProps) {
   useEffect(() => {
     supabaseClient
       .from("invoice_items")
-      .select("id,qty,selling_price,unit,product:products!product_id(id,name,sku)")
+      .select("id,qty,selling_price,cost_price_snapshot,unit,product:products!product_id(id,name,sku)")
       .eq("invoice_id", invoice.id)
       .then(({ data }) => {
-        type Row = { id: string; qty: number; selling_price: number; unit: string; product: { id: string; name: string; sku: string } | null };
+        type Row = {
+          id: string; qty: number; selling_price: number;
+          cost_price_snapshot: number; unit: string;
+          product: { id: string; name: string; sku: string } | null;
+        };
         setItems(
           ((data ?? []) as unknown as Row[]).map((r) => ({
-            invoice_item_id: r.id,
-            product_id:      r.product?.id ?? "",
-            product_name:    r.product?.name ?? "Unknown",
-            sku:             r.product?.sku ?? "",
-            qty:             r.qty,
-            unit:            r.unit,
-            selling_price:   String(r.selling_price),
+            invoice_item_id:    r.id,
+            product_id:         r.product?.id ?? "",
+            product_name:       r.product?.name ?? "Unknown",
+            sku:                r.product?.sku ?? "",
+            qty:                r.qty,
+            unit:               r.unit,
+            selling_price:      String(r.selling_price),
+            cost_price_snapshot: r.cost_price_snapshot,
           }))
         );
         setLoading(false);
@@ -277,16 +283,17 @@ function EditInvoiceModal({ invoice, onClose, onSaved }: EditModalProps) {
         .eq("invoice_id", invoice.id);
       if (delErr) throw delErr;
 
-      // 2. Re-insert updated items
+      // 2. Re-insert updated items (cost_price_snapshot preserved from original row)
       const { error: insErr } = await supabaseClient
         .from("invoice_items")
         .insert(
           items.map((it) => ({
-            invoice_id:    invoice.id,
-            product_id:    it.product_id,
-            qty:           parseInt(String(it.qty)) || 1,
-            selling_price: parseFloat(it.selling_price) || 0,
-            unit:          it.unit,
+            invoice_id:          invoice.id,
+            product_id:          it.product_id,
+            qty:                 parseInt(String(it.qty)) || 1,
+            selling_price:       parseFloat(it.selling_price) || 0,
+            unit:                it.unit,
+            cost_price_snapshot: it.cost_price_snapshot,
           }))
         );
       if (insErr) throw insErr;
