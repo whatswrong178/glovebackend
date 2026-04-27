@@ -478,7 +478,7 @@ export function DOListPage() {
   useEffect(() => {
     supabaseClient
       .from("company_settings")
-      .select("company_name,registration_no,address_line1,address_line2,city,postcode,state,phone,email,website,logo_url")
+      .select("company_name,registration_no,address_line1,address_line2,city,postcode,state,phone,email,website,logo_url,bank_name,bank_account_name,bank_account_no,bank_swift_code")
       .eq("id", "00000000-0000-0000-0000-000000000001")
       .single()
       .then(({ data }) => {
@@ -490,13 +490,17 @@ export function DOListPage() {
           data.state,
         ].filter(Boolean);
         setCompanyInfo({
-          name:    data.company_name ?? "MediGlove Supply Sdn. Bhd.",
-          regNo:   data.registration_no ?? undefined,
-          address: addrParts.join(", ") || undefined,
-          phone:   data.phone   ?? undefined,
-          email:   data.email   ?? undefined,
-          website: data.website ?? undefined,
-          logoUrl: data.logo_url ?? undefined,
+          name:            data.company_name      ?? "MediGlove Supply Sdn. Bhd.",
+          regNo:           data.registration_no   ?? undefined,
+          address:         addrParts.join(", ")   || undefined,
+          phone:           data.phone             ?? undefined,
+          email:           data.email             ?? undefined,
+          website:         data.website           ?? undefined,
+          logoUrl:         data.logo_url          ?? undefined,
+          bankName:        data.bank_name         ?? undefined,
+          bankAccountName: data.bank_account_name ?? undefined,
+          bankAccountNo:   data.bank_account_no   ?? undefined,
+          bankSwiftCode:   data.bank_swift_code   ?? undefined,
         });
       });
   }, []);

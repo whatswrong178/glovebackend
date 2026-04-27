@@ -57,13 +57,18 @@ export interface PrintDocData {
 
 // ─── Company info (passed from caller, fetched from company_settings) ─────────
 export interface CompanyInfo {
-  name:     string;
-  regNo?:   string;
-  address?: string;
-  phone?:   string;
-  email?:   string;
-  website?: string;
-  logoUrl?: string;
+  name:             string;
+  regNo?:           string;
+  address?:         string;
+  phone?:           string;
+  email?:           string;
+  website?:         string;
+  logoUrl?:         string;
+  // Bank payment details — rendered on printed invoices
+  bankName?:        string;
+  bankAccountName?: string;
+  bankAccountNo?:   string;
+  bankSwiftCode?:   string;
 }
 
 // ─── Fallback constants (used when company prop is not yet loaded) ─────────────
@@ -317,6 +322,41 @@ export const PrintLayout = forwardRef<HTMLDivElement, PrintLayoutProps>(
                 <span style={{ fontWeight: 700 }}>Payment Terms: </span>{doc.terms}
               </div>
             )}
+          </div>
+        )}
+
+        {/* ── Payment Info (Invoice only) ─────────────────────── */}
+        {type === "Invoice" && (co.bankName || co.bankAccountNo) && (
+          <div style={{ marginTop: "12pt", fontSize: "9.5pt", borderTop: "0.4pt solid #e5e7eb", paddingTop: "8pt" }}>
+            <div style={{ fontWeight: 700, marginBottom: "4pt" }}>Payment Details</div>
+            <table style={{ fontSize: "9pt", borderCollapse: "collapse" }}>
+              <tbody>
+                {co.bankName && (
+                  <tr>
+                    <td style={{ color: "#6b7280", paddingRight: "16pt", whiteSpace: "nowrap" }}>Bank</td>
+                    <td style={{ fontWeight: 600 }}>{co.bankName}</td>
+                  </tr>
+                )}
+                {co.bankAccountName && (
+                  <tr>
+                    <td style={{ color: "#6b7280", paddingRight: "16pt", whiteSpace: "nowrap" }}>Account Name</td>
+                    <td style={{ fontWeight: 600 }}>{co.bankAccountName}</td>
+                  </tr>
+                )}
+                {co.bankAccountNo && (
+                  <tr>
+                    <td style={{ color: "#6b7280", paddingRight: "16pt", whiteSpace: "nowrap" }}>Account No.</td>
+                    <td style={{ fontWeight: 600, fontFamily: "monospace" }}>{co.bankAccountNo}</td>
+                  </tr>
+                )}
+                {co.bankSwiftCode && (
+                  <tr>
+                    <td style={{ color: "#6b7280", paddingRight: "16pt", whiteSpace: "nowrap" }}>SWIFT / BIC</td>
+                    <td style={{ fontWeight: 600, fontFamily: "monospace" }}>{co.bankSwiftCode}</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
         )}
 

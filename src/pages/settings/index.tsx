@@ -28,22 +28,26 @@ import { useCompanySettings } from "../../context/CompanySettingsContext";
 const COMPANY_SINGLETON_ID = "00000000-0000-0000-0000-000000000001";
 
 interface CompanySettings {
-  id:              string;
-  company_name:    string;
-  registration_no: string | null;
-  gst_no:          string | null;
-  address_line1:   string | null;
-  address_line2:   string | null;
-  city:            string | null;
-  postcode:        string | null;
-  state:           string | null;
-  country:         string;
-  phone:           string | null;
-  fax:             string | null;
-  email:           string | null;
-  website:         string | null;
-  logo_url:        string | null;
-  updated_at:      string;
+  id:                  string;
+  company_name:        string;
+  registration_no:     string | null;
+  gst_no:              string | null;
+  address_line1:       string | null;
+  address_line2:       string | null;
+  city:                string | null;
+  postcode:            string | null;
+  state:               string | null;
+  country:             string;
+  phone:               string | null;
+  fax:                 string | null;
+  email:               string | null;
+  website:             string | null;
+  logo_url:            string | null;
+  bank_name:           string | null;
+  bank_account_name:   string | null;
+  bank_account_no:     string | null;
+  bank_swift_code:     string | null;
+  updated_at:          string;
 }
 
 interface SystemParam {
@@ -186,20 +190,24 @@ function CompanyProfileTab() {
   if (record && !initialised.current) {
     initialised.current = true;
     setForm({
-      company_name:    record.company_name    ?? "",
-      registration_no: record.registration_no ?? "",
-      gst_no:          record.gst_no          ?? "",
-      address_line1:   record.address_line1   ?? "",
-      address_line2:   record.address_line2   ?? "",
-      city:            record.city            ?? "",
-      postcode:        record.postcode        ?? "",
-      state:           record.state           ?? "",
-      country:         record.country         ?? "Malaysia",
-      phone:           record.phone           ?? "",
-      fax:             record.fax             ?? "",
-      email:           record.email           ?? "",
-      website:         record.website         ?? "",
-      logo_url:        record.logo_url        ?? "",
+      company_name:        record.company_name        ?? "",
+      registration_no:     record.registration_no     ?? "",
+      gst_no:              record.gst_no              ?? "",
+      address_line1:       record.address_line1       ?? "",
+      address_line2:       record.address_line2       ?? "",
+      city:                record.city                ?? "",
+      postcode:            record.postcode            ?? "",
+      state:               record.state               ?? "",
+      country:             record.country             ?? "Malaysia",
+      phone:               record.phone               ?? "",
+      fax:                 record.fax                 ?? "",
+      email:               record.email               ?? "",
+      website:             record.website             ?? "",
+      logo_url:            record.logo_url            ?? "",
+      bank_name:           record.bank_name           ?? "",
+      bank_account_name:   record.bank_account_name   ?? "",
+      bank_account_no:     record.bank_account_no     ?? "",
+      bank_swift_code:     record.bank_swift_code     ?? "",
     });
   }
 
@@ -353,6 +361,20 @@ function CompanyProfileTab() {
           <CField label="Fax"      value={form.fax     ?? ""} onChange={set("fax")}     type="tel"   placeholder="+603-XXXX XXXX" />
           <CField label="Email"    value={form.email   ?? ""} onChange={set("email")}   type="email" placeholder="info@mediglove.com" />
           <CField label="Website"  value={form.website ?? ""} onChange={set("website")} type="url"   placeholder="https://mediglove.com" />
+        </div>
+      </div>
+
+      {/* Banking Details */}
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 space-y-4">
+        <div>
+          <h3 className="text-sm font-bold text-gray-900">Banking Details</h3>
+          <p className="text-xs text-gray-400 mt-0.5">Printed on invoices under "Payment Details". Leave blank to hide.</p>
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <CField label="Bank Name"         value={form.bank_name         ?? ""} onChange={set("bank_name")}         placeholder="Maybank / CIMB / Public Bank" />
+          <CField label="Account Holder Name" value={form.bank_account_name ?? ""} onChange={set("bank_account_name")} placeholder="MediGlove Supply Sdn Bhd" />
+          <CField label="Account Number"    value={form.bank_account_no   ?? ""} onChange={set("bank_account_no")}   placeholder="5123 4567 8901" />
+          <CField label="SWIFT / BIC Code"  value={form.bank_swift_code   ?? ""} onChange={set("bank_swift_code")}   placeholder="MBBEMYKLXXX" />
         </div>
       </div>
 

@@ -223,13 +223,24 @@ interface EditModalProps {
   onSaved:  () => void;
 }
 
+interface ProductHit {
+  id:         string;
+  name:       string;
+  sku:        string;
+  cost_price: number;
+}
+
 function EditInvoiceModal({ invoice, onClose, onSaved }: EditModalProps) {
-  const [items,    setItems]    = useState<EditableItem[]>([]);
-  const [discount, setDiscount] = useState(String(invoice.discount ?? 0));
-  const [delivery, setDelivery] = useState(String(invoice.delivery_charge ?? 0));
-  const [loading,  setLoading]  = useState(true);
-  const [saving,   setSaving]   = useState(false);
-  const [error,    setError]    = useState("");
+  const [items,          setItems]          = useState<EditableItem[]>([]);
+  const [discount,       setDiscount]       = useState(String(invoice.discount ?? 0));
+  const [delivery,       setDelivery]       = useState(String(invoice.delivery_charge ?? 0));
+  const [loading,        setLoading]        = useState(true);
+  const [saving,         setSaving]         = useState(false);
+  const [error,          setError]          = useState("");
+  const [productQuery,   setProductQuery]   = useState("");
+  const [productHits,    setProductHits]    = useState<ProductHit[]>([]);
+  const [productSearching, setProductSearching] = useState(false);
+  const searchRef = React.useRef<HTMLDivElement>(null);
 
   const fmt = (n: number) =>
     n.toLocaleString("en-MY", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -261,6 +272,51 @@ function EditInvoiceModal({ invoice, onClose, onSaved }: EditModalProps) {
       });
   }, [invoice.id]);
 
+  // ── Product search ────────────────────────────────────────────────────────
+  useEffect(() => {
+    const q = productQuery.trim();
+    if (!q) { setProductHits([]); return; }
+    setProductSearching(true);
+    supabaseClient
+      .from("products")
+      .select("id,name,sku,cost_price")
+      .or(`name.ilike.%${q}%,sku.ilike.%${q}%`)
+      .limit(8)
+      .then(({ data }) => {
+        setProductHits((data ?? []) as unknown as ProductHit[]);
+        setProductSearching(false);
+      });
+  }, [productQuery]);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setProductQuery("");
+        setProductHits([]);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const addProduct = (hit: ProductHit) => {
+    setItems((prev) => [
+      ...prev,
+      {
+        product_id:          hit.id,
+        product_name:        hit.name,
+        sku:                 hit.sku,
+        qty:                 1,
+        unit:                "Carton",
+        selling_price:       "",
+        cost_price_snapshot: hit.cost_price,
+      },
+    ]);
+    setProductQuery("");
+    setProductHits([]);
+  };
+
   const updateItem = (idx: number, field: keyof EditableItem, val: string | number) => {
     setItems((prev) => prev.map((it, i) => i === idx ? { ...it, [field]: val } : it));
   };
@@ -274,6 +330,11 @@ function EditInvoiceModal({ invoice, onClose, onSaved }: EditModalProps) {
 
   const handleSave = async () => {
     if (items.length === 0) { setError("At least one item required."); return; }
+    const unpricedIdx = items.findIndex((it) => !parseFloat(it.selling_price));
+    if (unpricedIdx !== -1) {
+      setError(`Item ${unpricedIdx + 1} (${items[unpricedIdx].product_name}) has no selling price.`);
+      return;
+    }
     setSaving(true); setError("");
     try {
       // 1. Delete old invoice_items
@@ -378,6 +439,37 @@ function EditInvoiceModal({ invoice, onClose, onSaved }: EditModalProps) {
                 </div>
               </div>
 
+              {/* Add Product Search */}
+              <div ref={searchRef} className="relative">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Add Product</p>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={productQuery}
+                    onChange={(e) => setProductQuery(e.target.value)}
+                    placeholder="Search by name or SKU…"
+                    className="flex-1 text-sm border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  {productSearching && (
+                    <span className="text-xs text-gray-400">Searching…</span>
+                  )}
+                </div>
+                {productHits.length > 0 && (
+                  <div className="absolute z-20 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
+                    {productHits.map((hit) => (
+                      <button
+                        key={hit.id}
+                        onClick={() => addProduct(hit)}
+                        className="w-full text-left px-4 py-2.5 hover:bg-blue-50 transition-colors border-b border-gray-50 last:border-0"
+                      >
+                        <span className="text-sm font-medium text-gray-900">{hit.name}</span>
+                        <span className="ml-2 text-xs font-mono text-gray-400">{hit.sku}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               {/* Discount / Delivery */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -462,7 +554,7 @@ export function InvoiceListPage() {
   useEffect(() => {
     supabaseClient
       .from("company_settings")
-      .select("company_name,registration_no,address_line1,address_line2,city,postcode,state,phone,email,website,logo_url")
+      .select("company_name,registration_no,address_line1,address_line2,city,postcode,state,phone,email,website,logo_url,bank_name,bank_account_name,bank_account_no,bank_swift_code")
       .eq("id", "00000000-0000-0000-0000-000000000001")
       .single()
       .then(({ data }) => {
@@ -474,13 +566,17 @@ export function InvoiceListPage() {
           data.state,
         ].filter(Boolean);
         setCompanyInfo({
-          name:    data.company_name ?? "MediGlove Supply Sdn. Bhd.",
-          regNo:   data.registration_no ?? undefined,
-          address: addrParts.join(", ") || undefined,
-          phone:   data.phone   ?? undefined,
-          email:   data.email   ?? undefined,
-          website: data.website ?? undefined,
-          logoUrl: data.logo_url ?? undefined,
+          name:            data.company_name      ?? "MediGlove Supply Sdn. Bhd.",
+          regNo:           data.registration_no   ?? undefined,
+          address:         addrParts.join(", ")   || undefined,
+          phone:           data.phone             ?? undefined,
+          email:           data.email             ?? undefined,
+          website:         data.website           ?? undefined,
+          logoUrl:         data.logo_url          ?? undefined,
+          bankName:        data.bank_name         ?? undefined,
+          bankAccountName: data.bank_account_name ?? undefined,
+          bankAccountNo:   data.bank_account_no   ?? undefined,
+          bankSwiftCode:   data.bank_swift_code   ?? undefined,
         });
       });
   }, []);
