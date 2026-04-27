@@ -147,9 +147,21 @@ export function HRCreatePage() {
             setCredStatus({ state: "error", message: msg });
           }
         },
-        onError: () => {
-          // Staff row creation itself failed — stay on page, Refine will show the error
-          setCredStatus({ state: "idle" });
+        onError: (err) => {
+          // Staff INSERT failed — surface the real reason to the admin
+          const raw = (err as { message?: string; statusCode?: number } | null);
+          const msg = raw?.message ?? String(err);
+          const isDuplicate =
+            raw?.statusCode === 409 ||
+            msg.toLowerCase().includes("duplicate") ||
+            msg.toLowerCase().includes("unique") ||
+            msg.toLowerCase().includes("already exists");
+          setCredStatus({
+            state:   "error",
+            message: isDuplicate
+              ? `Email already exists in the staff table. Please use a different email address, or check if this staff member was previously offboarded.`
+              : `Failed to save staff record: ${msg}`,
+          });
         },
       }
     );

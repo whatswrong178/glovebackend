@@ -44,12 +44,13 @@ function StatusBadge({ status }: { status: InvoiceStatus }) {
 
 // ── Print Preview Modal ───────────────────────────────────────────────────────
 interface PreviewModalProps {
-  job:      PrintJob;
-  onClose:  () => void;
-  onPrint:  () => void;
+  job:         PrintJob;
+  company:     CompanyInfo;
+  onClose:     () => void;
+  onPrint:     () => void;
 }
 
-function PrintPreviewModal({ job, onClose, onPrint }: PreviewModalProps) {
+function PrintPreviewModal({ job, company, onClose, onPrint }: PreviewModalProps) {
   const { doc } = job;
   const fmt = (n: number) =>
     n.toLocaleString("en-MY", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -74,6 +75,19 @@ function PrintPreviewModal({ job, onClose, onPrint }: PreviewModalProps) {
 
         {/* Document summary */}
         <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
+
+          {/* Company letterhead row */}
+          <div className="flex items-start justify-between bg-blue-50 border border-blue-100 rounded-xl px-4 py-3">
+            <div>
+              <p className="text-sm font-bold text-blue-900">{company.name}</p>
+              {company.regNo  && <p className="text-xs text-blue-700 mt-0.5">Reg: {company.regNo}</p>}
+              {company.address && <p className="text-xs text-blue-600 mt-0.5">{company.address}</p>}
+            </div>
+            <div className="text-right text-xs text-blue-600 space-y-0.5">
+              {company.phone   && <p>{company.phone}</p>}
+              {company.email   && <p>{company.email}</p>}
+            </div>
+          </div>
 
           {/* Key info grid */}
           <div className="grid grid-cols-2 gap-4">
@@ -191,6 +205,228 @@ function PrintPreviewModal({ job, onClose, onPrint }: PreviewModalProps) {
   );
 }
 
+// ── Admin Edit Invoice Modal ──────────────────────────────────────────────────
+interface EditableItem {
+  invoice_item_id?: string;
+  product_id:       string;
+  product_name:     string;
+  sku:              string;
+  qty:              number;
+  unit:             string;
+  selling_price:    string;
+}
+
+interface EditModalProps {
+  invoice:  Invoice;
+  onClose:  () => void;
+  onSaved:  () => void;
+}
+
+function EditInvoiceModal({ invoice, onClose, onSaved }: EditModalProps) {
+  const [items,    setItems]    = useState<EditableItem[]>([]);
+  const [discount, setDiscount] = useState(String(invoice.discount ?? 0));
+  const [delivery, setDelivery] = useState(String(invoice.delivery_charge ?? 0));
+  const [loading,  setLoading]  = useState(true);
+  const [saving,   setSaving]   = useState(false);
+  const [error,    setError]    = useState("");
+
+  const fmt = (n: number) =>
+    n.toLocaleString("en-MY", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  useEffect(() => {
+    supabaseClient
+      .from("invoice_items")
+      .select("id,qty,selling_price,unit,product:products!product_id(id,name,sku)")
+      .eq("invoice_id", invoice.id)
+      .then(({ data }) => {
+        type Row = { id: string; qty: number; selling_price: number; unit: string; product: { id: string; name: string; sku: string } | null };
+        setItems(
+          ((data ?? []) as unknown as Row[]).map((r) => ({
+            invoice_item_id: r.id,
+            product_id:      r.product?.id ?? "",
+            product_name:    r.product?.name ?? "Unknown",
+            sku:             r.product?.sku ?? "",
+            qty:             r.qty,
+            unit:            r.unit,
+            selling_price:   String(r.selling_price),
+          }))
+        );
+        setLoading(false);
+      });
+  }, [invoice.id]);
+
+  const updateItem = (idx: number, field: keyof EditableItem, val: string | number) => {
+    setItems((prev) => prev.map((it, i) => i === idx ? { ...it, [field]: val } : it));
+  };
+
+  const removeItem = (idx: number) => setItems((prev) => prev.filter((_, i) => i !== idx));
+
+  const subtotal = items.reduce((s, it) => s + (parseInt(String(it.qty)) || 0) * (parseFloat(it.selling_price) || 0), 0);
+  const disc     = parseFloat(discount) || 0;
+  const del      = parseFloat(delivery) || 0;
+  const newTotal = Math.max(0, subtotal - disc + del);
+
+  const handleSave = async () => {
+    if (items.length === 0) { setError("At least one item required."); return; }
+    setSaving(true); setError("");
+    try {
+      // 1. Delete old invoice_items
+      const { error: delErr } = await supabaseClient
+        .from("invoice_items")
+        .delete()
+        .eq("invoice_id", invoice.id);
+      if (delErr) throw delErr;
+
+      // 2. Re-insert updated items
+      const { error: insErr } = await supabaseClient
+        .from("invoice_items")
+        .insert(
+          items.map((it) => ({
+            invoice_id:    invoice.id,
+            product_id:    it.product_id,
+            qty:           parseInt(String(it.qty)) || 1,
+            selling_price: parseFloat(it.selling_price) || 0,
+            unit:          it.unit,
+          }))
+        );
+      if (insErr) throw insErr;
+
+      // 3. Update invoice totals
+      const totalBoxes = items.reduce((s, it) => s + (parseInt(String(it.qty)) || 0), 0);
+      const { error: updErr } = await supabaseClient
+        .from("invoices")
+        .update({
+          discount:        disc,
+          delivery_charge: del,
+          total_amount:    newTotal,
+          total_boxes:     totalBoxes,
+        })
+        .eq("id", invoice.id);
+      if (updErr) throw updErr;
+
+      onSaved();
+    } catch (e: unknown) {
+      setError((e as { message?: string })?.message ?? String(e));
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[92vh] flex flex-col">
+
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+          <div>
+            <h2 className="text-lg font-bold text-gray-900">Edit Invoice</h2>
+            <p className="text-xs text-gray-500 mt-0.5 font-mono">{invoice.invoice_no} · Admin only</p>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl leading-none font-light">✕</button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
+          {loading ? (
+            <div className="flex items-center justify-center h-32 text-sm text-gray-400">Loading items…</div>
+          ) : (
+            <>
+              {/* Line items */}
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Line Items</p>
+                <div className="space-y-2">
+                  {items.map((it, idx) => (
+                    <div key={idx} className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold text-gray-800 truncate">{it.product_name}</p>
+                        <p className="text-xs text-gray-400 font-mono">{it.sku}</p>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <input
+                          type="number"
+                          min="1"
+                          value={it.qty}
+                          onChange={(e) => updateItem(idx, "qty", Math.max(1, parseInt(e.target.value) || 1))}
+                          className="w-14 text-sm text-center border border-gray-200 rounded-lg px-1 py-1 focus:outline-none focus:ring-1 focus:ring-blue-400"
+                        />
+                        <select
+                          value={it.unit}
+                          onChange={(e) => updateItem(idx, "unit", e.target.value)}
+                          className="text-xs border border-gray-200 rounded-lg px-1 py-1 bg-white focus:outline-none focus:ring-1 focus:ring-blue-400"
+                        >
+                          {["Carton","Box","Pack","Can","Piece","Bag","Roll"].map((u) => (
+                            <option key={u} value={u}>{u}</option>
+                          ))}
+                        </select>
+                        <span className="text-xs text-gray-400">RM</span>
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={it.selling_price}
+                          onChange={(e) => updateItem(idx, "selling_price", e.target.value)}
+                          className="w-20 text-sm text-right border border-gray-200 rounded-lg px-1 py-1 focus:outline-none focus:ring-1 focus:ring-blue-400"
+                        />
+                        <button onClick={() => removeItem(idx)} className="text-red-400 hover:text-red-600 text-lg leading-none ml-1">×</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Discount / Delivery */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 mb-1">Discount (RM)</label>
+                  <input
+                    type="number" min="0" step="0.01" value={discount}
+                    onChange={(e) => setDiscount(e.target.value)}
+                    className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-400"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 mb-1">Delivery Charge (RM)</label>
+                  <input
+                    type="number" min="0" step="0.01" value={delivery}
+                    onChange={(e) => setDelivery(e.target.value)}
+                    className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-400"
+                  />
+                </div>
+              </div>
+
+              {/* New total preview */}
+              <div className="flex justify-end">
+                <div className="space-y-1 min-w-[200px] text-sm">
+                  <div className="flex justify-between text-gray-600"><span>Subtotal</span><span>MYR {fmt(subtotal)}</span></div>
+                  {disc > 0 && <div className="flex justify-between text-red-600"><span>Discount</span><span>({fmt(disc)})</span></div>}
+                  {del > 0  && <div className="flex justify-between text-gray-600"><span>Delivery</span><span>MYR {fmt(del)}</span></div>}
+                  <div className="flex justify-between font-bold text-gray-900 border-t border-gray-200 pt-2">
+                    <span>New Total</span><span>MYR {fmt(newTotal)}</span>
+                  </div>
+                </div>
+              </div>
+
+              {error && (
+                <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-2 text-sm text-red-700">{error}</div>
+              )}
+            </>
+          )}
+        </div>
+
+        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100 bg-gray-50 rounded-b-2xl">
+          <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 border border-gray-200 rounded-lg hover:bg-white transition-colors">
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={saving || loading}
+            className="px-5 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50"
+          >
+            {saving ? "Saving…" : "Save Changes"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── InvoiceListPage ───────────────────────────────────────────────────────────
 export function InvoiceListPage() {
   const { push } = useNavigation();
@@ -205,9 +441,10 @@ export function InvoiceListPage() {
   const [tab,          setTab]          = useState<Tab>("active");
   const [search,       setSearch]       = useState("");
   const [page,         setPage]         = useState(1);
-  const [previewLoading, setPreviewLoading] = useState<string | null>(null); // invoice ID being fetched
-  const [previewJob,   setPreviewJob]   = useState<PrintJob | null>(null);   // modal open
-  const [printJob,     setPrintJob]     = useState<PrintJob | null>(null);   // triggers window.print()
+  const [previewLoading, setPreviewLoading] = useState<string | null>(null);
+  const [previewJob,   setPreviewJob]   = useState<PrintJob | null>(null);
+  const [printJob,     setPrintJob]     = useState<PrintJob | null>(null);
+  const [editInvoice,  setEditInvoice]  = useState<Invoice | null>(null);
   const [companyInfo,  setCompanyInfo]  = useState<CompanyInfo>({ name: "MediGlove Supply Sdn. Bhd." });
   const PAGE_SIZE = 25;
 
@@ -219,6 +456,7 @@ export function InvoiceListPage() {
     supabaseClient
       .from("company_settings")
       .select("company_name,registration_no,address_line1,address_line2,city,postcode,state,phone,email,website,logo_url")
+      .eq("id", "00000000-0000-0000-0000-000000000001")
       .single()
       .then(({ data }) => {
         if (!data) return;
@@ -426,8 +664,18 @@ export function InvoiceListPage() {
       {previewJob && (
         <PrintPreviewModal
           job={previewJob}
+          company={companyInfo}
           onClose={() => setPreviewJob(null)}
           onPrint={() => { const job = previewJob; setPreviewJob(null); setPrintJob(job); }}
+        />
+      )}
+
+      {/* Admin edit modal */}
+      {editInvoice && (
+        <EditInvoiceModal
+          invoice={editInvoice}
+          onClose={() => setEditInvoice(null)}
+          onSaved={() => { setEditInvoice(null); refetch(); }}
         />
       )}
 
@@ -537,6 +785,11 @@ export function InvoiceListPage() {
                       </td>
                       <td className="px-4 py-3 text-right">
                         <div className="flex items-center justify-end gap-2">
+                          {inv.status === "Active" && isAdmin && (
+                            <button onClick={() => setEditInvoice(inv)} className="text-xs text-indigo-600 hover:text-indigo-800 font-medium">
+                              Edit
+                            </button>
+                          )}
                           {inv.status === "Active" && canMarkPaid && (
                             <button onClick={() => handleMarkPaid(inv)} className="text-xs text-emerald-600 hover:text-emerald-800 font-medium">
                               Mark Paid

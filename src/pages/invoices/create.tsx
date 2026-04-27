@@ -143,11 +143,14 @@ export function InvoiceCreatePage() {
         product_name:      p.name,
         sku:               p.sku,
         qty:               1,
-        unit:              "Carton",
-        selling_price:     String(p.suggested_price),
-        min_selling_price: p.min_selling_price,
-        suggested_price:   p.suggested_price,
-        units_per_carton:  p.units_per_carton ?? 1,
+        unit:                "Carton",
+        _baseSuggestedPrice: p.suggested_price,
+        _baseMinPrice:       p.min_selling_price,
+        // Default unit = Carton → multiply per-unit DB price by units_per_carton
+        selling_price:       (p.suggested_price * (p.units_per_carton ?? 1)).toFixed(2),
+        min_selling_price:   p.min_selling_price * (p.units_per_carton ?? 1),
+        suggested_price:     p.suggested_price * (p.units_per_carton ?? 1),
+        units_per_carton:    p.units_per_carton ?? 1,
       },
     ]);
     setProductSearch("");
@@ -166,16 +169,15 @@ export function InvoiceCreatePage() {
         li.qty = Math.max(1, parseInt(value) || 1);
       } else if (field === "unit") {
         li.unit = value;
-        // Auto-calculate selling price per unit based on units_per_carton
-        const upc = li.units_per_carton ?? 1;
-        const pricePerUnit = value === "Carton"
-          ? li.suggested_price
-          : li.suggested_price / upc;
-        const minPerUnit = value === "Carton"
-          ? li.min_selling_price
-          : li.min_selling_price / upc;
-        li.selling_price  = pricePerUnit.toFixed(2);
-        li.min_selling_price = minPerUnit;  // track per-unit min for validation
+        // Always derive from immutable _base* prices — never mutate them
+        const upc  = li.units_per_carton ?? 1;
+        const base = li._baseSuggestedPrice ?? li.suggested_price / upc;
+        const baseMin = li._baseMinPrice ?? li.min_selling_price / upc;
+        const pricePerUnit = value === "Carton" ? base * upc : base;
+        const minPerUnit   = value === "Carton" ? baseMin * upc : baseMin;
+        li.selling_price     = pricePerUnit.toFixed(2);
+        li.suggested_price   = pricePerUnit;
+        li.min_selling_price = minPerUnit;
         li._error = undefined;
       } else {
         li.selling_price = value;

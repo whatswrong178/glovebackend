@@ -479,6 +479,7 @@ export function DOListPage() {
     supabaseClient
       .from("company_settings")
       .select("company_name,registration_no,address_line1,address_line2,city,postcode,state,phone,email,website,logo_url")
+      .eq("id", "00000000-0000-0000-0000-000000000001")
       .single()
       .then(({ data }) => {
         if (!data) return;
