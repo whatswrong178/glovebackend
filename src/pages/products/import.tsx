@@ -93,8 +93,7 @@ export function ProductImportPage() {
       const formData = new FormData();
       formData.append("file", file);
 
-      const supabaseUrl = (supabase as unknown as { supabaseUrl?: string }).supabaseUrl
-        ?? import.meta.env.VITE_SUPABASE_URL;
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
 
       const res = await fetch(`${supabaseUrl}/functions/v1/ai-product-import`, {
         method:  "POST",
@@ -531,3 +530,4 @@ export function ProductImportPage() {
     </div>
   );
 }
+                                                              
