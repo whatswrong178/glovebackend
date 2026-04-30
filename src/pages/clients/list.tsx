@@ -113,7 +113,7 @@ export function ClientListPage() {
       { resource: "clients", id },
       {
         onSuccess: () => { refetchMine(); refetchPool(); },
-        onError:   (err) => alert((err as Error).message ?? "Delete failed. The client may have linked records."),
+        onError:   (err) => alert((err as unknown as Error).message ?? "Delete failed. The client may have linked records."),
       }
     );
   };

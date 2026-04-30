@@ -72,7 +72,7 @@ export function ProductListPage() {
       { resource: "products", id },
       {
         onSuccess: () => refetch(),
-        onError:   (err) => alert((err as Error).message ?? "Delete failed. This product may be referenced by existing invoices."),
+        onError:   (err) => alert((err as unknown as Error).message ?? "Delete failed. This product may be referenced by existing invoices."),
       }
     );
   };

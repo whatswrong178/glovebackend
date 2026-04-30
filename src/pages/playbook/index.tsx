@@ -420,7 +420,7 @@ export function PlaybookPage() {
       { resource: "playbook_materials", id: m.id },
       {
         onSuccess: () => refetch(),
-        onError:   (err) => alert((err as Error).message ?? "Delete failed."),
+        onError:   (err) => alert((err as unknown as Error).message ?? "Delete failed."),
       }
     );
   }, [deleteMaterial, refetch]);
