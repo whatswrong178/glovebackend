@@ -381,7 +381,7 @@ export function PlaybookPage() {
   const [editTarget,       setEditTarget]       = useState<PlaybookMaterial | null>(null);
   const [uploadVersion,    setUploadVersion]    = useState(0);
 
-  const { data, isLoading } = useList<PlaybookMaterial>({
+  const { data, isLoading, refetch } = useList<PlaybookMaterial>({
     resource:   "playbook_materials",
     pagination: { current: 1, pageSize: 1000 },
     sorters:    [{ field: "category", order: "asc" }, { field: "title", order: "asc" }],
@@ -416,8 +416,14 @@ export function PlaybookPage() {
 
   const handleDelete = useCallback((m: PlaybookMaterial) => {
     if (!window.confirm(`Delete "${m.title}"?\n\nThis cannot be undone.`)) return;
-    deleteMaterial({ resource: "playbook_materials", id: m.id });
-  }, [deleteMaterial]);
+    deleteMaterial(
+      { resource: "playbook_materials", id: m.id },
+      {
+        onSuccess: () => refetch(),
+        onError:   (err) => alert((err as Error).message ?? "Delete failed."),
+      }
+    );
+  }, [deleteMaterial, refetch]);
 
   const handleCategoryClick = (cat: string) => {
     if (selectedCategory === cat && selectedSub === null) {

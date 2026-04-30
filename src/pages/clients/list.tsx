@@ -65,7 +65,7 @@ export function ClientListPage() {
     });
   }
 
-  const { data: mineData, isLoading: mineLoading } = useList<Client & { owner?: { name: string } }>({
+  const { data: mineData, isLoading: mineLoading, refetch: refetchMine } = useList<Client & { owner?: { name: string } }>({
     resource:   "clients",
     pagination: { current: tab === "mine" ? page : 1, pageSize: PAGE_SIZE },
     sorters:    [{ field: "created_at", order: "desc" }],
@@ -90,7 +90,7 @@ export function ClientListPage() {
     });
   }
 
-  const { data: poolData, isLoading: poolLoading } = useList<Client>({
+  const { data: poolData, isLoading: poolLoading, refetch: refetchPool } = useList<Client>({
     resource:   "clients",
     pagination: { current: tab === "pool" ? page : 1, pageSize: PAGE_SIZE },
     sorters:    [{ field: "created_at", order: "desc" }],
@@ -109,7 +109,13 @@ export function ClientListPage() {
 
   const handleDelete = (id: string, name: string) => {
     if (!window.confirm(`Delete client "${name}"? All associated invoices will lose their client reference.`)) return;
-    deleteClient({ resource: "clients", id });
+    deleteClient(
+      { resource: "clients", id },
+      {
+        onSuccess: () => { refetchMine(); refetchPool(); },
+        onError:   (err) => alert((err as Error).message ?? "Delete failed. The client may have linked records."),
+      }
+    );
   };
 
   const handleCSVExport = async () => {

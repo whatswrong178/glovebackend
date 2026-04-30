@@ -50,7 +50,7 @@ export function ProductListPage() {
     });
   }
 
-  const { data, isLoading } = useList<AdminProduct | SafeProduct>({
+  const { data, isLoading, refetch } = useList<AdminProduct | SafeProduct>({
     resource: isAdmin ? "products" : "products_safe_view",
     pagination: { current: page, pageSize: PAGE_SIZE },
     sorters:    [{ field: "name", order: "asc" }],
@@ -68,7 +68,13 @@ export function ProductListPage() {
 
   const handleDelete = (id: string, name: string) => {
     if (!window.confirm(`Delete "${name}"? This cannot be undone.`)) return;
-    deleteProduct({ resource: "products", id });
+    deleteProduct(
+      { resource: "products", id },
+      {
+        onSuccess: () => refetch(),
+        onError:   (err) => alert((err as Error).message ?? "Delete failed. This product may be referenced by existing invoices."),
+      }
+    );
   };
 
   return (
