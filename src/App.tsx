@@ -1,3 +1,4 @@
+import React from "react";
 import { Refine, Authenticated } from "@refinedev/core";
 import { dataProvider, liveProvider } from "@refinedev/supabase";
 import routerBindings, {
@@ -37,6 +38,34 @@ import { PlaybookPage }       from "./pages/playbook";
 import { ReportsPage }        from "./pages/reports";
 import { SettingsPage }       from "./pages/settings";
 import { LoginPage }          from "./pages/auth/login";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Error Boundary — catches render crashes and shows the error instead of blank
+// ─────────────────────────────────────────────────────────────────────────────
+class ReportsErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { error: string | null }
+> {
+  state = { error: null };
+  static getDerivedStateFromError(e: Error) { return { error: e.message }; }
+  render() {
+    if (this.state.error) {
+      return (
+        <div className="m-6 p-5 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 space-y-2">
+          <p className="font-bold text-red-800">⚠ Reports crashed — please share this with your developer:</p>
+          <pre className="text-xs bg-red-100 rounded p-3 overflow-x-auto whitespace-pre-wrap">{this.state.error}</pre>
+          <button
+            onClick={() => this.setState({ error: null })}
+            className="px-3 py-1.5 bg-red-600 text-white text-xs rounded-lg hover:bg-red-700"
+          >
+            Retry
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 export default function App() {
@@ -160,7 +189,7 @@ export default function App() {
 
               {/* Other modules */}
               <Route path="/playbook" element={<PlaybookPage />} />
-              <Route path="/reports"  element={<ReportsPage />} />
+              <Route path="/reports"  element={<ReportsErrorBoundary><ReportsPage /></ReportsErrorBoundary>} />
               <Route path="/settings" element={<SettingsPage />} />
 
               {/* Fallback → dashboard */}

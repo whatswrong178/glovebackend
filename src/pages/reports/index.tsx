@@ -166,7 +166,7 @@ function ARAgingTab({ supabase }: { supabase: SupabaseClientType }) {
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
           <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Total Invoices</p>
           <p className="text-xl font-bold text-gray-900 mt-1">
-            {data.buckets.reduce((s, b) => s + b.count, 0)}
+            {(data.buckets ?? []).reduce((s, b) => s + b.count, 0)}
           </p>
         </div>
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
@@ -383,7 +383,7 @@ function OrgChartTab({ supabase }: { supabase: SupabaseClientType }) {
         <div className="flex gap-10 items-start justify-center min-w-max">
           {roots.map((root) => (
             <OrgNodeCard key={root.id} node={root}>
-              <OrgTreeRender nodes={data.nodes} parentId={root.id} />
+              <OrgTreeRender nodes={data.nodes ?? []} parentId={root.id} />
             </OrgNodeCard>
           ))}
         </div>
