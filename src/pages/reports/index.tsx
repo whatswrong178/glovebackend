@@ -133,10 +133,10 @@ function ARAgingTab({ supabase }: { supabase: SupabaseClientType }) {
 
   useEffect(() => { load(); }, [load]);
 
-  const totalOutstanding = data?.buckets.reduce((s, b) => s + b.total_amount, 0) ?? 0;
-  const overdueTotal     = data?.buckets
+  const totalOutstanding = (data?.buckets ?? []).reduce((s, b) => s + b.total_amount, 0);
+  const overdueTotal     = (data?.buckets ?? [])
     .filter(b => b.bucket !== "Current")
-    .reduce((s, b) => s + b.total_amount, 0) ?? 0;
+    .reduce((s, b) => s + b.total_amount, 0);
 
   if (loading) return <div className="flex items-center justify-center h-48 text-sm text-gray-400">Loading AR Aging…</div>;
   if (error)   return (
@@ -178,7 +178,7 @@ function ARAgingTab({ supabase }: { supabase: SupabaseClientType }) {
       </div>
 
       {/* Bucket cards */}
-      {data.buckets.map((bucket) => {
+      {(data.buckets ?? []).map((bucket) => {
         const pct  = totalOutstanding > 0 ? (bucket.total_amount / totalOutstanding * 100) : 0;
         const open = expanded[bucket.bucket] ?? false;
         return (
@@ -306,8 +306,8 @@ function OrgNodeCard({ node, children }: { node: OrgNode; children?: React.React
   );
 }
 
-function buildTree(nodes: OrgNode[], parentId: string | null): OrgNode[] {
-  return nodes.filter(n => n.reports_to === parentId);
+function buildTree(nodes: OrgNode[] | null | undefined, parentId: string | null): OrgNode[] {
+  return (nodes ?? []).filter(n => n.reports_to === parentId);
 }
 
 function OrgTreeRender({ nodes, parentId }: { nodes: OrgNode[]; parentId: string | null }) {
@@ -366,7 +366,7 @@ function OrgChartTab({ supabase }: { supabase: SupabaseClientType }) {
     </div>
   );
 
-  const roots = buildTree(data.nodes, null);
+  const roots = buildTree(data.nodes ?? [], null);
 
   return (
     <div className="space-y-4">
@@ -390,7 +390,7 @@ function OrgChartTab({ supabase }: { supabase: SupabaseClientType }) {
       </div>
 
       <p className="text-xs text-gray-400 text-right">
-        {data.year}/{String(data.month).padStart(2, "0")} — {data.nodes.length} active staff
+        {data.year}/{String(data.month).padStart(2, "0")} — {(data.nodes ?? []).length} active staff
       </p>
     </div>
   );
@@ -504,7 +504,7 @@ function PLTab({ supabase }: { supabase: SupabaseClientType }) {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50">
-                    {(data.top_skus ?? []).map((sku, i) => (
+                    {(data.top_skus ?? []).map((sku, _i) => (
                       <tr key={sku.sku} className="hover:bg-gray-50">
                         <td className="px-4 py-2 font-mono text-xs text-gray-500">{sku.sku}</td>
                         <td className="px-4 py-2 text-gray-700 max-w-[120px] truncate">{sku.name}</td>
