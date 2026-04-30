@@ -107,8 +107,27 @@ export function ClientListPage() {
   const total   = activeData?.total ?? 0;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
-  const handleDelete = (id: string, name: string) => {
-    if (!window.confirm(`Delete client "${name}"? All associated invoices will lose their client reference.`)) return;
+  const handleDelete = async (id: string, name: string) => {
+    if (!window.confirm(`Delete client "${name}"?\n\nThis will permanently remove the client record.`)) return;
+
+    // ── Pre-flight: block if invoices or DOs reference this client ────────────
+    const [{ count: invCount }, { count: doCount }] = await Promise.all([
+      supabase.from("invoices").select("id", { count: "exact", head: true }).eq("client_id", id),
+      supabase.from("delivery_orders").select("id", { count: "exact", head: true }).eq("client_id", id),
+    ]);
+
+    if ((invCount ?? 0) > 0 || (doCount ?? 0) > 0) {
+      const parts: string[] = [];
+      if ((invCount ?? 0) > 0) parts.push(`${invCount} invoice${invCount !== 1 ? "s" : ""}`);
+      if ((doCount  ?? 0) > 0) parts.push(`${doCount} delivery order${doCount !== 1 ? "s" : ""}`);
+      alert(
+        `Cannot delete "${name}".\n\n` +
+        `This client has ${parts.join(" and ")} on record.\n\n` +
+        `Archive or reassign those records first.`
+      );
+      return;
+    }
+
     deleteClient(
       { resource: "clients", id },
       {
