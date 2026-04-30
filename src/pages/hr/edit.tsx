@@ -127,7 +127,10 @@ export function HREditPage() {
           auth_user_id:             values.auth_user_id?.trim() || null,
         },
       },
-      { onSuccess: () => list("staff") }
+      {
+        onSuccess: () => list("staff"),
+        onError:   (err) => alert((err as unknown as Error).message ?? "Save failed. Please try again."),
+      }
     );
   };
 

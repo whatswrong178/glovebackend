@@ -188,6 +188,7 @@ export function ProductEditPage() {
       },
       {
         onSuccess: () => list("products"),
+        onError:   (err) => alert((err as unknown as Error).message ?? "Failed to save product. Please try again."),
       }
     );
   };

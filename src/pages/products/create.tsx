@@ -160,6 +160,7 @@ export function ProductCreatePage() {
       },
       {
         onSuccess: () => list("products"),
+        onError:   (err) => alert((err as unknown as Error).message ?? "Failed to create product. The SKU may already exist."),
       }
     );
   };

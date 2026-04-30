@@ -604,7 +604,13 @@ function SuppliersTab() {
 
   const handleDelete = (id: string) => {
     if (!confirm("Delete this supplier? Products referencing it will have supplier set to null.")) return;
-    deleteSupplier({ resource: "suppliers", id }, { onSuccess: () => refetch() });
+    deleteSupplier(
+      { resource: "suppliers", id },
+      {
+        onSuccess: () => refetch(),
+        onError:   (err) => alert((err as unknown as Error).message ?? "Delete failed. This supplier may be referenced by existing products."),
+      }
+    );
   };
 
   if (isLoading) return <div className="flex items-center justify-center h-48 text-sm text-gray-400">Loading…</div>;

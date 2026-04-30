@@ -642,7 +642,10 @@ export function DOListPage() {
           delivered_at: newStatus === "Delivered" ? new Date().toISOString() : null,
         },
       },
-      { onSuccess: () => refetch() }
+      {
+        onSuccess: () => refetch(),
+        onError:   (err) => alert((err as unknown as Error).message ?? "Status update failed. Please try again."),
+      }
     );
   };
 

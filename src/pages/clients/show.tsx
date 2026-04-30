@@ -262,9 +262,13 @@ export function ClientShowPage() {
                 reviewed_at: new Date().toISOString(),
               },
             },
-            { onSuccess: () => { refetch(); refetchReqs(); setReviewNote(""); } }
+            {
+              onSuccess: () => { refetch(); refetchReqs(); setReviewNote(""); },
+              onError:   (err) => alert((err as unknown as Error).message ?? "Failed to mark request as Approved."),
+            }
           );
         },
+        onError: (err) => alert((err as unknown as Error).message ?? "Failed to apply client changes. The request was not approved."),
       }
     );
   };
@@ -281,7 +285,10 @@ export function ClientShowPage() {
           reviewed_at: new Date().toISOString(),
         },
       },
-      { onSuccess: () => { refetchReqs(); setReviewNote(""); } }
+      {
+        onSuccess: () => { refetchReqs(); setReviewNote(""); },
+        onError:   (err) => alert((err as unknown as Error).message ?? "Failed to reject request. Please try again."),
+      }
     );
   };
 

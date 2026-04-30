@@ -736,7 +736,10 @@ export function InvoiceListPage() {
     )) return;
     updateInvoice(
       { resource: "invoices", id: inv.id, values: { status: "Paid" } },
-      { onSuccess: () => refetch() }
+      {
+        onSuccess: () => refetch(),
+        onError:   (err) => alert((err as unknown as Error).message ?? "Failed to mark invoice as Paid. Please try again."),
+      }
     );
   };
 
@@ -744,13 +747,22 @@ export function InvoiceListPage() {
     if (!window.confirm(`Cancel invoice ${inv.invoice_no}? This action cannot be undone.`)) return;
     updateInvoice(
       { resource: "invoices", id: inv.id, values: { status: "Cancelled" } },
-      { onSuccess: () => refetch() }
+      {
+        onSuccess: () => refetch(),
+        onError:   (err) => alert((err as unknown as Error).message ?? "Failed to cancel invoice. Please try again."),
+      }
     );
   };
 
   const handleDelete = (id: string, no: string) => {
     if (!window.confirm(`Permanently delete invoice ${no}?`)) return;
-    deleteInvoice({ resource: "invoices", id }, { onSuccess: () => refetch() });
+    deleteInvoice(
+      { resource: "invoices", id },
+      {
+        onSuccess: () => refetch(),
+        onError:   (err) => alert((err as unknown as Error).message ?? "Delete failed. This invoice may have linked delivery orders."),
+      }
+    );
   };
 
   return (
