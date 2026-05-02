@@ -34,8 +34,9 @@ import { HRCreatePage }           from "./pages/hr/create";
 import { HREditPage }             from "./pages/hr/edit";
 import { HRShowPage }             from "./pages/hr/show";
 import { LeaderPerformancePage }  from "./pages/hr/leader-performance";
-import { PlaybookPage }       from "./pages/playbook";
-import { ReportsPage }        from "./pages/reports";
+import { PlaybookPage }         from "./pages/playbook";
+import { NeedsAssessmentPage } from "./pages/needs-assessment";
+import { ReportsPage }          from "./pages/reports";
 import { SettingsPage }       from "./pages/settings";
 import { LoginPage }          from "./pages/auth/login";
 
@@ -124,6 +125,11 @@ export default function App() {
               meta:       { label: "Playbook", icon: "📚" },
             },
             {
+              name:       "needs-assessment",
+              list:       "/needs-assessment",
+              meta:       { label: "需求问卷", icon: "📋" },
+            },
+            {
               name:       "reports",
               list:       "/reports",
               meta:       { label: "Reports", icon: "📊" },
@@ -188,9 +194,10 @@ export default function App() {
               <Route path="/hr/:id"                 element={<HRShowPage />} />
 
               {/* Other modules */}
-              <Route path="/playbook" element={<PlaybookPage />} />
-              <Route path="/reports"  element={<ReportsErrorBoundary><ReportsPage /></ReportsErrorBoundary>} />
-              <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/playbook"          element={<PlaybookPage />} />
+              <Route path="/needs-assessment"  element={<NeedsAssessmentPage />} />
+              <Route path="/reports"           element={<ReportsErrorBoundary><ReportsPage /></ReportsErrorBoundary>} />
+              <Route path="/settings"          element={<SettingsPage />} />
 
               {/* Fallback → dashboard */}
               <Route path="*" element={<NavigateToResource resource="dashboard" />} />

@@ -4,6 +4,7 @@
  */
 import React, { useEffect, useState, useCallback } from "react";
 import { useGetIdentity } from "@refinedev/core";
+import { useNavigate } from "react-router-dom";
 import { supabaseClient } from "../../supabaseClient";
 
 interface StaffIdentity { name: string; role: string; }
@@ -41,6 +42,7 @@ const fmt = (n: number) =>
   n.toLocaleString("en-MY", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 export function DashboardPage() {
+  const navigate = useNavigate();
   const { data: identity, isLoading: idLoading } = useGetIdentity<StaffIdentity>();
   const [kpis,    setKpis]    = useState<DashboardKpis | null>(null);
   const [kpiLoad, setKpiLoad] = useState(true);
@@ -140,6 +142,27 @@ export function DashboardPage() {
           <strong>见款发佣则 (Paid-then-commission)</strong>: Estimated commissions are display-only.
           Actual payouts are computed exclusively from invoices with{" "}
           <strong>status = Paid</strong>. The system code-level blocks advance salary against unpaid AR.
+        </span>
+      </div>
+
+      {/* ── Needs Assessment CTA ────────────────────────────────────── */}
+      <div
+        onClick={() => navigate("/needs-assessment")}
+        className="cursor-pointer group bg-gradient-to-r from-gray-900 to-gray-800
+                   rounded-xl p-5 flex items-center gap-5 hover:from-gray-800 hover:to-gray-700
+                   transition-all shadow-sm"
+      >
+        <div className="flex-shrink-0 w-12 h-12 bg-red-600 rounded-xl flex items-center justify-center text-2xl">
+          📋
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-white font-bold text-sm">客户需求挖取问卷</p>
+          <p className="text-gray-400 text-xs mt-0.5">
+            填写拜访问卷 → 自动创建客户档案 → 生成热度评分 (Hot / Warm / Cold)
+          </p>
+        </div>
+        <span className="text-gray-400 group-hover:text-white text-lg transition-colors flex-shrink-0">
+          →
         </span>
       </div>
 

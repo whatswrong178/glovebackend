@@ -20,7 +20,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const GEMINI_API_URL =
-  "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
+  "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -61,15 +61,15 @@ const CORS_HEADERS = {
   "Access-Control-Allow-Headers": "Authorization, Content-Type",
 };
 
-// ── Utility: uint8Array → base64 (Deno-compatible) ───────────────────────────
+// ── Utility: uint8Array → base64 (chunked — avoids OOM on large files) ───────
 
 function uint8ArrayToBase64(bytes: Uint8Array): string {
-  let binary = "";
-  const len = bytes.byteLength;
-  for (let i = 0; i < len; i++) {
-    binary += String.fromCharCode(bytes[i]);
+  const CHUNK = 32768; // 32 KB per chunk — keeps peak heap low
+  const parts: string[] = [];
+  for (let i = 0; i < bytes.byteLength; i += CHUNK) {
+    parts.push(String.fromCharCode(...bytes.subarray(i, i + CHUNK)));
   }
-  return btoa(binary);
+  return btoa(parts.join(""));
 }
 
 // ── Utility: detect MIME type from file header bytes ─────────────────────────
