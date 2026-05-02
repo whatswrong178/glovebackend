@@ -59,6 +59,8 @@ interface FormData {
   visitDate:        string;
   region:           ClientRegion | "";
   contactWhatsapp:  string;
+  contactEmail:     string;
+  contactAddress:   string;
   // S1
   industry:         string;
   // S2
@@ -84,7 +86,8 @@ interface FormData {
 
 const EMPTY_FORM: FormData = {
   shopName: "", contactName: "", visitDate: new Date().toISOString().split("T")[0],
-  region: "", contactWhatsapp: "", industry: "", monthlyUsage: "", gloveTypes: [],
+  region: "", contactWhatsapp: "", contactEmail: "", contactAddress: "",
+  industry: "", monthlyUsage: "", gloveTypes: [],
   gloveSizes: [], supplierSources: [], priceRange: "", reorderTiming: "",
   painPoints: [], priorities: [], switchConditions: [], decisionMaker: "",
   satisfaction: 0, nextReorder: "", todayActions: [], salesNotes: "",
@@ -229,8 +232,9 @@ export function NeedsAssessmentPage() {
             region:         form.region,
             owner_id:       identity.id,
             created_by:     identity.id,
-            contact_person: form.contactName.trim() || null,
-            contact_phone:  form.contactWhatsapp.trim() || null,
+            contact_person: form.contactName.trim()      || null,
+            contact_phone:  form.contactWhatsapp.trim()  || null,
+            contact_email:  form.contactEmail.trim()     || null,
             is_orphan:      false,
             credit_terms:   "Cash Term",
             neglect_index:  0,
@@ -269,6 +273,8 @@ export function NeedsAssessmentPage() {
       shop_name:        form.shopName.trim(),
       contact_name:     form.contactName.trim() || null,
       contact_whatsapp: form.contactWhatsapp.trim() || null,
+      contact_email:    form.contactEmail.trim()    || null,
+      contact_address:  form.contactAddress.trim()  || null,
       region:           form.region || null,
       industry:         form.industry || null,
       monthly_usage:    form.monthlyUsage || null,
@@ -446,6 +452,47 @@ export function NeedsAssessmentPage() {
               <option value="East Malaysia">East Malaysia（东马）</option>
             </select>
           </div>
+
+          {/* WhatsApp */}
+          <div>
+            <label className="block text-xs font-semibold text-gray-600 mb-1">
+              客户 WhatsApp
+            </label>
+            <input
+              type="tel"
+              placeholder="e.g. 012-3456789"
+              value={form.contactWhatsapp}
+              onChange={(e) => set("contactWhatsapp", e.target.value)}
+              className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2
+                         focus:outline-none focus:ring-2 focus:ring-red-500"
+            />
+          </div>
+
+          {/* Email */}
+          <div>
+            <label className="block text-xs font-semibold text-gray-600 mb-1">邮箱 Email</label>
+            <input
+              type="email"
+              placeholder="e.g. clinic@example.com"
+              value={form.contactEmail}
+              onChange={(e) => set("contactEmail", e.target.value)}
+              className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2
+                         focus:outline-none focus:ring-2 focus:ring-red-500"
+            />
+          </div>
+        </div>
+
+        {/* Address — full width */}
+        <div>
+          <label className="block text-xs font-semibold text-gray-600 mb-1">地址 Address</label>
+          <input
+            type="text"
+            placeholder="e.g. No. 12, Jalan Bukit Bintang, KL"
+            value={form.contactAddress}
+            onChange={(e) => set("contactAddress", e.target.value)}
+            className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2
+                       focus:outline-none focus:ring-2 focus:ring-red-500"
+          />
         </div>
 
         {/* Auto-client status */}
@@ -663,16 +710,6 @@ export function NeedsAssessmentPage() {
           ]}
           selected={form.todayActions}
           onToggle={(v) => set("todayActions", toggleArr(form.todayActions, v))}
-        />
-
-        <QLabel>客户 WhatsApp</QLabel>
-        <input
-          type="tel"
-          placeholder="e.g. 012-3456789"
-          value={form.contactWhatsapp}
-          onChange={(e) => set("contactWhatsapp", e.target.value)}
-          className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2
-                     focus:outline-none focus:ring-2 focus:ring-red-500"
         />
 
         <QLabel>业务员笔记</QLabel>

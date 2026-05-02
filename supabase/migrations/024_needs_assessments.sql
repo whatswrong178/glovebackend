@@ -21,6 +21,8 @@ CREATE TABLE IF NOT EXISTS needs_assessments (
   shop_name         TEXT          NOT NULL,
   contact_name      TEXT,
   contact_whatsapp  TEXT,
+  contact_email     TEXT,
+  contact_address   TEXT,
   region            TEXT          NOT NULL
                                   CHECK (region IN ('West Malaysia','East Malaysia')),
 
