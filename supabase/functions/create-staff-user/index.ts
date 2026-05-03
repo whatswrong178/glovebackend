@@ -31,7 +31,7 @@ import { resendSendEmail } from "../_shared/resend.ts";
 
 // ─── CORS ─────────────────────────────────────────────────────────────────────
 const CORS = {
-  "Access-Control-Allow-Origin":  "*",
+  "Access-Control-Allow-Origin":  "https://glovebackend.vercel.app",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
