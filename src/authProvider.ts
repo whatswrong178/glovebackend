@@ -1,6 +1,28 @@
 import type { AuthProvider } from "@refinedev/core";
 import { supabaseClient } from "./supabaseClient";
 
+// ─── Local initials avatar — no external requests, CSP-safe ──────────────────
+function generateInitialsAvatar(name: string): string {
+  const initials = name
+    .split(" ")
+    .map((w) => w[0] ?? "")
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+
+  const svg = [
+    `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">`,
+    `<circle cx="32" cy="32" r="32" fill="#2563eb"/>`,
+    `<text x="32" y="41" font-family="Arial,Helvetica,sans-serif" `,
+    `font-size="26" font-weight="700" fill="#ffffff" text-anchor="middle">`,
+    initials,
+    `</text>`,
+    `</svg>`,
+  ].join("");
+
+  return `data:image/svg+xml;base64,${btoa(svg)}`;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // MediGlove Auth Provider
 // Delegates authentication entirely to Supabase Auth.
@@ -111,7 +133,7 @@ export const authProvider: AuthProvider = {
       role:        staffRow.role,
       department:  staffRow.department,
       job_title:   staffRow.job_title,
-      avatar:      `https://ui-avatars.com/api/?name=${encodeURIComponent(staffRow.name)}&background=2563eb&color=fff`,
+      avatar:      generateInitialsAvatar(staffRow.name),
     };
   },
 
