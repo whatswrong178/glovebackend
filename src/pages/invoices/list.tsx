@@ -735,7 +735,11 @@ export function InvoiceListPage() {
       `Mark invoice ${inv.invoice_no} as Paid? This will unlock commissions and cannot be undone.`
     )) return;
     updateInvoice(
-      { resource: "invoices", id: inv.id, values: { status: "Paid" } },
+      {
+        resource: "invoices",
+        id:       inv.id,
+        values:   { status: "Paid", paid_at: new Date().toISOString() },
+      },
       {
         onSuccess: () => refetch(),
         onError:   (err) => alert((err as unknown as Error).message ?? "Failed to mark invoice as Paid. Please try again."),

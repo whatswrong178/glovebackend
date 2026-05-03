@@ -5,12 +5,38 @@
 // Admin sees: compensation block + Spinoff Approval button (T-02.3)
 // Spinoff button calls fn_request_spinoff() RPC — validates 50k GMV,
 // locks spinoff_legacy_map, promotes Sales → Leader at DB level.
+// Admin sees "Create Login" button when staff.auth_user_id is NULL.
 // ══════════════════════════════════════════════════════════════════════════════
 
 import React, { useState } from "react";
 import { useOne, useNavigation, useGetIdentity, useParsed, useCustomMutation } from "@refinedev/core";
 import type { Staff, StaffRole } from "../../types/staff";
 import { ROLE_META, STATUS_META } from "../../types/staff";
+import { supabaseClient } from "../../supabaseClient";
+
+// ─── Local initials avatar — no external requests, CSP-safe ──────────────────
+function generateInitialsAvatar(name: string): string {
+  const initials = name
+    .split(" ")
+    .map((w) => w[0] ?? "")
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+
+  const svg = [
+    `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">`,
+    `<circle cx="32" cy="32" r="32" fill="#2563eb"/>`,
+    `<text x="32" y="41" font-family="Arial,Helvetica,sans-serif" `,
+    `font-size="26" font-weight="700" fill="#ffffff" text-anchor="middle">`,
+    initials,
+    `</text>`,
+    `</svg>`,
+  ].join("");
+
+  return `data:image/svg+xml;base64,${btoa(svg)}`;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 function Field({ label, value }: { label: string; value: React.ReactNode }) {
   return (
@@ -27,7 +53,9 @@ export function HRShowPage() {
   const staffId            = params?.id as string;
   const { list, edit }     = useNavigation();
 
-  const [spinoffResult, setSpinoffResult] = useState<string | null>(null);
+  const [spinoffResult,    setSpinoffResult]    = useState<string | null>(null);
+  const [loginResult,      setLoginResult]      = useState<string | null>(null);
+  const [isCreatingLogin,  setIsCreatingLogin]  = useState(false);
 
   const { data, isLoading, refetch } = useOne<Staff>({
     resource: "staff",
@@ -61,7 +89,7 @@ export function HRShowPage() {
           const d = (res as unknown as { data: { success: boolean; message?: string; error?: string } }).data;
           if (d?.success) {
             setSpinoffResult(`✅ ${d.message}`);
-            refetch(); // refresh staff data to show updated role
+            refetch();
           } else {
             setSpinoffResult(`❌ ${d?.error ?? "Spinoff failed"}`);
           }
@@ -69,6 +97,41 @@ export function HRShowPage() {
         onError: (err) => setSpinoffResult(`❌ RPC error: ${JSON.stringify(err)}`),
       }
     );
+  };
+
+  // ── Create Login handler ───────────────────────────────────────────────────
+  const handleCreateLogin = async () => {
+    if (!staff) return;
+    if (
+      !window.confirm(
+        `Create login credentials for "${staff.name}" (${staff.email})?\n\nThis will:\n• Create a Supabase Auth account\n• Send a credential email to ${staff.email}\n\nProceed?`
+      )
+    )
+      return;
+
+    setIsCreatingLogin(true);
+    setLoginResult(null);
+    try {
+      const { data: fnData, error: fnError } = await supabaseClient.functions.invoke(
+        "create-staff-user",
+        { body: { staff_id: staffId } }
+      );
+
+      if (fnError) throw fnError;
+
+      const result = fnData as { success?: boolean; error?: string; message?: string };
+      if (result?.success) {
+        setLoginResult(`✅ Login created. Credentials email sent to ${staff.email}.`);
+        refetch(); // auth_user_id is now populated
+      } else {
+        setLoginResult(`❌ ${result?.error ?? "Failed to create login."}`);
+      }
+    } catch (err: unknown) {
+      const msg = (err as { message?: string })?.message ?? "Unknown error";
+      setLoginResult(`❌ ${msg}`);
+    } finally {
+      setIsCreatingLogin(false);
+    }
   };
 
   if (isLoading) {
@@ -94,6 +157,11 @@ export function HRShowPage() {
     staff.role   === "Sales" &&
     staff.status === "Active";
 
+  const showCreateLoginButton =
+    isAdmin &&
+    !staff.auth_user_id &&
+    staff.status === "Active";
+
   return (
     <div className="max-w-2xl space-y-4">
 
@@ -107,7 +175,7 @@ export function HRShowPage() {
         </button>
         <span className="text-gray-300">/</span>
         <h1 className="text-xl font-bold text-gray-900">{staff.name}</h1>
-        <div className="ml-auto flex gap-2">
+        <div className="ml-auto flex gap-2 flex-wrap">
           {isAdmin && (
             <button
               onClick={() => edit("staff", staff.id)}
@@ -115,6 +183,17 @@ export function HRShowPage() {
                          text-gray-600 hover:bg-gray-100 transition-colors"
             >
               Edit
+            </button>
+          )}
+          {showCreateLoginButton && (
+            <button
+              onClick={handleCreateLogin}
+              disabled={isCreatingLogin}
+              className="text-xs px-3 py-1.5 rounded border border-blue-200
+                         text-blue-700 bg-blue-50 hover:bg-blue-100
+                         disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {isCreatingLogin ? "Creating…" : "🔑 Create Login"}
             </button>
           )}
           {showSpinoffButton && (
@@ -131,6 +210,16 @@ export function HRShowPage() {
         </div>
       </div>
 
+      {/* Login creation result banner */}
+      {loginResult && (
+        <div className={`rounded-lg px-4 py-3 text-sm
+          ${loginResult.startsWith("✅")
+            ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
+            : "bg-red-50 text-red-800 border border-red-200"}`}>
+          {loginResult}
+        </div>
+      )}
+
       {/* Spinoff result banner */}
       {spinoffResult && (
         <div className={`rounded-lg px-4 py-3 text-sm
@@ -141,11 +230,18 @@ export function HRShowPage() {
         </div>
       )}
 
+      {/* No-login warning (admin only) */}
+      {isAdmin && !staff.auth_user_id && staff.status === "Active" && (
+        <div className="rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-xs text-amber-800">
+          ⚠ This staff member has no login account. Use <strong>🔑 Create Login</strong> above to provision access.
+        </div>
+      )}
+
       {/* Identity card */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
         <div className="flex items-center gap-4 mb-5">
           <img
-            src={`https://ui-avatars.com/api/?name=${encodeURIComponent(staff.name)}&size=56&background=2563eb&color=fff`}
+            src={generateInitialsAvatar(staff.name)}
             alt=""
             className="w-14 h-14 rounded-full flex-shrink-0"
           />
@@ -159,6 +255,14 @@ export function HRShowPage() {
               <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${statusMeta.color}`}>
                 {statusMeta.label}
               </span>
+              {isAdmin && (
+                <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium
+                  ${staff.auth_user_id
+                    ? "bg-emerald-100 text-emerald-700"
+                    : "bg-orange-100 text-orange-700"}`}>
+                  {staff.auth_user_id ? "✓ Login" : "No Login"}
+                </span>
+              )}
             </div>
           </div>
         </div>
