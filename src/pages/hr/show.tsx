@@ -99,33 +99,40 @@ export function HRShowPage() {
     );
   };
 
-  // ── Create Login handler ───────────────────────────────────────────────────
-  const handleCreateLogin = async () => {
+  // ── Create Login / Resend Credentials handler ─────────────────────────────
+  const handleCredentials = async (isResend: boolean) => {
     if (!staff) return;
-    if (
-      !window.confirm(
-        `Create login credentials for "${staff.name}" (${staff.email})?\n\nThis will:\n• Create a Supabase Auth account\n• Send a credential email to ${staff.email}\n\nProceed?`
-      )
-    )
-      return;
+
+    const confirmMsg = isResend
+      ? `Reset and resend login credentials to "${staff.name}" (${staff.email})?\n\nThis will:\n• Generate a new temporary password\n• Send a credentials email to ${staff.email}\n• The old password will stop working immediately\n\nProceed?`
+      : `Create login credentials for "${staff.name}" (${staff.email})?\n\nThis will:\n• Create a Supabase Auth account\n• Send a credentials email to ${staff.email}\n\nProceed?`;
+
+    if (!window.confirm(confirmMsg)) return;
 
     setIsCreatingLogin(true);
     setLoginResult(null);
     try {
       const { data: fnData, error: fnError } = await supabaseClient.functions.invoke(
         "create-staff-user",
-        { body: { staff_id: staffId } }
+        { body: { staff_id: staffId, resend: isResend } }
       );
 
       if (fnError) throw fnError;
 
-      const result = fnData as { success?: boolean; error?: string; message?: string };
-      if (result?.success) {
-        setLoginResult(`✅ Login created. Credentials email sent to ${staff.email}.`);
-        refetch(); // auth_user_id is now populated
-      } else {
-        setLoginResult(`❌ ${result?.error ?? "Failed to create login."}`);
+      const result = fnData as { auth_user_id?: string; email_sent?: boolean; mode?: string; error?: string; email_warning?: string };
+
+      if (result?.error) {
+        setLoginResult(`❌ ${result.error}`);
+        return;
       }
+
+      const modeLabel = isResend ? "reset and resent" : "created";
+      const emailNote = result?.email_sent
+        ? `Credentials email sent to ${staff.email}.`
+        : `⚠ Account ${modeLabel} but email failed: ${result?.email_warning ?? "unknown reason"}`;
+
+      setLoginResult(`✅ Login ${modeLabel}. ${emailNote}`);
+      refetch();
     } catch (err: unknown) {
       const msg = (err as { message?: string })?.message ?? "Unknown error";
       setLoginResult(`❌ ${msg}`);
@@ -157,10 +164,9 @@ export function HRShowPage() {
     staff.role   === "Sales" &&
     staff.status === "Active";
 
-  const showCreateLoginButton =
-    isAdmin &&
-    !staff.auth_user_id &&
-    staff.status === "Active";
+  // Admin can always manage credentials (create or resend) for Active staff
+  const showCredentialButton = isAdmin && staff.status === "Active";
+  const hasLogin             = !!staff.auth_user_id;
 
   return (
     <div className="max-w-2xl space-y-4">
@@ -185,15 +191,19 @@ export function HRShowPage() {
               Edit
             </button>
           )}
-          {showCreateLoginButton && (
+          {showCredentialButton && (
             <button
-              onClick={handleCreateLogin}
+              onClick={() => handleCredentials(hasLogin)}
               disabled={isCreatingLogin}
-              className="text-xs px-3 py-1.5 rounded border border-blue-200
-                         text-blue-700 bg-blue-50 hover:bg-blue-100
-                         disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className={`text-xs px-3 py-1.5 rounded border transition-colors
+                         disabled:opacity-50 disabled:cursor-not-allowed
+                         ${hasLogin
+                           ? "border-gray-200 text-gray-600 bg-white hover:bg-gray-100"
+                           : "border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100"}`}
             >
-              {isCreatingLogin ? "Creating…" : "🔑 Create Login"}
+              {isCreatingLogin
+                ? (hasLogin ? "Resending…" : "Creating…")
+                : (hasLogin ? "📧 Resend Credentials" : "🔑 Create Login")}
             </button>
           )}
           {showSpinoffButton && (
@@ -230,8 +240,8 @@ export function HRShowPage() {
         </div>
       )}
 
-      {/* No-login warning (admin only) */}
-      {isAdmin && !staff.auth_user_id && staff.status === "Active" && (
+      {/* No-login warning (admin only, only when no login exists) */}
+      {isAdmin && !staff.auth_user_id && staff.status === "Active" && !loginResult && (
         <div className="rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-xs text-amber-800">
           ⚠ This staff member has no login account. Use <strong>🔑 Create Login</strong> above to provision access.
         </div>
