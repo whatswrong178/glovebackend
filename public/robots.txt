@@ -1,0 +1,20 @@
+User-agent: *
+# This is an internal ERP system — no public content to index.
+Disallow: /
+
+# Specific sensitive path list (belt-and-suspenders over the blanket Disallow above)
+Disallow: /api/
+Disallow: /auth/
+Disallow: /admin/
+Disallow: /settings/
+Disallow: /reports/
+Disallow: /hr/
+Disallow: /clients/
+Disallow: /invoices/
+Disallow: /products/
+Disallow: /playbook/
+Disallow: /delivery-orders/
+Disallow: /needs-assessment/
+Disallow: /vector/
+Disallow: /iceberg/
+Disallow: /functions/
