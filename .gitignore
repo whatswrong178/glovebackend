@@ -41,5 +41,3 @@ pnpm-debug.log*
 # ── Supabase local state ──────────────────────────────────
 supabase/.branches/
 supabase/.temp/
-
-mcp-hermes-erp/
