@@ -5,6 +5,7 @@
 // Features:
 //   • Paginated table with search (name/email/dept) + role/status filters
 //   • Role & Status badges from types/staff.ts meta
+//   • Clicking a row navigates to Staff Show page
 //   • Admin-only: Edit, Offboard actions
 //   • Offboard triggers DB-level fn_staff_offboarding() via status PATCH
 //   • HR role: Create button visible
@@ -18,6 +19,28 @@ import type { Staff, StaffRole, StaffStatus } from "../../types/staff";
 import { ROLE_META, STATUS_META } from "../../types/staff";
 
 const PAGE_SIZE = 20;
+
+// ─── Local initials avatar — CSP-safe, no external requests ──────────────────
+function generateInitialsAvatar(name: string): string {
+  const initials = name
+    .split(" ")
+    .map((w) => w[0] ?? "")
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+
+  const svg = [
+    `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">`,
+    `<circle cx="16" cy="16" r="16" fill="#2563eb"/>`,
+    `<text x="16" y="21" font-family="Arial,Helvetica,sans-serif" `,
+    `font-size="13" font-weight="700" fill="#ffffff" text-anchor="middle">`,
+    initials,
+    `</text>`,
+    `</svg>`,
+  ].join("");
+
+  return `data:image/svg+xml;base64,${btoa(svg)}`;
+}
 
 const ROLE_OPTIONS: Array<{ value: StaffRole | ""; label: string }> = [
   { value: "",          label: "All Roles"   },
@@ -36,7 +59,7 @@ const STATUS_OPTIONS: Array<{ value: StaffStatus | ""; label: string }> = [
 
 export function HRListPage() {
   const { data: identity } = useGetIdentity<{ id: string; name: string; role: StaffRole }>();
-  const { edit, create }   = useNavigation();
+  const { edit, create, show } = useNavigation();
   const { mutate: updateStaff, isLoading: isOffboarding } = useUpdate();
 
   const [search,        setSearch]        = useState("");
@@ -172,32 +195,36 @@ export function HRListPage() {
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Leader</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Hire Date</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
-                  {isAdmin && (
-                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">Actions</th>
-                  )}
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {rows.map((staff, idx) => {
-                  const roleMeta         = ROLE_META[staff.role];
-                  const statusMeta       = STATUS_META[staff.status];
+                  const roleMeta          = ROLE_META[staff.role];
+                  const statusMeta        = STATUS_META[staff.status];
                   const isThisOffboarding = isOffboarding && offboardingId === staff.id;
-                  const leaderName       = (staff as unknown as { leader?: { name: string } }).leader?.name;
+                  const leaderName        = (staff as unknown as { leader?: { name: string } }).leader?.name;
 
                   return (
-                    <tr key={staff.id} className="hover:bg-gray-50 transition-colors">
+                    <tr
+                      key={staff.id}
+                      className="hover:bg-gray-50 transition-colors cursor-pointer"
+                      onClick={() => show("staff", staff.id)}
+                    >
                       <td className="px-4 py-3 text-gray-400 tabular-nums">
                         {(currentPage - 1) * PAGE_SIZE + idx + 1}
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2.5">
                           <img
-                            src={`https://ui-avatars.com/api/?name=${encodeURIComponent(staff.name)}&size=32&background=2563eb&color=fff`}
+                            src={generateInitialsAvatar(staff.name)}
                             alt=""
                             className="w-8 h-8 rounded-full flex-shrink-0"
                           />
                           <div>
-                            <p className="font-medium text-gray-900 leading-tight">{staff.name}</p>
+                            <p className="font-medium text-gray-900 leading-tight hover:text-blue-600 transition-colors">
+                              {staff.name}
+                            </p>
                             <p className="text-xs text-gray-400">{staff.email}</p>
                           </div>
                         </div>
@@ -226,9 +253,12 @@ export function HRListPage() {
                           {statusMeta.label}
                         </span>
                       </td>
-                      {isAdmin && (
-                        <td className="px-4 py-3">
-                          <div className="flex items-center justify-end gap-2">
+                      <td className="px-4 py-3">
+                        <div
+                          className="flex items-center justify-end gap-2"
+                          onClick={(e) => e.stopPropagation()} // prevent row click when clicking action buttons
+                        >
+                          {isAdmin && (
                             <button
                               onClick={() => edit("staff", staff.id)}
                               className="text-xs px-2.5 py-1 rounded border border-gray-200
@@ -236,20 +266,20 @@ export function HRListPage() {
                             >
                               Edit
                             </button>
-                            {staff.status === "Active" && (
-                              <button
-                                onClick={() => handleOffboard(staff)}
-                                disabled={isThisOffboarding}
-                                className="text-xs px-2.5 py-1 rounded border border-red-200
-                                           text-red-600 hover:bg-red-50 transition-colors
-                                           disabled:opacity-50 disabled:cursor-not-allowed"
-                              >
-                                {isThisOffboarding ? "…" : "Offboard"}
-                              </button>
-                            )}
-                          </div>
-                        </td>
-                      )}
+                          )}
+                          {isAdmin && staff.status === "Active" && (
+                            <button
+                              onClick={() => handleOffboard(staff)}
+                              disabled={isThisOffboarding}
+                              className="text-xs px-2.5 py-1 rounded border border-red-200
+                                         text-red-600 hover:bg-red-50 transition-colors
+                                         disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {isThisOffboarding ? "…" : "Offboard"}
+                            </button>
+                          )}
+                        </div>
+                      </td>
                     </tr>
                   );
                 })}
