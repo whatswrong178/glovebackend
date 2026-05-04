@@ -82,7 +82,7 @@ function renderTemplate(
 // ─── CORS headers ─────────────────────────────────────────────────────────────
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin":  "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-system-secret",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-system-secret, x-application-name",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
