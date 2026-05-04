@@ -39,6 +39,7 @@ import { NeedsAssessmentPage } from "./pages/needs-assessment";
 import { ReportsPage }          from "./pages/reports";
 import { SettingsPage }       from "./pages/settings";
 import { LoginPage }          from "./pages/auth/login";
+import { ResetPasswordPage }  from "./pages/auth/reset-password";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Error Boundary — catches render crashes and shows the error instead of blank
@@ -203,8 +204,9 @@ export default function App() {
               <Route path="*" element={<NavigateToResource resource="dashboard" />} />
             </Route>
 
-            {/* ── Public route ─────────────────────────────────── */}
-            <Route path="/login" element={<LoginPage />} />
+            {/* ── Public routes ────────────────────────────────── */}
+            <Route path="/login"          element={<LoginPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
 
             {/* ── Unauthenticated catch-all ─────────────────────── */}
             <Route path="*" element={<CatchAllNavigate to="/login" />} />

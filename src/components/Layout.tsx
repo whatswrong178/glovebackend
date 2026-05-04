@@ -2,10 +2,11 @@
  * Layout — main authenticated shell
  * Sidebar navigation + top bar + role-aware menu filtering
  */
-import React, { type ReactNode } from "react";
+import React, { useState, type ReactNode } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useGetIdentity, useLogout } from "@refinedev/core";
 import { useCompanySettings } from "../context/CompanySettingsContext";
+import { supabaseClient } from "../supabaseClient";
 
 interface StaffIdentity {
   id:        string;
@@ -52,6 +53,40 @@ export default function Layout({ children }: LayoutProps) {
 
   const userRole   = identity?.role ?? "Sales";
   const visibleNav = NAV_ITEMS.filter((item) => item.minRoles.includes(userRole));
+
+  // ── Change Password modal state ──────────────────────────────────────────────
+  const [showChangePwd,  setShowChangePwd]  = useState(false);
+  const [newPwd,         setNewPwd]         = useState("");
+  const [confirmPwd,     setConfirmPwd]     = useState("");
+  const [pwdMsg,         setPwdMsg]         = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [isChangingPwd,  setIsChangingPwd]  = useState(false);
+
+  const openChangePwd = () => {
+    setNewPwd(""); setConfirmPwd(""); setPwdMsg(null);
+    setShowChangePwd(true);
+  };
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPwdMsg(null);
+    if (newPwd.length < 8) {
+      setPwdMsg({ type: "error", text: "Password must be at least 8 characters." });
+      return;
+    }
+    if (newPwd !== confirmPwd) {
+      setPwdMsg({ type: "error", text: "Passwords do not match." });
+      return;
+    }
+    setIsChangingPwd(true);
+    const { error } = await supabaseClient.auth.updateUser({ password: newPwd });
+    setIsChangingPwd(false);
+    if (error) {
+      setPwdMsg({ type: "error", text: error.message });
+    } else {
+      setPwdMsg({ type: "success", text: "Password updated! Please use your new password next time." });
+      setTimeout(() => setShowChangePwd(false), 2500);
+    }
+  };
 
   return (
     <div className="flex h-screen bg-surface overflow-hidden">
@@ -114,6 +149,13 @@ export default function Layout({ children }: LayoutProps) {
                 <p className="text-xs text-brand-300 truncate">{identity.role}</p>
               </div>
               <button
+                onClick={openChangePwd}
+                className="text-brand-300 hover:text-white transition-colors text-xs shrink-0"
+                title="Change password"
+              >
+                🔑
+              </button>
+              <button
                 onClick={() => logout()}
                 className="text-brand-300 hover:text-white transition-colors text-xs shrink-0"
                 title="Sign out"
@@ -126,6 +168,69 @@ export default function Layout({ children }: LayoutProps) {
           )}
         </div>
       </aside>
+
+      {/* ── Change Password Modal ────────────────────────────────────────────── */}
+      {showChangePwd && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+          onClick={(e) => { if (e.target === e.currentTarget) setShowChangePwd(false); }}
+        >
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6">
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-lg font-bold text-gray-900">Change Password</h2>
+              <button
+                onClick={() => setShowChangePwd(false)}
+                className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
+              >×</button>
+            </div>
+            <form onSubmit={handleChangePassword} className="space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1.5">New Password</label>
+                <input
+                  type="password"
+                  value={newPwd}
+                  onChange={(e) => setNewPwd(e.target.value)}
+                  required
+                  minLength={8}
+                  autoFocus
+                  placeholder="Min. 8 characters"
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm
+                             focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1.5">Confirm New Password</label>
+                <input
+                  type="password"
+                  value={confirmPwd}
+                  onChange={(e) => setConfirmPwd(e.target.value)}
+                  required
+                  placeholder="Repeat new password"
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm
+                             focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                />
+              </div>
+              {pwdMsg && (
+                <p className={`text-xs rounded-lg px-3 py-2 border ${
+                  pwdMsg.type === "success"
+                    ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+                    : "bg-red-50 text-red-700 border-red-200"
+                }`}>
+                  {pwdMsg.type === "success" ? "✅" : "❌"} {pwdMsg.text}
+                </p>
+              )}
+              <button
+                type="submit"
+                disabled={isChangingPwd}
+                className="w-full bg-brand-600 hover:bg-brand-700 text-white font-semibold
+                           rounded-lg py-2.5 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isChangingPwd ? "Updating…" : "Update Password"}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* ── Main content area ─────────────────────────────────────────────── */}
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
