@@ -35,7 +35,38 @@
  */
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { resendSendEmail } from "../_shared/resend.ts";
+
+// ─── Inlined Resend API helper (no _shared/ import — Dashboard-compatible) ────
+interface ResendEmailTag { name: string; value: string; }
+interface ResendSendParams {
+  from:     string;
+  to:       string[];
+  subject:  string;
+  html:     string;
+  tags?:    ResendEmailTag[];
+}
+interface ResendSendResponse { id: string; [k: string]: unknown; }
+
+async function resendSendEmail(
+  params:  ResendSendParams,
+  apiKey:  string,
+): Promise<ResendSendResponse> {
+  const res = await fetch("https://api.resend.com/emails", {
+    method:  "POST",
+    headers: {
+      "Authorization": `Bearer ${apiKey}`,
+      "Content-Type":  "application/json",
+    },
+    body: JSON.stringify(params),
+  });
+  const body = await res.json() as ResendSendResponse & { error?: { message?: string } };
+  if (!res.ok) {
+    throw new Error(
+      `Resend API error ${res.status}: ${body.error?.message ?? "Unknown error"}`
+    );
+  }
+  return body;
+}
 
 // ─── CORS ─────────────────────────────────────────────────────────────────────
 const CORS = {
@@ -295,13 +326,15 @@ Deno.serve(async (req: Request) => {
         isResend:   params.isResend,
       });
 
+      const subject = params.isResend
+        ? `Your ${companyName} ERP Password Has Been Reset`
+        : `Welcome to ${companyName} ERP — Your Login Credentials`;
+
       const result = await resendSendEmail(
         {
           from:    fromAddress,
           to:      [email],
-          subject: params.isResend
-            ? `Your ${(await getEmailMeta()).companyName} ERP Password Has Been Reset`
-            : `Welcome to ${(await getEmailMeta()).companyName} ERP — Your Login Credentials`,
+          subject,
           html,
           tags: [
             { name: "module",   value: "hr" },

@@ -27,8 +27,57 @@
  *   500 { "error": "..." }   — Resend / DB failure
  */
 
-import { createClient }     from "https://esm.sh/@supabase/supabase-js@2";
-import { resendSendEmail, renderTemplate } from "../_shared/resend.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+// ─── Inlined from _shared/resend.ts — Dashboard-compatible (no relative imports) ─
+interface ResendAttachment { filename: string; content: string; }
+interface ResendTag        { name: string; value: string; }
+interface ResendSendParams {
+  from:         string;
+  to:           string[];
+  subject:      string;
+  html:         string;
+  cc?:          string[];
+  bcc?:         string[];
+  reply_to?:    string;
+  attachments?: ResendAttachment[];
+  tags?:        ResendTag[];
+}
+interface ResendSendResponse {
+  id: string;
+  error?: { name: string; message: string; statusCode: number };
+}
+
+async function resendSendEmail(
+  params: ResendSendParams,
+  apiKey: string,
+): Promise<ResendSendResponse> {
+  const res = await fetch("https://api.resend.com/emails", {
+    method:  "POST",
+    headers: {
+      "Authorization": `Bearer ${apiKey}`,
+      "Content-Type":  "application/json",
+    },
+    body: JSON.stringify(params),
+  });
+  const body = await res.json() as ResendSendResponse;
+  if (!res.ok) {
+    throw new Error(
+      `Resend API error ${res.status}: ${body.error?.message ?? "Unknown error"}`
+    );
+  }
+  return body;
+}
+
+function renderTemplate(
+  htmlTemplate: string,
+  variables: Record<string, string | number>,
+): string {
+  return htmlTemplate.replace(/\{\{(\w+)\}\}/g, (match, key: string) => {
+    const value = variables[key];
+    return value != null ? String(value) : match;
+  });
+}
 
 // ─── CORS headers ─────────────────────────────────────────────────────────────
 const CORS_HEADERS = {
