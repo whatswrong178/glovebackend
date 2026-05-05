@@ -103,6 +103,13 @@ export function ProductListPage() {
               ⊞ Bulk Create (Variants)
             </button>
             <button
+              onClick={() => push("/products/bulk-price")}
+              className="px-3 py-2 text-sm font-medium text-emerald-700 bg-emerald-50 border border-emerald-200
+                         hover:bg-emerald-100 rounded-lg transition-colors"
+            >
+              💲 Bulk Edit Prices
+            </button>
+            <button
               onClick={() => push("/products/create")}
               className="px-3 py-2 text-sm font-medium bg-blue-600 text-white rounded-lg
                          hover:bg-blue-700 transition-colors"

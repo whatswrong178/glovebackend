@@ -10,7 +10,7 @@
 import React, { useRef, useState } from "react";
 import { useOne, useList, useUpdate, useNavigation } from "@refinedev/core";
 import { useParams } from "react-router-dom";
-import { PrintLayout } from "../../components/PrintLayout";
+import { PrintLayout, PRINT_CSS } from "../../components/PrintLayout";
 import type { PrintDocData, PrintLineItem, CompanyInfo } from "../../components/PrintLayout";
 import { useCompanySettings } from "../../context/CompanySettingsContext";
 
@@ -63,26 +63,8 @@ function usePrint() {
     if (!win) { window.print(); return; }
     win.document.write(`<!DOCTYPE html><html><head>
       <title>Purchase Order</title>
-      <style>
-        @page { size: A4; margin: 12mm; }
-        body { font-family: Arial, sans-serif; font-size: 11pt; color: #1e293b; }
-        .print-area { max-width: 100%; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 6px 8px; border: 1px solid #e2e8f0; text-align: left; font-size: 10pt; }
-        th { background: #f8fafc; font-weight: 600; }
-        .print-doc-header { display: flex; justify-content: space-between; margin-bottom: 16px; }
-        .company-block h1 { font-size: 16pt; font-weight: 800; margin: 0 0 4px; }
-        .doc-meta-block { text-align: right; }
-        .doc-type-label { font-size: 14pt; font-weight: 800; color: #7c3aed; }
-        .party-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
-        .party-block { border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px; }
-        .party-label { font-size: 8pt; font-weight: 700; text-transform: uppercase; color: #64748b; margin-bottom: 4px; }
-        .totals-block { text-align: right; margin-top: 12px; }
-        .print-footer { margin-top: 24px; border-top: 1px solid #e2e8f0; padding-top: 8px; font-size: 8pt; color: #94a3b8; text-align: center; }
-        .status-badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 9pt; font-weight: 600; }
-        .watermark { position: fixed; top: 40%; left: 50%; transform: translate(-50%,-50%) rotate(-30deg); font-size: 72pt; font-weight: 900; color: rgba(0,0,0,0.05); pointer-events: none; z-index: 0; }
-      </style>
-    </head><body>${content}</body></html>`);
+      <style>@page{size:A4;margin:15mm 14mm}body{margin:0}${PRINT_CSS}</style>
+    </head><body><div class="print-area">${content}</div></body></html>`);
     win.document.close();
     win.focus();
     setTimeout(() => { win.print(); }, 400);
@@ -166,7 +148,7 @@ export function POShowPage() {
         label:   "Supplier",
         name:    po.supplier?.name ?? "—",
         address: po.supplier?.address,
-        contact: po.supplier?.contact_phone ?? po.supplier?.contact_person,
+        contact: [po.supplier?.contact_person, po.supplier?.contact_phone].filter(Boolean).join(" · ") || undefined,
         email:   po.supplier?.email,
       },
     ],

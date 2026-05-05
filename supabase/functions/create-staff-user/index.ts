@@ -379,7 +379,7 @@ Deno.serve(async (req: Request) => {
     // Generate a new temporary password and reset the auth user
     const tempPassword = generateTempPassword();
 
-    const { error: resetErr } = await adminClient.auth.admin.updateUser(auth_user_id, {
+    const { error: resetErr } = await adminClient.auth.admin.updateUserById(auth_user_id, {
       password: tempPassword,
     });
 

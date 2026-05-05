@@ -27,6 +27,7 @@ import { ProductEditPage }    from "./pages/products/edit";
 import { ProductShowPage }    from "./pages/products/show";
 import { ProductImportPage }  from "./pages/products/import";
 import { ProductBulkCreatePage } from "./pages/products/bulk-create";
+import { BulkPricePage }        from "./pages/products/bulk-price";
 import { POListPage }         from "./pages/purchaseOrders/list";
 import { POShowPage }         from "./pages/purchaseOrders/show";
 import { InvoiceListPage }    from "./pages/invoices/list";
@@ -186,6 +187,7 @@ export default function App() {
               <Route path="/products"              element={<ProductListPage />} />
               <Route path="/products/import"       element={<ProductImportPage />} />
               <Route path="/products/bulk-create"  element={<ProductBulkCreatePage />} />
+              <Route path="/products/bulk-price"   element={<BulkPricePage />} />
               <Route path="/products/create"       element={<ProductCreatePage />} />
               <Route path="/products/:id/edit"     element={<ProductEditPage />} />
               <Route path="/products/:id"          element={<ProductShowPage />} />

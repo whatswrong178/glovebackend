@@ -17,7 +17,7 @@ import type { CrudFilters } from "@refinedev/core";
 import type { Invoice, InvoiceStatus } from "../../types/invoice";
 import type { StaffRole } from "../../types/staff";
 import { supabaseClient } from "../../supabaseClient";
-import { PrintLayout } from "../../components/PrintLayout";
+import { PrintLayout, PRINT_CSS } from "../../components/PrintLayout";
 import type { PrintDocData, CompanyInfo } from "../../components/PrintLayout";
 
 
@@ -233,6 +233,8 @@ interface ProductHit {
 function EditInvoiceModal({ invoice, onClose, onSaved }: EditModalProps) {
   const [items,          setItems]          = useState<EditableItem[]>([]);
   const [discount,       setDiscount]       = useState(String(invoice.discount ?? 0));
+  const [discountMode,   setDiscountMode]   = useState<"rm" | "pct">("rm");
+  const [discountPct,    setDiscountPct]    = useState("0");
   const [delivery,       setDelivery]       = useState(String(invoice.delivery_charge ?? 0));
   const [loading,        setLoading]        = useState(true);
   const [saving,         setSaving]         = useState(false);
@@ -324,7 +326,9 @@ function EditInvoiceModal({ invoice, onClose, onSaved }: EditModalProps) {
   const removeItem = (idx: number) => setItems((prev) => prev.filter((_, i) => i !== idx));
 
   const subtotal = items.reduce((s, it) => s + (parseInt(String(it.qty)) || 0) * (parseFloat(it.selling_price) || 0), 0);
-  const disc     = parseFloat(discount) || 0;
+  const disc     = discountMode === "pct"
+    ? subtotal * ((parseFloat(discountPct) || 0) / 100)
+    : parseFloat(discount) || 0;
   const del      = parseFloat(delivery) || 0;
   const newTotal = Math.max(0, subtotal - disc + del);
 
@@ -473,12 +477,44 @@ function EditInvoiceModal({ invoice, onClose, onSaved }: EditModalProps) {
               {/* Discount / Delivery */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-gray-500 mb-1">Discount (RM)</label>
-                  <input
-                    type="number" min="0" step="0.01" value={discount}
-                    onChange={(e) => setDiscount(e.target.value)}
-                    className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-400"
-                  />
+                  <label className="block text-xs font-semibold text-gray-500 mb-1">Discount</label>
+                  <div className="flex items-stretch">
+                    <button
+                      type="button"
+                      onClick={() => setDiscountMode("rm")}
+                      className={`px-2.5 text-xs font-bold border rounded-l-lg transition-colors ${
+                        discountMode === "rm"
+                          ? "bg-blue-600 text-white border-blue-600"
+                          : "bg-white text-gray-500 border-gray-200 hover:bg-gray-50"
+                      }`}
+                    >RM</button>
+                    <button
+                      type="button"
+                      onClick={() => setDiscountMode("pct")}
+                      className={`px-2.5 text-xs font-bold border-t border-b border-r transition-colors ${
+                        discountMode === "pct"
+                          ? "bg-blue-600 text-white border-blue-600"
+                          : "bg-white text-gray-500 border-gray-200 hover:bg-gray-50"
+                      }`}
+                    >%</button>
+                    {discountMode === "rm" ? (
+                      <input
+                        type="number" min="0" step="0.01" value={discount}
+                        onChange={(e) => setDiscount(e.target.value)}
+                        className="flex-1 min-w-0 text-sm border border-l-0 border-gray-200 rounded-r-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-400"
+                      />
+                    ) : (
+                      <input
+                        type="number" min="0" max="100" step="0.1" value={discountPct}
+                        onChange={(e) => setDiscountPct(e.target.value)}
+                        placeholder="e.g. 10"
+                        className="flex-1 min-w-0 text-sm border border-l-0 border-gray-200 rounded-r-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-400"
+                      />
+                    )}
+                  </div>
+                  {discountMode === "pct" && disc > 0 && (
+                    <p className="text-xs text-gray-400 mt-1">= RM {disc.toFixed(2)}</p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-gray-500 mb-1">Delivery Charge (RM)</label>
@@ -589,25 +625,8 @@ export function InvoiceListPage() {
     if (!win) return;
     win.document.write(`<!DOCTYPE html><html><head>
       <title>${title}</title>
-      <style>
-        @page { size: A4; margin: 12mm; }
-        body { font-family: Arial, sans-serif; font-size: 11pt; color: #1e293b; margin: 0; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 6px 8px; border: 1px solid #e2e8f0; text-align: left; font-size: 10pt; }
-        th { background: #f8fafc; font-weight: 600; }
-        .print-doc-header { display: flex; justify-content: space-between; margin-bottom: 16px; }
-        .company-block h1 { font-size: 16pt; font-weight: 800; margin: 0 0 4px; }
-        .doc-meta-block { text-align: right; }
-        .doc-type-label { font-size: 14pt; font-weight: 800; color: #7c3aed; }
-        .party-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
-        .party-block { border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px; }
-        .party-label { font-size: 8pt; font-weight: 700; text-transform: uppercase; color: #64748b; margin-bottom: 4px; }
-        .totals-block { text-align: right; margin-top: 12px; }
-        .print-footer { margin-top: 24px; border-top: 1px solid #e2e8f0; padding-top: 8px; font-size: 8pt; color: #94a3b8; text-align: center; }
-        .status-badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 9pt; font-weight: 600; }
-        .watermark { position: fixed; top: 40%; left: 50%; transform: translate(-50%,-50%) rotate(-30deg); font-size: 72pt; font-weight: 900; color: rgba(0,0,0,0.05); pointer-events: none; z-index: 0; }
-      </style>
-    </head><body>${content}</body></html>`);
+      <style>@page{size:A4;margin:15mm 14mm}body{margin:0}${PRINT_CSS}</style>
+    </head><body><div class="print-area">${content}</div></body></html>`);
     win.document.close();
     win.focus();
     setTimeout(() => { win.print(); }, 400);
@@ -636,7 +655,7 @@ export function InvoiceListPage() {
           .from("invoices")
           .select(
             "id,invoice_no,status,region,total_amount,delivery_charge,discount,is_joint_order,created_at,paid_at," +
-            "client:clients!client_id(name,ssm_no,region,contact_person,contact_email,contact_phone,credit_terms)," +
+            "client:clients!client_id(name,ssm_no,region,contact_person,contact_email,contact_phone,address,credit_terms)," +
             "creator:staff!created_by(name)"
           )
           .eq("id", invoiceId)
@@ -657,6 +676,7 @@ export function InvoiceListPage() {
         name: string; ssm_no: string | null; region: string | null;
         contact_person: string | null; contact_email: string | null;
         contact_phone: string | null; credit_terms: string | null;
+        address: string | null;
       };
       type ItemRow = {
         qty: number; selling_price: number; unit: string;
@@ -686,7 +706,7 @@ export function InvoiceListPage() {
             label:   "Bill To",
             name:    client?.name ?? "—",
             ssm:     client?.ssm_no ?? undefined,
-            address: client?.region ?? undefined,
+            address: client?.address ?? undefined,
             contact: client?.contact_person ?? undefined,
             email:   client?.contact_email ?? undefined,
           },
