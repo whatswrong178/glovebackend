@@ -18,7 +18,7 @@ import { supabaseClient } from "../../supabaseClient";
 import type { StaffRole } from "../../types/staff";
 import { PrintLayout } from "../../components/PrintLayout";
 import type { PrintDocData, PrintDocType, CompanyInfo } from "../../components/PrintLayout";
-import { usePrint } from "../../lib/print/usePrint";
+
 
 type DOType   = "Invoice" | "Sample";
 type DOStatus = "Pending" | "In Transit" | "Delivered" | "Cancelled";
@@ -445,7 +445,7 @@ function DOPrintPreviewModal({ job, onClose, onPrint }: DOPreviewModalProps) {
             className="px-5 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700
                        rounded-lg transition-colors flex items-center gap-2"
           >
-            🖨 Print DO
+            🖨 Print / Save PDF
           </button>
         </div>
       </div>
@@ -505,14 +505,47 @@ export function DOListPage() {
       });
   }, []);
 
-  // ── Print hook ──────────────────────────────────────────────────────────
-  const { printRef, triggerPrint, isPrinting } = usePrint({
-    onAfterPrint: () => setPrintJob(null),
-  });
+  // ── Print (clean popup window — no app chrome) ───────────────────────────
+  const printRef = useRef<HTMLDivElement>(null);
 
+  const openPrintWindow = (content: string, title: string) => {
+    const win = window.open("", "_blank", "width=900,height=1200");
+    if (!win) return;
+    win.document.write(`<!DOCTYPE html><html><head>
+      <title>${title}</title>
+      <style>
+        @page { size: A4; margin: 12mm; }
+        body { font-family: Arial, sans-serif; font-size: 11pt; color: #1e293b; margin: 0; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 6px 8px; border: 1px solid #e2e8f0; text-align: left; font-size: 10pt; }
+        th { background: #f8fafc; font-weight: 600; }
+        .print-doc-header { display: flex; justify-content: space-between; margin-bottom: 16px; }
+        .company-block h1 { font-size: 16pt; font-weight: 800; margin: 0 0 4px; }
+        .doc-meta-block { text-align: right; }
+        .doc-type-label { font-size: 14pt; font-weight: 800; color: #7c3aed; }
+        .party-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+        .party-block { border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px; }
+        .party-label { font-size: 8pt; font-weight: 700; text-transform: uppercase; color: #64748b; margin-bottom: 4px; }
+        .totals-block { text-align: right; margin-top: 12px; }
+        .print-footer { margin-top: 24px; border-top: 1px solid #e2e8f0; padding-top: 8px; font-size: 8pt; color: #94a3b8; text-align: center; }
+        .status-badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 9pt; font-weight: 600; }
+        .watermark { position: fixed; top: 40%; left: 50%; transform: translate(-50%,-50%) rotate(-30deg); font-size: 72pt; font-weight: 900; color: rgba(0,0,0,0.05); pointer-events: none; z-index: 0; }
+        img { max-width: 100%; height: auto; }
+      </style>
+    </head><body>${content}</body></html>`);
+    win.document.close();
+    win.focus();
+    setTimeout(() => { win.print(); }, 400);
+  };
+
+  // When printJob is set → one RAF to let React render PrintLayout → open clean popup
   useEffect(() => {
-    if (!printJob) return;
-    const rafId = requestAnimationFrame(() => { triggerPrint(); });
+    if (!printJob || !printRef.current) return;
+    const rafId = requestAnimationFrame(() => {
+      const content = printRef.current?.innerHTML ?? "";
+      openPrintWindow(content, printJob.doc.docNumber);
+      setPrintJob(null);
+    });
     return () => cancelAnimationFrame(rafId);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [printJob]);
@@ -761,7 +794,7 @@ export function DOListPage() {
                       <td className="px-4 py-3">
                         <button
                           onClick={() => handlePreview(do_)}
-                          disabled={!!previewLoading || isPrinting}
+                          disabled={!!previewLoading}
                           className="font-mono text-blue-600 hover:text-blue-800 hover:underline text-xs font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                           title="Click to preview & print"
                         >
