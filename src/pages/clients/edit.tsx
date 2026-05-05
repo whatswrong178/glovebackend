@@ -50,6 +50,7 @@ export function ClientEditPage() {
         contact_person: c.contact_person ?? "",
         contact_email:  c.contact_email  ?? "",
         contact_phone:  c.contact_phone  ?? "",
+        address:        (c as any).address ?? "",
         owner_id:       c.owner_id ?? "",
       };
       setForm(vals);
@@ -123,6 +124,7 @@ export function ClientEditPage() {
             contact_person: form.contact_person.trim() || null,
             contact_email:  form.contact_email.trim()  || null,
             contact_phone:  form.contact_phone.trim()  || null,
+            address:        (form as any).address?.trim() || null,
           },
         },
         {
@@ -319,6 +321,22 @@ export function ClientEditPage() {
                          focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
+        </div>
+
+        {/* Address */}
+        <div>
+          <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1">
+            Address
+          </label>
+          <textarea
+            value={(form as any).address ?? ""}
+            onChange={set("address" as any)}
+            rows={3}
+            placeholder="e.g. No. 12, Jalan Utama 1, Taman Maju, 47810 Petaling Jaya, Selangor"
+            className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2
+                       focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+          />
+          <p className="text-xs text-gray-400 mt-1">Used on printed invoices and delivery orders.</p>
         </div>
 
         {/* Change diff preview for non-admin */}

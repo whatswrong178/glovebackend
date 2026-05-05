@@ -26,6 +26,9 @@ import { ProductCreatePage }  from "./pages/products/create";
 import { ProductEditPage }    from "./pages/products/edit";
 import { ProductShowPage }    from "./pages/products/show";
 import { ProductImportPage }  from "./pages/products/import";
+import { ProductBulkCreatePage } from "./pages/products/bulk-create";
+import { POListPage }         from "./pages/purchaseOrders/list";
+import { POShowPage }         from "./pages/purchaseOrders/show";
 import { InvoiceListPage }    from "./pages/invoices/list";
 import { InvoiceCreatePage }  from "./pages/invoices/create";
 import { DOListPage }         from "./pages/deliveryOrders/list";
@@ -102,6 +105,12 @@ export default function App() {
               meta:       { label: "Products", icon: "📦" },
             },
             {
+              name:       "purchase_orders",
+              list:       "/purchase-orders",
+              show:       "/purchase-orders/:id",
+              meta:       { label: "Purchase Orders", icon: "🛒" },
+            },
+            {
               name:       "invoices",
               list:       "/invoices",
               create:     "/invoices/create",
@@ -176,9 +185,14 @@ export default function App() {
               {/* Products (T-03.1 / T-03.2) */}
               <Route path="/products"              element={<ProductListPage />} />
               <Route path="/products/import"       element={<ProductImportPage />} />
+              <Route path="/products/bulk-create"  element={<ProductBulkCreatePage />} />
               <Route path="/products/create"       element={<ProductCreatePage />} />
               <Route path="/products/:id/edit"     element={<ProductEditPage />} />
               <Route path="/products/:id"          element={<ProductShowPage />} />
+
+              {/* Purchase Orders */}
+              <Route path="/purchase-orders"       element={<POListPage />} />
+              <Route path="/purchase-orders/:id"   element={<POShowPage />} />
 
               {/* Invoices */}
               <Route path="/invoices"        element={<InvoiceListPage />} />

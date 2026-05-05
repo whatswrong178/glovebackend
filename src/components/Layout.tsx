@@ -25,8 +25,9 @@ const NAV_ITEMS: {
 }[] = [
   { path: "/",               label: "Dashboard",       icon: "🏠", minRoles: ["Admin","HR","Leader","Sales","Logistics"] },
   { path: "/clients",        label: "Clients",         icon: "👥", minRoles: ["Admin","HR","Leader","Sales"] },
-  { path: "/products",       label: "Products",        icon: "📦", minRoles: ["Admin","HR","Leader","Sales"] },
-  { path: "/invoices",       label: "Invoices",        icon: "🧾", minRoles: ["Admin","HR","Leader","Sales"] },
+  { path: "/products",        label: "Products",        icon: "📦", minRoles: ["Admin","HR","Leader","Sales"] },
+  { path: "/purchase-orders",label: "Purchase Orders", icon: "🛒", minRoles: ["Admin","HR"] },
+  { path: "/invoices",        label: "Invoices",        icon: "🧾", minRoles: ["Admin","HR","Leader","Sales"] },
   { path: "/delivery-orders",label: "Delivery Orders", icon: "🚚", minRoles: ["Admin","HR","Leader","Sales","Logistics"] },
   { path: "/hr",             label: "HR",              icon: "🏢", minRoles: ["Admin","HR"] },
   { path: "/playbook",       label: "Playbook",        icon: "📚", minRoles: ["Admin","HR","Leader","Sales"] },

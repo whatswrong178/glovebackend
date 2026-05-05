@@ -27,6 +27,7 @@ export function ClientCreatePage() {
     contact_person: "",
     contact_email:  "",
     contact_phone:  "",
+    address:        "",
     owner_id:       identity?.id ?? "",
   });
   const [errors, setErrors] = useState<Partial<Record<keyof ClientFormValues, string>>>({});
@@ -79,6 +80,7 @@ export function ClientCreatePage() {
           contact_person: form.contact_person.trim() || null,
           contact_email:  form.contact_email.trim() || null,
           contact_phone:  form.contact_phone.trim() || null,
+          address:        form.address.trim() || null,
           created_by:     identity?.id,
           owner_id:       ownerId,
           is_orphan:      false,
@@ -233,6 +235,22 @@ export function ClientCreatePage() {
                          focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
+        </div>
+
+        {/* Address */}
+        <div>
+          <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1">
+            Address
+          </label>
+          <textarea
+            value={form.address}
+            onChange={set("address")}
+            rows={3}
+            placeholder="e.g. No. 12, Jalan Utama 1, Taman Maju, 47810 Petaling Jaya, Selangor"
+            className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2
+                       focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+          />
+          <p className="text-xs text-gray-400 mt-1">Used on printed invoices and delivery orders.</p>
         </div>
 
         {/* Owner assignment (Admin only) */}

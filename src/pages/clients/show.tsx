@@ -200,7 +200,7 @@ export function ClientShowPage() {
     resource: "clients",
     id:       id!,
     meta: {
-      select: "id,name,ssm_no,region,credit_terms,neglect_index,is_orphan,contact_person,contact_email,contact_phone,first_order_date,created_at,owner_id,created_by,last_assisted_by,owner:staff!owner_id(name),creator:staff!created_by(name),last_assistant:staff!last_assisted_by(name)",
+      select: "id,name,ssm_no,region,credit_terms,neglect_index,is_orphan,contact_person,contact_email,contact_phone,address,first_order_date,created_at,owner_id,created_by,last_assisted_by,owner:staff!owner_id(name),creator:staff!created_by(name),last_assistant:staff!last_assisted_by(name)",
     },
   });
 
@@ -416,6 +416,7 @@ export function ClientShowPage() {
               <Field label="Contact Person"  value={client.contact_person ?? "—"} />
               <Field label="Contact Email"   value={client.contact_email  ?? "—"} />
               <Field label="Contact Phone"   value={client.contact_phone  ?? "—"} />
+              <Field label="Address" value={(client as any).address ?? "—"} />
               <Field label="First Order Date" value={
                 client.first_order_date
                   ? new Date(client.first_order_date).toLocaleDateString("en-MY", { day: "2-digit", month: "short", year: "numeric" })
