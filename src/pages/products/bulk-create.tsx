@@ -57,6 +57,20 @@ function newRow(label = "", code = ""): VariantRow {
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
+function gp(sell: number, cost: number): string {
+  if (sell <= 0 || cost < 0) return "—";
+  const pct = ((sell - cost) / sell) * 100;
+  return pct.toFixed(1) + "%";
+}
+
+function gpColor(sell: number, cost: number): string {
+  if (sell <= 0) return "text-gray-400";
+  const pct = ((sell - cost) / sell) * 100;
+  if (pct >= 30) return "text-emerald-600 font-semibold";
+  if (pct >= 15) return "text-yellow-600 font-semibold";
+  return "text-red-600 font-semibold";
+}
+
 function skuFor(base: string, code: string): string {
   const b = base.trim().toUpperCase();
   const c = code.trim().toUpperCase();
@@ -343,6 +357,41 @@ export function ProductBulkCreatePage() {
             ))}
           </div>
 
+          {/* ── Live GP Calculator ────────────────────────────────────────── */}
+          {(base.cost_price || base.min_selling_price || base.suggested_price) && (() => {
+            const cost = parseFloat(base.cost_price) || 0;
+            const min  = parseFloat(base.min_selling_price) || 0;
+            const sug  = parseFloat(base.suggested_price) || 0;
+            const upc  = parseInt(base.units_per_carton, 10) || 1;
+            return (
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 grid grid-cols-2 gap-x-8 gap-y-2 text-xs">
+                <div className="col-span-2 text-gray-500 font-semibold uppercase tracking-wide mb-1">
+                  GP Calculator (per unit basis)
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">GP @ Min Selling</span>
+                  <span className={gpColor(min, cost)}>{gp(min, cost)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">GP @ Suggested</span>
+                  <span className={gpColor(sug, cost)}>{gp(sug, cost)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Cost / Carton ({upc} units)</span>
+                  <span className="tabular-nums text-gray-700">RM {(cost * upc).toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Min / Carton</span>
+                  <span className="tabular-nums text-gray-700">RM {(min * upc).toFixed(2)}</span>
+                </div>
+                <div className="col-span-2 flex justify-between">
+                  <span className="text-gray-500">Suggested / Carton</span>
+                  <span className="tabular-nums text-gray-700">RM {(sug * upc).toFixed(2)}</span>
+                </div>
+              </div>
+            );
+          })()}
+
           {/* Units per carton + Description */}
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -480,17 +529,43 @@ export function ProductBulkCreatePage() {
 
         {/* ── PREVIEW SUMMARY ───────────────────────────────────────────────── */}
         {preview.some(v => v.sku) && (
-          <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-2">
-            <p className="text-xs font-bold text-gray-600 uppercase tracking-wide">Preview — {preview.length} product(s) to create</p>
-            <div className="grid grid-cols-1 gap-1">
-              {preview.map(v => (
-                <div key={v.id} className="flex items-center gap-3 text-xs text-gray-700">
-                  <span className="font-mono bg-white border border-gray-200 px-2 py-0.5 rounded w-36 text-center">{v.sku || "—"}</span>
-                  <span className="text-gray-500 w-32">{v.label || "—"}</span>
-                  <span className="tabular-nums">RM {v.cost.toFixed(2)} / {v.minSell.toFixed(2)} / {v.suggested.toFixed(2)}</span>
-                  <span className="text-gray-400">{v.units} u/ctn</span>
-                </div>
-              ))}
+          <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-3">
+            <p className="text-xs font-bold text-gray-600 uppercase tracking-wide">
+              Preview — {preview.length} product(s) to create
+            </p>
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="text-gray-400 uppercase tracking-wide border-b border-gray-200">
+                    <th className="text-left pb-2 pr-4">SKU</th>
+                    <th className="text-left pb-2 pr-4">Label</th>
+                    <th className="text-right pb-2 pr-4">Cost/unit</th>
+                    <th className="text-right pb-2 pr-4">Min/unit</th>
+                    <th className="text-right pb-2 pr-4">Sug/unit</th>
+                    <th className="text-right pb-2 pr-4">GP@Min</th>
+                    <th className="text-right pb-2 pr-4">GP@Sug</th>
+                    <th className="text-right pb-2 pr-4">Ctn</th>
+                    <th className="text-right pb-2 pr-4">Cost/Ctn</th>
+                    <th className="text-right pb-2">Sug/Ctn</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {preview.map(v => (
+                    <tr key={v.id} className="hover:bg-white">
+                      <td className="py-1.5 pr-4 font-mono bg-white border border-gray-200 rounded px-2 my-1 inline-block">{v.sku || "—"}</td>
+                      <td className="py-1.5 pr-4 text-gray-600">{v.label || "—"}</td>
+                      <td className="py-1.5 pr-4 text-right tabular-nums">RM {v.cost.toFixed(2)}</td>
+                      <td className="py-1.5 pr-4 text-right tabular-nums">RM {v.minSell.toFixed(2)}</td>
+                      <td className="py-1.5 pr-4 text-right tabular-nums">RM {v.suggested.toFixed(2)}</td>
+                      <td className={`py-1.5 pr-4 text-right ${gpColor(v.minSell, v.cost)}`}>{gp(v.minSell, v.cost)}</td>
+                      <td className={`py-1.5 pr-4 text-right ${gpColor(v.suggested, v.cost)}`}>{gp(v.suggested, v.cost)}</td>
+                      <td className="py-1.5 pr-4 text-right text-gray-400">{v.units}</td>
+                      <td className="py-1.5 pr-4 text-right tabular-nums text-gray-600">RM {(v.cost * v.units).toFixed(2)}</td>
+                      <td className="py-1.5 text-right tabular-nums text-gray-600">RM {(v.suggested * v.units).toFixed(2)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         )}
