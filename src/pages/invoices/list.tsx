@@ -580,7 +580,7 @@ export function InvoiceListPage() {
   const [previewJob,   setPreviewJob]   = useState<PrintJob | null>(null);
   const [printJob,     setPrintJob]     = useState<PrintJob | null>(null);
   const [editInvoice,  setEditInvoice]  = useState<Invoice | null>(null);
-  const [companyInfo,  setCompanyInfo]  = useState<CompanyInfo>({ name: "MediGlove Supply Sdn. Bhd." });
+  const [companyInfo,  setCompanyInfo]  = useState<CompanyInfo>({ name: "Equimed Supply Enterprise" });
   const PAGE_SIZE = 25;
 
   const { mutate: deleteInvoice } = useDelete();
@@ -602,7 +602,7 @@ export function InvoiceListPage() {
           data.state,
         ].filter(Boolean);
         setCompanyInfo({
-          name:            data.company_name      ?? "MediGlove Supply Sdn. Bhd.",
+          name:            data.company_name      ?? "Equimed Supply Enterprise",
           regNo:           data.registration_no   ?? undefined,
           address:         addrParts.join(", ")   || undefined,
           phone:           data.phone             ?? undefined,

@@ -35,7 +35,7 @@ export interface CompanySettingsData {
 }
 
 const DEFAULTS: CompanySettingsData = {
-  company_name:    "MediGlove",
+  company_name:    "Equimed Supply Enterprise",
   registration_no: null,
   gst_no:          null,
   address_line1:   null,

@@ -224,7 +224,7 @@ Deno.serve(async (req: Request) => {
   const supabaseUrl     = Deno.env.get("SUPABASE_URL")             ?? "";
   const serviceRoleKey  = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
   const resendApiKey    = Deno.env.get("RESEND_API_KEY")            ?? "";
-  const frontendUrl     = Deno.env.get("FRONTEND_URL")              ?? "https://erp.mediglove.com";
+  const frontendUrl     = Deno.env.get("FRONTEND_URL")              ?? "https://erp.equimedsupply.com";
 
   if (!supabaseUrl || !serviceRoleKey) {
     return json({ error: "Supabase env vars not configured." }, 500);
@@ -299,9 +299,9 @@ Deno.serve(async (req: Request) => {
 
     const fromAddress = routingRes.data
       ? `${routingRes.data.sender_name} <${routingRes.data.sender_email}>`
-      : "MediGlove HR <hr@mediglove.com>";
+      : "Equimed HR <hr@equimedsupply.com>";
 
-    const companyName = settingsRes.data?.company_name ?? "MediGlove Supply Sdn. Bhd.";
+    const companyName = settingsRes.data?.company_name ?? "Equimed Supply Enterprise";
     return { fromAddress, companyName };
   }
 

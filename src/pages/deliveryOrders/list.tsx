@@ -469,7 +469,7 @@ export function DOListPage() {
   const [previewLoading, setPreviewLoading] = useState<string | null>(null); // do ID being fetched
   const [previewJob,     setPreviewJob]     = useState<PrintJob | null>(null); // modal open
   const [printJob,       setPrintJob]       = useState<PrintJob | null>(null); // triggers window.print()
-  const [companyInfo,    setCompanyInfo]    = useState<CompanyInfo>({ name: "MediGlove Supply Sdn. Bhd." });
+  const [companyInfo,    setCompanyInfo]    = useState<CompanyInfo>({ name: "Equimed Supply Enterprise" });
   const PAGE_SIZE = 25;
 
   const { mutate: updateDO } = useUpdate();
@@ -490,7 +490,7 @@ export function DOListPage() {
           data.state,
         ].filter(Boolean);
         setCompanyInfo({
-          name:            data.company_name      ?? "MediGlove Supply Sdn. Bhd.",
+          name:            data.company_name      ?? "Equimed Supply Enterprise",
           regNo:           data.registration_no   ?? undefined,
           address:         addrParts.join(", ")   || undefined,
           phone:           data.phone             ?? undefined,

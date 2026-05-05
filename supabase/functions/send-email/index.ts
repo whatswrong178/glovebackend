@@ -178,7 +178,7 @@ Deno.serve(async (req: Request) => {
   // Add universal system variables available in every template
   const systemVars: Record<string, string | number> = {
     ...variables,
-    CompanyName:    "MediGlove Supply Sdn. Bhd.",
+    CompanyName:    "Equimed Supply Enterprise",
     SupportEmail:   routing.sender_email,
     CurrentDate:    new Date().toLocaleDateString("en-MY", {
       day: "2-digit", month: "long", year: "numeric"

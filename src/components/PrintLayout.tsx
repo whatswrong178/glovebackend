@@ -191,7 +191,7 @@ export const PRINT_CSS = `
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const COMPANY_FALLBACK: CompanyInfo = {
-  name: "MediGlove Supply Sdn. Bhd.",
+  name: "Equimed Supply Enterprise",
 };
 
 const DOC_LABELS: Record<PrintDocType, string> = {

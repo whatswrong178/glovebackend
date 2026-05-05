@@ -7,12 +7,13 @@
 // Includes margin analysis panel — same auto-detect logic as create.tsx.
 // ══════════════════════════════════════════════════════════════════════════════
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useOne, useUpdate, useList, useNavigation } from "@refinedev/core";
 import { useParams } from "react-router-dom";
 import type { Product, ProductFormValues, ProductCategory } from "../../types/product";
 import { validatePriceOrder } from "../../types/product";
 import type { Supplier } from "../../types/product";
+import { supabaseClient } from "../../supabaseClient";
 
 // ── Category auto-detection ────────────────────────────────────────────────
 // Rule: gross margin = (min_selling - cost) / min_selling
@@ -62,10 +63,16 @@ export function ProductEditPage() {
   // Starts false — auto-detect activates when user edits prices after load.
   const [categoryOverridden, setCategoryOverridden] = useState(false);
 
+  // ── Website image upload ─────────────────────────────────────────────────
+  const [imageUrl,    setImageUrl]    = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string>("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const { data: productData, isLoading: productLoading } = useOne<Product>({
     resource: "products",
     id:       id!,
-    meta:     { select: "id,name,sku,supplier_id,category,cost_price,min_selling_price,suggested_price,units_per_carton,description" },
+    meta:     { select: "id,name,sku,supplier_id,category,cost_price,min_selling_price,suggested_price,units_per_carton,description,image_url" },
   });
 
   const { data: suppliersData, isLoading: suppliersLoading } = useList<Supplier>({
@@ -93,6 +100,7 @@ export function ProductEditPage() {
         units_per_carton:  String(p.units_per_carton ?? 1),
         description:       p.description ?? "",
       });
+      setImageUrl((p as unknown as { image_url: string | null }).image_url ?? null);
       setInitDone(true);
     }
   }, [productData, initDone]);
@@ -166,6 +174,62 @@ export function ProductEditPage() {
     return Object.keys(newErrors).length === 0;
   };
 
+  // ── Image upload handler ────────────────────────────────────────────────
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const MAX_MB = 5;
+    if (file.size > MAX_MB * 1024 * 1024) {
+      setUploadError(`File too large. Maximum size is ${MAX_MB} MB.`);
+      return;
+    }
+    if (!file.type.startsWith("image/")) {
+      setUploadError("Only image files are accepted (JPEG, PNG, WebP).");
+      return;
+    }
+
+    setIsUploading(true);
+    setUploadError("");
+
+    // Deterministic path: products/<product-id>.<ext>
+    const ext  = file.name.split(".").pop() ?? "jpg";
+    const path = `products/${id}.${ext}`;
+
+    const { error: upErr } = await supabaseClient.storage
+      .from("product-images")
+      .upload(path, file, { upsert: true, contentType: file.type });
+
+    if (upErr) {
+      setUploadError(upErr.message);
+      setIsUploading(false);
+      return;
+    }
+
+    const { data: urlData } = supabaseClient.storage
+      .from("product-images")
+      .getPublicUrl(path);
+
+    // Cache-bust so the new image shows immediately
+    const publicUrl = `${urlData.publicUrl}?t=${Date.now()}`;
+    setImageUrl(publicUrl);
+    setIsUploading(false);
+
+    // Persist image_url immediately (independent of the main form save)
+    await supabaseClient
+      .from("products")
+      .update({ image_url: publicUrl })
+      .eq("id", id!);
+  };
+
+  const handleImageRemove = async () => {
+    setImageUrl(null);
+    await supabaseClient
+      .from("products")
+      .update({ image_url: null })
+      .eq("id", id!);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!form || !validate()) return;
@@ -183,6 +247,7 @@ export function ProductEditPage() {
           suggested_price:   parseFloat(form.suggested_price),
           units_per_carton:  Math.max(1, parseInt(form.units_per_carton, 10) || 1),
           description:       form.description.trim() || null,
+          image_url:         imageUrl ?? null,
           // SKU is NOT updated — immutable after creation
         },
       },
@@ -475,6 +540,69 @@ export function ProductEditPage() {
             className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2
                        focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
           />
+        </div>
+
+        {/* ── Website Image ─────────────────────────────────────────────────── */}
+        <div className="border-t border-gray-100 pt-5">
+          <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1">
+            Website Product Image
+          </label>
+          <p className="text-xs text-gray-400 mb-3">
+            This image appears on the public website product catalogue. Upload a clean product photo (JPEG / PNG / WebP, max 5 MB).
+          </p>
+
+          {/* Preview */}
+          {imageUrl && (
+            <div className="relative inline-block mb-3">
+              <img
+                src={imageUrl}
+                alt="Product"
+                className="w-40 h-40 object-cover rounded-xl border border-gray-200 shadow-sm"
+              />
+              <button
+                type="button"
+                onClick={handleImageRemove}
+                className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full text-xs
+                           flex items-center justify-center hover:bg-red-600 transition-colors shadow"
+                title="Remove image"
+              >
+                ✕
+              </button>
+            </div>
+          )}
+
+          {/* Upload button */}
+          <div className="flex items-center gap-3">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleImageUpload}
+              className="hidden"
+            />
+            <button
+              type="button"
+              disabled={isUploading}
+              onClick={() => fileInputRef.current?.click()}
+              className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700
+                         rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isUploading ? "Uploading…" : imageUrl ? "Replace Image" : "Upload Image"}
+            </button>
+            {imageUrl && (
+              <a
+                href={imageUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-indigo-500 hover:underline"
+              >
+                View full size ↗
+              </a>
+            )}
+          </div>
+          {uploadError && (
+            <p className="text-xs text-red-500 mt-2">⚠ {uploadError}</p>
+          )}
         </div>
 
         {/* Actions */}

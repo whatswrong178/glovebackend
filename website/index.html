@@ -564,10 +564,16 @@
       </p>
     </div>
 
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:24px;margin-bottom:48px;">
+    <!-- ↓ Populated by loadProducts() in <script> at page bottom ↓ -->
+    <div id="product-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:24px;margin-bottom:48px;align-items:start;">
+      <!-- loading skeleton (replaced once fetch completes) -->
+      <div style="border-radius:var(--radius-lg);border:1px solid var(--gray-200);background:white;padding:48px 32px;text-align:center;grid-column:1/-1;">
+        <p style="color:var(--gray-400);font-size:0.9rem;">Loading products…</p>
+      </div>
+    </div>
 
-      <!-- Nitrile -->
-      <div class="reveal" style="border-radius:var(--radius-lg);border:1px solid var(--gray-200);overflow:hidden;background:white;box-shadow:var(--shadow);transition:transform 0.25s,box-shadow 0.25s;" onmouseenter="this.style.transform='translateY(-5px)';this.style.boxShadow='var(--shadow-lg)'" onmouseleave="this.style.transform='';this.style.boxShadow='var(--shadow)'">
+    <!-- legacy hardcoded cards hidden — JS renders real products above -->
+    <div style="display:none" aria-hidden="true" data-legacy-products="1">
         <div style="background:linear-gradient(135deg,#0c2d52,#0a3d6e);padding:36px 32px 28px;position:relative;overflow:hidden;">
           <div style="position:absolute;top:-20px;right:-20px;width:100px;height:100px;background:rgba(6,182,212,0.12);border-radius:50%;"></div>
           <div style="font-size:2.8rem;margin-bottom:12px;">🧤</div>
@@ -762,8 +768,7 @@
           <span class="en">Tell Us What You Need →</span>
         </a>
       </div>
-
-    </div>
+    </div><!-- /data-legacy-products -->
 
     <!-- Price note -->
     <div style="text-align:center;padding:24px 32px;background:linear-gradient(135deg,rgba(6,182,212,0.08),rgba(21,101,192,0.08));border-radius:var(--radius-lg);border:1px solid rgba(6,182,212,0.2);">
@@ -992,6 +997,44 @@
   </div>
 </section>
 
+<!-- ══ ADMIN PANEL (hidden — access via #admin in URL) ════════════════════ -->
+<section id="admin-panel" style="display:none;background:#0f172a;padding:60px 0;">
+  <div class="container">
+
+    <!-- Login state -->
+    <div id="admin-login" style="max-width:400px;margin:0 auto;">
+      <h2 style="color:white;margin-bottom:8px;font-size:1.4rem;">🔐 Admin — Product Images</h2>
+      <p style="color:rgba(255,255,255,0.5);font-size:0.85rem;margin-bottom:24px;">Log in with your ERP account to upload product images to the public website.</p>
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <input id="admin-email" type="email" placeholder="email@equimedsupply.com"
+          style="padding:10px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.07);color:white;font-size:0.9rem;outline:none;" />
+        <input id="admin-pw" type="password" placeholder="Password"
+          style="padding:10px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.07);color:white;font-size:0.9rem;outline:none;" />
+        <button id="admin-login-btn" onclick="adminLogin()"
+          style="padding:11px;border-radius:8px;background:#06b6d4;color:white;font-weight:700;border:none;cursor:pointer;font-size:0.9rem;">
+          Sign In
+        </button>
+        <p id="admin-login-err" style="color:#f87171;font-size:0.8rem;display:none;"></p>
+      </div>
+    </div>
+
+    <!-- Authenticated state -->
+    <div id="admin-dashboard" style="display:none;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:32px;">
+        <h2 style="color:white;font-size:1.4rem;">📸 Product Image Manager</h2>
+        <button onclick="adminLogout()"
+          style="padding:8px 16px;border-radius:8px;background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.15);cursor:pointer;font-size:0.8rem;">
+          Sign Out
+        </button>
+      </div>
+      <div id="admin-product-list" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;">
+        <p style="color:rgba(255,255,255,0.4);">Loading products…</p>
+      </div>
+    </div>
+
+  </div>
+</section>
+
 <!-- ══ FOOTER ════════════════════════════════════════════════════════════ -->
 <footer class="footer">
   <div class="container">
@@ -1028,11 +1071,21 @@
     <div class="footer__bottom">
       <p>© 2026 <span class="zh">Equimed Supply。保留所有权利。</span><span class="en">Equimed Supply. All rights reserved.</span></p>
       <p><span class="zh">马来西亚注册公司</span><span class="en">Registered in Malaysia</span></p>
+      <p style="margin-top:8px;">
+        <a href="#admin" onclick="document.getElementById('admin-panel').style.display='block';window.scrollTo({top:document.getElementById('admin-panel').offsetTop,behavior:'smooth'});return false;"
+          style="font-size:0.7rem;color:rgba(255,255,255,0.2);text-decoration:none;">Admin</a>
+      </p>
     </div>
   </div>
 </footer>
 
 <script>
+  // ══════════════════════════════════════════════════════════════════════════
+  // CONFIG — update these two values before deploying
+  // ══════════════════════════════════════════════════════════════════════════
+  const SUPABASE_URL  = "https://YOUR_PROJECT_REF.supabase.co";
+  const SUPABASE_ANON = "YOUR_ANON_KEY";
+
   // ── Language toggle ──────────────────────────────────────────────────────
   function setLang(lang) {
     document.documentElement.lang = lang;
@@ -1052,15 +1105,15 @@
   }, { passive: true });
 
   // ── Scroll-reveal ────────────────────────────────────────────────────────
-  const observer = new IntersectionObserver((entries) => {
+  const revealObserver = new IntersectionObserver((entries) => {
     entries.forEach((entry, i) => {
       if (entry.isIntersecting) {
         setTimeout(() => entry.target.classList.add('visible'), i * 80);
-        observer.unobserve(entry.target);
+        revealObserver.unobserve(entry.target);
       }
     });
   }, { threshold: 0.12 });
-  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+  document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
 
   // ── Smooth scroll for anchor links ───────────────────────────────────────
   document.querySelectorAll('a[href^="#"]').forEach(a => {
@@ -1072,6 +1125,267 @@
       }
     });
   });
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // DYNAMIC PRODUCT CATALOGUE — fetches from Supabase public REST API
+  // ══════════════════════════════════════════════════════════════════════════
+
+  const CARD_GRADIENTS = [
+    "linear-gradient(135deg,#0c2d52,#0a3d6e)",
+    "linear-gradient(135deg,#1a3a2a,#1d5c3a)",
+    "linear-gradient(135deg,#3d1f00,#6b3500)",
+    "linear-gradient(135deg,#1a2a4a,#233d6b)",
+    "linear-gradient(135deg,#2a1a00,#4a3000)",
+    "linear-gradient(135deg,#2a0a3a,#4a1a5a)",
+  ];
+  const CARD_EMOJIS = ["🧤","🫱","🍽️","🛡️","⚙️","📦"];
+
+  function buildProductCard(p, idx) {
+    const gradient = CARD_GRADIENTS[idx % CARD_GRADIENTS.length];
+    const emoji    = CARD_EMOJIS[idx % CARD_EMOJIS.length];
+    const lang     = document.documentElement.lang || 'zh';
+    const name     = p.name || (lang === 'zh' ? '产品' : 'Product');
+    const desc     = p.description ? p.description.slice(0, 100) : '';
+    const sku      = p.sku ? `SKU: ${p.sku}` : '';
+
+    const imageBlock = p.image_url
+      ? `<div style="height:180px;overflow:hidden;background:${gradient};">
+           <img src="${p.image_url}" alt="${name}"
+             style="width:100%;height:100%;object-fit:cover;display:block;"
+             onerror="this.parentElement.innerHTML='<div style=\\'font-size:2.8rem;padding:40px 0;text-align:center;\\'>${emoji}</div>'" />
+         </div>`
+      : `<div style="${gradient};padding:36px 32px 28px;position:relative;overflow:hidden;">
+           <div style="position:absolute;top:-20px;right:-20px;width:100px;height:100px;background:rgba(255,255,255,0.08);border-radius:50%;"></div>
+           <div style="font-size:2.8rem;margin-bottom:12px;">${emoji}</div>
+           <h3 style="color:white;font-size:1.15rem;margin-bottom:4px;">${name}</h3>
+           ${sku ? `<p style="color:rgba(255,255,255,0.5);font-size:0.78rem;">${sku}</p>` : ''}
+         </div>`;
+
+    return `
+      <div style="border-radius:var(--radius-lg);border:1px solid var(--gray-200);overflow:hidden;
+                  background:white;box-shadow:var(--shadow);transition:transform 0.25s,box-shadow 0.25s;"
+           onmouseenter="this.style.transform='translateY(-5px)';this.style.boxShadow='var(--shadow-lg)'"
+           onmouseleave="this.style.transform='';this.style.boxShadow='var(--shadow)'">
+        ${imageBlock}
+        <div style="padding:20px 24px;">
+          ${p.image_url ? `<h3 style="font-size:1rem;margin-bottom:6px;color:var(--gray-900);">${name}</h3>` : ''}
+          ${desc ? `<p style="font-size:0.84rem;color:var(--gray-500);margin-bottom:12px;line-height:1.6;">${desc}</p>` : ''}
+          <div style="display:flex;justify-content:space-between;align-items:center;padding-top:12px;border-top:1px solid var(--gray-100);">
+            <span style="font-size:0.78rem;color:var(--gray-400);">${sku}</span>
+            <a href="#contact" style="font-size:0.82rem;font-weight:700;color:var(--teal);text-decoration:none;">
+              <span class="zh">询价 →</span><span class="en">Enquire →</span>
+            </a>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  const MORE_CARD = `
+    <div style="border-radius:var(--radius-lg);border:2px dashed var(--gray-200);overflow:hidden;
+                background:var(--gray-50);display:flex;flex-direction:column;align-items:center;
+                justify-content:center;padding:52px 32px;text-align:center;min-height:280px;">
+      <div style="font-size:2.8rem;margin-bottom:16px;">🔍</div>
+      <h3 style="margin-bottom:10px;">
+        <span class="zh">找不到你需要的？</span>
+        <span class="en">Can't Find What You Need?</span>
+      </h3>
+      <p style="font-size:0.88rem;margin-bottom:24px;">
+        <span class="zh">我们持续扩充产品目录。联系我们，告诉我们你的需求，我们为你寻源。</span>
+        <span class="en">We're constantly expanding our catalogue. Contact us with your requirements — we'll source it for you.</span>
+      </p>
+      <a href="#contact" class="btn btn-dark" style="font-size:0.875rem;padding:12px 24px;">
+        <span class="zh">告诉我们你的需求 →</span>
+        <span class="en">Tell Us What You Need →</span>
+      </a>
+    </div>`;
+
+  async function loadProducts() {
+    const grid = document.getElementById('product-grid');
+    if (!grid) return;
+
+    // Skip fetch if config not yet set
+    if (SUPABASE_URL.includes('YOUR_PROJECT_REF')) {
+      grid.innerHTML = MORE_CARD;
+      return;
+    }
+
+    try {
+      const res = await fetch(
+        `${SUPABASE_URL}/rest/v1/products_safe_view?select=id,name,sku,description,image_url&order=name`,
+        { headers: { 'apikey': SUPABASE_ANON, 'Accept': 'application/json' } }
+      );
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const products = await res.json();
+
+      if (!products.length) {
+        grid.innerHTML = MORE_CARD;
+        return;
+      }
+
+      grid.innerHTML = products.map((p, i) => buildProductCard(p, i)).join('') + MORE_CARD;
+
+      // Re-observe newly created .reveal cards
+      grid.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
+
+    } catch (err) {
+      console.warn('Product fetch failed — showing placeholder', err);
+      grid.innerHTML = MORE_CARD;
+    }
+  }
+
+  loadProducts();
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // ADMIN PANEL — product image upload via Supabase Auth + Storage
+  // Access: click "Admin" link in footer (URL hash #admin)
+  // ══════════════════════════════════════════════════════════════════════════
+
+  let _adminToken = null;
+
+  // Show panel when #admin is in URL
+  if (window.location.hash === '#admin') {
+    const panel = document.getElementById('admin-panel');
+    if (panel) panel.style.display = 'block';
+  }
+
+  async function adminLogin() {
+    const email = document.getElementById('admin-email').value.trim();
+    const pw    = document.getElementById('admin-pw').value;
+    const errEl = document.getElementById('admin-login-err');
+    const btn   = document.getElementById('admin-login-btn');
+
+    errEl.style.display = 'none';
+    btn.textContent = 'Signing in…';
+    btn.disabled = true;
+
+    try {
+      const res  = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+        method:  'POST',
+        headers: { 'apikey': SUPABASE_ANON, 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ email, password: pw }),
+      });
+      const data = await res.json();
+
+      if (!res.ok || !data.access_token) {
+        throw new Error(data.error_description || data.msg || 'Login failed');
+      }
+
+      _adminToken = data.access_token;
+      document.getElementById('admin-login').style.display    = 'none';
+      document.getElementById('admin-dashboard').style.display = 'block';
+      loadAdminProducts();
+
+    } catch (err) {
+      errEl.textContent = err.message;
+      errEl.style.display = 'block';
+    } finally {
+      btn.textContent = 'Sign In';
+      btn.disabled = false;
+    }
+  }
+
+  function adminLogout() {
+    _adminToken = null;
+    document.getElementById('admin-login').style.display    = 'block';
+    document.getElementById('admin-dashboard').style.display = 'none';
+    document.getElementById('admin-email').value = '';
+    document.getElementById('admin-pw').value    = '';
+  }
+
+  async function loadAdminProducts() {
+    const listEl = document.getElementById('admin-product-list');
+    listEl.innerHTML = '<p style="color:rgba(255,255,255,0.4);">Loading…</p>';
+
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/products?select=id,name,sku,image_url&order=name&limit=200`,
+      { headers: { 'apikey': SUPABASE_ANON, 'Authorization': `Bearer ${_adminToken}`, 'Accept': 'application/json' } }
+    );
+    const products = await res.json();
+
+    if (!products.length) {
+      listEl.innerHTML = '<p style="color:rgba(255,255,255,0.4);">No products found.</p>';
+      return;
+    }
+
+    listEl.innerHTML = products.map(p => `
+      <div style="background:rgba(255,255,255,0.06);border-radius:12px;padding:16px;border:1px solid rgba(255,255,255,0.1);">
+        ${p.image_url
+          ? `<img src="${p.image_url}" style="width:100%;height:120px;object-fit:cover;border-radius:8px;margin-bottom:10px;" />`
+          : `<div style="width:100%;height:120px;background:rgba(255,255,255,0.04);border-radius:8px;margin-bottom:10px;display:flex;align-items:center;justify-content:center;">
+               <span style="color:rgba(255,255,255,0.2);font-size:0.8rem;">No image</span>
+             </div>`}
+        <p style="color:white;font-weight:600;font-size:0.875rem;margin-bottom:2px;">${p.name}</p>
+        <p style="color:rgba(255,255,255,0.4);font-size:0.75rem;margin-bottom:10px;">${p.sku || ''}</p>
+        <label style="display:block;padding:8px;background:rgba(6,182,212,0.2);border:1px solid rgba(6,182,212,0.4);
+                      border-radius:8px;cursor:pointer;text-align:center;color:#06b6d4;font-size:0.8rem;font-weight:600;">
+          📤 Upload Image
+          <input type="file" accept="image/*" style="display:none;" onchange="uploadProductImage(this,'${p.id}','${p.name}')" />
+        </label>
+        <p id="up-status-${p.id}" style="color:#34d399;font-size:0.75rem;margin-top:6px;display:none;"></p>
+      </div>`).join('');
+  }
+
+  async function uploadProductImage(input, productId, productName) {
+    const file = input.files[0];
+    if (!file) return;
+
+    const statusEl = document.getElementById(`up-status-${productId}`);
+    statusEl.style.display = 'block';
+    statusEl.style.color   = '#94a3b8';
+    statusEl.textContent   = 'Uploading…';
+
+    const ext  = file.name.split('.').pop() || 'jpg';
+    const path = `products/${productId}.${ext}`;
+
+    // Upload to Supabase Storage via REST
+    const upRes = await fetch(`${SUPABASE_URL}/storage/v1/object/product-images/${path}`, {
+      method:  'POST',
+      headers: {
+        'apikey':        SUPABASE_ANON,
+        'Authorization': `Bearer ${_adminToken}`,
+        'x-upsert':      'true',
+        'Content-Type':  file.type,
+      },
+      body: file,
+    });
+
+    if (!upRes.ok) {
+      const err = await upRes.json().catch(() => ({}));
+      statusEl.style.color = '#f87171';
+      statusEl.textContent = `Upload failed: ${err.message || upRes.status}`;
+      return;
+    }
+
+    // Build public URL and save to products table
+    const cacheBust = Date.now();
+    const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/product-images/${path}?t=${cacheBust}`;
+
+    const patchRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/products?id=eq.${productId}`,
+      {
+        method:  'PATCH',
+        headers: {
+          'apikey':         SUPABASE_ANON,
+          'Authorization':  `Bearer ${_adminToken}`,
+          'Content-Type':   'application/json',
+          'Prefer':         'return=minimal',
+        },
+        body: JSON.stringify({ image_url: publicUrl }),
+      }
+    );
+
+    if (!patchRes.ok) {
+      statusEl.style.color = '#f87171';
+      statusEl.textContent = 'Image uploaded but failed to save URL. Refresh ERP.';
+      return;
+    }
+
+    statusEl.style.color = '#34d399';
+    statusEl.textContent = '✓ Saved! Reload the page to see it on the website.';
+
+    // Reload admin product list to show new image
+    setTimeout(loadAdminProducts, 1500);
+  }
 </script>
 </body>
 </html>

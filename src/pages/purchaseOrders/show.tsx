@@ -13,6 +13,7 @@ import { useParams } from "react-router-dom";
 import { PrintLayout, PRINT_CSS } from "../../components/PrintLayout";
 import type { PrintDocData, PrintLineItem, CompanyInfo } from "../../components/PrintLayout";
 import { useCompanySettings } from "../../context/CompanySettingsContext";
+import { supabaseClient } from "../../supabaseClient";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface POItem {
@@ -21,7 +22,7 @@ interface POItem {
   product_id: string;
   qty:        number;
   unit_cost:  number;
-  product:    { name: string; sku: string } | null;
+  product:    { name: string; sku: string; units_per_carton: number | null } | null;
 }
 
 interface PurchaseOrder {
@@ -52,6 +53,199 @@ const STATUS_NEXT: Record<string, "Approved" | "Sent"> = {
   Approved: "Sent",
 };
 
+// ── EditPOModal ───────────────────────────────────────────────────────────────
+interface EditableItem {
+  id:              string;
+  product_id:      string;
+  productName:     string;
+  productSku:      string;
+  qty:             string;   // string for input binding
+  unit_cost:       string;
+  unitsPerCarton:  number;   // for implied per-unit helper
+}
+
+function EditPOModal({
+  poId,
+  items,
+  onClose,
+  onSaved,
+}: {
+  poId:    string;
+  items:   POItem[];
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const [rows, setRows] = useState<EditableItem[]>(() =>
+    items.map((it) => ({
+      id:             it.id,
+      product_id:     it.product_id,
+      productName:    it.product?.name ?? "Unknown",
+      productSku:     it.product?.sku  ?? "—",
+      qty:            String(it.qty),
+      unit_cost:      String(it.unit_cost),
+      unitsPerCarton: it.product?.units_per_carton ?? 1,
+    }))
+  );
+  const [saving,  setSaving]  = useState(false);
+  const [error,   setError]   = useState("");
+
+  const n = (v: string) => parseFloat(v) || 0;
+
+  const update = (id: string, field: "qty" | "unit_cost", val: string) => {
+    setRows((prev) => prev.map((r) => r.id === id ? { ...r, [field]: val } : r));
+    setError("");
+  };
+
+  const subtotal = rows.reduce((s, r) => s + n(r.qty) * n(r.unit_cost), 0);
+  const fmt = (v: number) => v.toLocaleString("en-MY", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  const handleSave = async () => {
+    // Validate
+    for (const r of rows) {
+      if (n(r.qty) <= 0)      { setError(`${r.productSku}: Qty must be > 0.`);       return; }
+      if (n(r.unit_cost) < 0) { setError(`${r.productSku}: Unit cost cannot be negative.`); return; }
+    }
+    setSaving(true);
+    setError("");
+    try {
+      await Promise.all(
+        rows.map((r) =>
+          supabaseClient
+            .from("purchase_order_items")
+            .update({ qty: Math.round(n(r.qty)), unit_cost: n(r.unit_cost) })
+            .eq("id", r.id)
+            .throwOnError()
+        )
+      );
+      onSaved();
+    } catch (e: unknown) {
+      setError((e as { message?: string })?.message ?? String(e));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col">
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+          <div>
+            <h2 className="text-base font-bold text-gray-900">Edit Purchase Order</h2>
+            <p className="text-xs text-gray-500 mt-0.5">Adjust quantities and unit costs. Changes save immediately.</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 text-xl leading-none"
+          >✕</button>
+        </div>
+
+        {/* Table */}
+        <div className="flex-1 overflow-y-auto px-6 py-4">
+          {error && (
+            <div className="mb-4 bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm text-red-700">
+              ⚠️ {error}
+            </div>
+          )}
+
+          {/* Hint banner */}
+          <div className="mb-3 flex items-start gap-2 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-800">
+            <span className="mt-0.5 shrink-0">💡</span>
+            <span>
+              <strong>Cost per Carton</strong> = the price you pay per carton delivered.
+              The implied per-unit cost is shown below each field — use it to verify the entry is correct.
+            </span>
+          </div>
+
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-gray-100">
+                <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wide pb-2">SKU</th>
+                <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wide pb-2">Product</th>
+                <th className="text-center text-xs font-semibold text-gray-500 uppercase tracking-wide pb-2 w-20">Units/<br/>Carton</th>
+                <th className="text-right text-xs font-semibold text-gray-500 uppercase tracking-wide pb-2 w-24">Qty<br/>(Cartons)</th>
+                <th className="text-right text-xs font-semibold text-gray-500 uppercase tracking-wide pb-2 w-40">Cost/Carton (RM)</th>
+                <th className="text-right text-xs font-semibold text-gray-500 uppercase tracking-wide pb-2 w-28">Line Total</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {rows.map((row) => {
+                const lineTotal        = n(row.qty) * n(row.unit_cost);
+                const upc              = row.unitsPerCarton > 0 ? row.unitsPerCarton : 1;
+                const impliedPerUnit   = n(row.unit_cost) / upc;
+                return (
+                  <tr key={row.id} className="hover:bg-gray-50">
+                    <td className="py-3 pr-3 font-mono text-xs text-gray-500">{row.productSku}</td>
+                    <td className="py-3 pr-3 text-gray-800 font-medium">{row.productName}</td>
+                    <td className="py-3 pr-3 text-center tabular-nums text-gray-600 font-medium">
+                      {row.unitsPerCarton}
+                    </td>
+                    <td className="py-3 pr-3">
+                      <input
+                        type="number"
+                        min="1"
+                        step="1"
+                        value={row.qty}
+                        onChange={(e) => update(row.id, "qty", e.target.value)}
+                        className="w-full text-right text-sm border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-400 tabular-nums"
+                      />
+                    </td>
+                    <td className="py-3 pr-3">
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={row.unit_cost}
+                        onChange={(e) => update(row.id, "unit_cost", e.target.value)}
+                        className="w-full text-right text-sm border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-400 tabular-nums"
+                      />
+                      {n(row.unit_cost) > 0 && (
+                        <p className="text-right text-[10px] text-gray-400 tabular-nums mt-0.5">
+                          = RM {impliedPerUnit.toLocaleString("en-MY", { minimumFractionDigits: 4, maximumFractionDigits: 4 })} / unit
+                        </p>
+                      )}
+                    </td>
+                    <td className="py-3 text-right tabular-nums font-semibold text-gray-900">
+                      {fmt(lineTotal)}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+            <tfoot>
+              <tr className="border-t-2 border-gray-200">
+                <td colSpan={5} className="pt-3 text-right text-sm font-semibold text-gray-600 pr-3">New Total:</td>
+                <td className="pt-3 text-right text-base font-bold text-gray-900 tabular-nums">
+                  RM {fmt(subtotal)}
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100 bg-gray-50 rounded-b-2xl">
+          <button
+            onClick={onClose}
+            disabled={saving}
+            className="px-4 py-2 text-sm text-gray-600 border border-gray-200 rounded-lg hover:bg-white transition-colors disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="px-5 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {saving ? "Saving…" : "Save Changes"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── usePrint hook ─────────────────────────────────────────────────────────────
 function usePrint() {
   const printRef = useRef<HTMLDivElement>(null);
@@ -81,6 +275,7 @@ export function POShowPage() {
   const { settings } = useCompanySettings();
   const { printRef, triggerPrint } = usePrint();
   const [showPreview, setShowPreview] = useState(false);
+  const [showEdit,    setShowEdit]    = useState(false);
 
   // Fetch PO
   const { data: poData, isLoading: poLoading, refetch } = useOne<PurchaseOrder>({
@@ -97,7 +292,7 @@ export function POShowPage() {
     pagination: { current: 1, pageSize: 200 },
     filters:    [{ field: "po_id", operator: "eq", value: id }],
     meta: {
-      select: "id,po_id,product_id,qty,unit_cost,product:products!product_id(name,sku)",
+      select: "id,po_id,product_id,qty,unit_cost,product:products!product_id(name,sku,units_per_carton)",
     },
   });
 
@@ -207,6 +402,14 @@ export function POShowPage() {
 
         {/* Actions toolbar */}
         <div className="flex items-center gap-2">
+          {po.status !== "Sent" && (
+            <button
+              onClick={() => setShowEdit(true)}
+              className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-amber-700 bg-amber-50 border border-amber-200 hover:bg-amber-100 rounded-lg transition-colors"
+            >
+              ✏️ Edit Prices
+            </button>
+          )}
           <button
             onClick={() => setShowPreview(true)}
             className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 hover:border-gray-300 rounded-lg transition-colors"
@@ -277,6 +480,16 @@ export function POShowPage() {
           </>
         )}
       </div>
+
+      {/* ── Edit Modal ───────────────────────────────────────────────────── */}
+      {showEdit && (
+        <EditPOModal
+          poId={po.id}
+          items={items}
+          onClose={() => setShowEdit(false)}
+          onSaved={() => { setShowEdit(false); refetch(); }}
+        />
+      )}
 
       {/* ── Hidden print area ─────────────────────────────────────────────── */}
       <div className="hidden">
