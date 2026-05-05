@@ -127,12 +127,17 @@ export function POShowPage() {
 
   // ── Build PrintDocData ──────────────────────────────────────────────────────
   const companyInfo: CompanyInfo = {
-    name:    settings?.company_name   ?? "Equimed Supply",
-    regNo:   settings?.reg_no         ?? "",
-    address: settings?.address        ?? "",
-    phone:   settings?.phone          ?? "",
-    email:   settings?.email          ?? "",
-    website: settings?.website        ?? "",
+    name:    settings?.company_name    ?? "Equimed Supply",
+    regNo:   settings?.registration_no ?? "",
+    address: [
+      settings?.address_line1,
+      settings?.address_line2,
+      [settings?.postcode, settings?.city].filter(Boolean).join(" "),
+      settings?.state,
+    ].filter(Boolean).join(", ") || "",
+    phone:   settings?.phone           ?? "",
+    email:   settings?.email           ?? "",
+    website: settings?.website         ?? "",
   };
 
   const printItems: PrintLineItem[] = items.map((item, idx) => ({

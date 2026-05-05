@@ -35,7 +35,7 @@ export function ClientEditPage() {
     resource: "clients",
     id:       id!,
     meta: {
-      select: "id,name,ssm_no,region,credit_terms,contact_person,contact_email,contact_phone,owner_id",
+      select: "id,name,ssm_no,region,credit_terms,contact_person,contact_email,contact_phone,address,owner_id",
     },
   });
 
@@ -50,7 +50,7 @@ export function ClientEditPage() {
         contact_person: c.contact_person ?? "",
         contact_email:  c.contact_email  ?? "",
         contact_phone:  c.contact_phone  ?? "",
-        address:        (c as any).address ?? "",
+        address:        c.address ?? "",
         owner_id:       c.owner_id ?? "",
       };
       setForm(vals);
@@ -124,7 +124,7 @@ export function ClientEditPage() {
             contact_person: form.contact_person.trim() || null,
             contact_email:  form.contact_email.trim()  || null,
             contact_phone:  form.contact_phone.trim()  || null,
-            address:        (form as any).address?.trim() || null,
+            address:        form.address.trim() || null,
           },
         },
         {
@@ -329,8 +329,8 @@ export function ClientEditPage() {
             Address
           </label>
           <textarea
-            value={(form as any).address ?? ""}
-            onChange={set("address" as any)}
+            value={form.address}
+            onChange={set("address")}
             rows={3}
             placeholder="e.g. No. 12, Jalan Utama 1, Taman Maju, 47810 Petaling Jaya, Selangor"
             className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2

@@ -23,6 +23,7 @@ export interface Client {
   contact_person:   string | null;
   contact_email:    string | null;
   contact_phone:    string | null;
+  address:          string | null;    // Used on printed invoices and delivery orders
   created_at:       string;
 }
 
@@ -49,6 +50,7 @@ export interface ClientFormValues {
   contact_person: string;
   contact_email:  string;
   contact_phone:  string;
+  address:        string;             // Used on printed invoices and delivery orders
   owner_id:       string;             // Admin can reassign; others fixed to self
 }
 

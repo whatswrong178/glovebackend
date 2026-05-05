@@ -416,7 +416,7 @@ export function ClientShowPage() {
               <Field label="Contact Person"  value={client.contact_person ?? "—"} />
               <Field label="Contact Email"   value={client.contact_email  ?? "—"} />
               <Field label="Contact Phone"   value={client.contact_phone  ?? "—"} />
-              <Field label="Address" value={(client as any).address ?? "—"} />
+              <Field label="Address" value={client.address ?? "—"} />
               <Field label="First Order Date" value={
                 client.first_order_date
                   ? new Date(client.first_order_date).toLocaleDateString("en-MY", { day: "2-digit", month: "short", year: "numeric" })
