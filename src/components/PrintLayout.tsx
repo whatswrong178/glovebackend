@@ -147,9 +147,9 @@ export const PRINT_CSS = `
 
 /* ── Items table ── */
 .p-table{width:100%;border-collapse:collapse;border:1pt solid #aaa}
-.p-table thead tr{background:#000}
-.p-table thead th{font-size:9pt;font-weight:700;color:#fff;padding:7pt 8pt;
-  text-align:left;border-right:1pt solid #444}
+.p-table thead tr{background:transparent}
+.p-table thead th{font-size:9pt;font-weight:700;color:#000;padding:7pt 8pt;
+  text-align:left;border-right:1pt solid #aaa;border-bottom:2pt solid #000}
 .p-table thead th.r{text-align:right}
 /* Zebra rows — neutral grays survive grayscale perfectly */
 .p-table tbody tr:nth-child(even){background:#f0f0f0}

@@ -473,7 +473,8 @@ function usePrint() {
         const src = img.getAttribute("src") ?? "";
         if (src.startsWith("http")) {
           const isLogo = src.includes("/logos/");
-          img.setAttribute("src", isLogo ? await processLogoForPrint(src) : await toDataUrl(src));
+          const fetchSrc = isLogo ? `${src.split("?")[0]}?v=${Date.now()}` : src;
+          img.setAttribute("src", isLogo ? await processLogoForPrint(fetchSrc) : await toDataUrl(fetchSrc));
         }
       })
     );

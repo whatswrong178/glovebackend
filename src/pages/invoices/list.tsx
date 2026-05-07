@@ -635,9 +635,11 @@ export function InvoiceListPage() {
       imgs.map(async (img) => {
         const src = img.getAttribute("src") ?? "";
         if (src.startsWith("http")) {
-          // Logo images get background-removal + darkening for clean B&W print
+          // Logo images get background-removal + darkening for clean B&W print.
+          // Append cache-bust so browser always fetches the latest uploaded file.
           const isLogo = src.includes("/logos/");
-          img.setAttribute("src", isLogo ? await processLogoForPrint(src) : await toDataUrl(src));
+          const fetchSrc = isLogo ? `${src.split("?")[0]}?v=${Date.now()}` : src;
+          img.setAttribute("src", isLogo ? await processLogoForPrint(fetchSrc) : await toDataUrl(fetchSrc));
         }
       })
     );
