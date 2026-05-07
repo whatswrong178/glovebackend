@@ -302,22 +302,51 @@ function EditPOModal({
             </div>
             {showDropdown && searchResults.length > 0 && (
               <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
-                {searchResults.map(hit => (
-                  <button
-                    key={hit.id}
-                    type="button"
-                    onClick={() => addProduct(hit)}
-                    className="w-full text-left px-4 py-2.5 hover:bg-blue-50 transition-colors flex items-center justify-between gap-3"
-                  >
-                    <span className="font-medium text-sm text-gray-800">{hit.name}</span>
-                    <span className="font-mono text-xs text-gray-400 shrink-0">{hit.sku}</span>
-                  </button>
-                ))}
+                <div className="px-4 py-1.5 bg-gray-50 border-b border-gray-100 text-[10px] font-semibold text-gray-400 uppercase tracking-wide">
+                  Select product — will be added to PO only, invoice is unaffected
+                </div>
+                {searchResults.map(hit => {
+                  const alreadyAdded = rows.some(r => r.product_id === hit.id);
+                  const upc          = hit.units_per_carton ?? 1;
+                  const cpc          = (hit.cost_price ?? 0) * upc;
+                  return (
+                    <button
+                      key={hit.id}
+                      type="button"
+                      onClick={() => addProduct(hit)}
+                      disabled={alreadyAdded}
+                      className={`w-full text-left px-4 py-3 transition-colors flex items-start justify-between gap-3
+                        ${alreadyAdded
+                          ? "bg-gray-50 cursor-not-allowed opacity-50"
+                          : "hover:bg-blue-50 cursor-pointer"
+                        }`}
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-sm text-gray-800 truncate">{hit.name}</span>
+                          <span className="font-mono text-xs text-gray-400 shrink-0">{hit.sku}</span>
+                          {alreadyAdded && (
+                            <span className="text-[10px] bg-amber-100 text-amber-700 rounded px-1.5 py-0.5 font-semibold shrink-0">
+                              Already in PO
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-[11px] text-gray-400 mt-0.5 tabular-nums">
+                          {upc} units/carton
+                          {hit.cost_price != null && hit.cost_price > 0 && (
+                            <> · RM {(hit.cost_price).toFixed(2)}/unit · RM {cpc.toFixed(2)}/carton</>
+                          )}
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             )}
             {showDropdown && searchResults.length === 0 && !searchLoading && searchQuery.length >= 2 && (
               <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-lg px-4 py-3 text-sm text-gray-400">
-                No products found for "{searchQuery}".
+                No products found for "<span className="text-gray-600">{searchQuery}</span>".
+                <span className="block text-xs mt-1">Make sure the product exists in the Products catalogue first.</span>
               </div>
             )}
           </div>
