@@ -237,21 +237,19 @@ function CompanyProfileTab() {
     setLogoUploading(true);
 
     const ext      = file.name.split(".").pop();
-    const path     = `logo/company-logo.${ext}`;
+    const path     = `logos/company-logo.${ext}`;
     const { error } = await supabaseClient.storage
-      .from("company-assets")
+      .from("product-images")
       .upload(path, file, { upsert: true, contentType: file.type });
 
     if (error) {
-      setLogoError(error.message.includes("not found")
-        ? 'Bucket "company-assets" not found. Create it in Supabase Dashboard → Storage → New Bucket (Public: ON).'
-        : error.message);
+      setLogoError(error.message);
       setLogoUploading(false);
       return;
     }
 
     const { data: urlData } = supabaseClient.storage
-      .from("company-assets")
+      .from("product-images")
       .getPublicUrl(path);
 
     // Bust cache with timestamp

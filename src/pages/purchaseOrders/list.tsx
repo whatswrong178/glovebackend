@@ -6,10 +6,11 @@
 // invoice). Status: Draft → Approved → Sent
 //
 // Columns: PO No · Supplier · Invoice Ref · Status · Items · Total Cost · Date · Actions
+// Delete: Admin only, Draft / Approved POs (Sent = locked)
 // ══════════════════════════════════════════════════════════════════════════════
 
 import React, { useState } from "react";
-import { useList, useUpdate, useGetIdentity, useNavigation } from "@refinedev/core";
+import { useList, useUpdate, useDelete, useGetIdentity, useNavigation } from "@refinedev/core";
 import type { StaffRole } from "../../types/staff";
 
 interface PurchaseOrder {
@@ -21,7 +22,6 @@ interface PurchaseOrder {
   supplier_id: string;
   supplier:    { name: string } | null;
   invoice:     { invoice_no: string } | null;
-  // aggregated via RPC — not available via simple select, we'll fetch items separately
 }
 
 const STATUS_COLOR: Record<string, string> = {
@@ -38,10 +38,15 @@ const STATUS_NEXT: Record<string, "Approved" | "Sent"> = {
 export function POListPage() {
   const { push } = useNavigation();
   const { data: identity } = useGetIdentity<{ id: string; role: StaffRole }>();
-  const { mutate: updatePO } = useUpdate();
+  const isAdmin = identity?.role === "Admin";
 
-  const [statusFilter, setStatusFilter] = useState<string>("All");
+  const { mutate: updatePO } = useUpdate();
+  const { mutate: deletePO } = useDelete();
+
+  const [statusFilter,   setStatusFilter]   = useState<string>("All");
   const [supplierFilter, setSupplierFilter] = useState("");
+  const [deletingId,     setDeletingId]     = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const { data, isLoading, refetch } = useList<PurchaseOrder>({
     resource:   "purchase_orders",
@@ -70,6 +75,28 @@ export function POListPage() {
     );
   };
 
+  const handleDeleteClick = (poId: string) => {
+    setConfirmDeleteId(poId);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (!confirmDeleteId) return;
+    setDeletingId(confirmDeleteId);
+    setConfirmDeleteId(null);
+    deletePO(
+      { resource: "purchase_orders", id: confirmDeleteId },
+      {
+        onSuccess: () => { setDeletingId(null); refetch(); },
+        onError:   (err) => {
+          setDeletingId(null);
+          alert((err as unknown as Error).message ?? "Delete failed. Please try again.");
+        },
+      }
+    );
+  };
+
+  const confirmPO = allPOs.find(p => p.id === confirmDeleteId);
+
   const fmt = (d: string) =>
     new Date(d).toLocaleDateString("en-MY", { day: "2-digit", month: "short", year: "numeric" });
 
@@ -79,6 +106,38 @@ export function POListPage() {
 
   return (
     <div className="space-y-5">
+
+      {/* Confirm delete dialog */}
+      {confirmDeleteId && confirmPO && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4">
+            <div className="flex items-start gap-3">
+              <span className="text-2xl">🗑️</span>
+              <div>
+                <h2 className="text-base font-bold text-gray-900">Delete Purchase Order</h2>
+                <p className="text-sm text-gray-500 mt-1">
+                  Permanently delete <span className="font-mono font-semibold text-gray-800">{confirmPO.po_no}</span>?
+                  All line items will be removed. <span className="text-red-600 font-medium">Cannot be undone.</span>
+                </p>
+              </div>
+            </div>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setConfirmDeleteId(null)}
+                className="px-4 py-2 text-sm text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteConfirm}
+                className="px-4 py-2 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
+              >
+                Delete PO
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -134,48 +193,62 @@ export function POListPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {filtered.map(po => (
-                <tr key={po.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-4 py-3">
-                    <button
-                      onClick={() => push(`/purchase-orders/${po.id}`)}
-                      className="font-mono text-blue-600 hover:text-blue-800 font-medium text-xs"
-                    >
-                      {po.po_no}
-                    </button>
-                  </td>
-                  <td className="px-4 py-3 text-gray-800">{po.supplier?.name ?? "—"}</td>
-                  <td className="px-4 py-3">
-                    {po.invoice?.invoice_no ? (
-                      <span className="font-mono text-xs text-gray-600">{po.invoice.invoice_no}</span>
-                    ) : "—"}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${STATUS_COLOR[po.status]}`}>
-                      {po.status}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-gray-500 text-xs">{fmt(po.created_at)}</td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
+              {filtered.map(po => {
+                const canDelete = isAdmin && (po.status === "Draft" || po.status === "Approved");
+                const isBeingDeleted = deletingId === po.id;
+                return (
+                  <tr key={po.id} className={`hover:bg-gray-50 transition-colors ${isBeingDeleted ? "opacity-40" : ""}`}>
+                    <td className="px-4 py-3">
                       <button
                         onClick={() => push(`/purchase-orders/${po.id}`)}
-                        className="text-xs text-gray-600 hover:text-blue-600 border border-gray-200 hover:border-blue-300 rounded px-2 py-1 transition-colors"
+                        className="font-mono text-blue-600 hover:text-blue-800 font-medium text-xs"
                       >
-                        View / Print
+                        {po.po_no}
                       </button>
-                      {po.status !== "Sent" && (
+                    </td>
+                    <td className="px-4 py-3 text-gray-800">{po.supplier?.name ?? "—"}</td>
+                    <td className="px-4 py-3">
+                      {po.invoice?.invoice_no ? (
+                        <span className="font-mono text-xs text-gray-600">{po.invoice.invoice_no}</span>
+                      ) : "—"}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${STATUS_COLOR[po.status]}`}>
+                        {po.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-gray-500 text-xs">{fmt(po.created_at)}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
                         <button
-                          onClick={() => advanceStatus(po)}
-                          className="text-xs text-white bg-blue-600 hover:bg-blue-700 rounded px-2 py-1 transition-colors"
+                          onClick={() => push(`/purchase-orders/${po.id}`)}
+                          className="text-xs text-gray-600 hover:text-blue-600 border border-gray-200 hover:border-blue-300 rounded px-2 py-1 transition-colors"
                         >
-                          → {STATUS_NEXT[po.status]}
+                          View / Print
                         </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                        {po.status !== "Sent" && (
+                          <button
+                            onClick={() => advanceStatus(po)}
+                            className="text-xs text-white bg-blue-600 hover:bg-blue-700 rounded px-2 py-1 transition-colors"
+                          >
+                            → {STATUS_NEXT[po.status]}
+                          </button>
+                        )}
+                        {canDelete && (
+                          <button
+                            onClick={() => handleDeleteClick(po.id)}
+                            disabled={isBeingDeleted}
+                            className="text-xs text-red-500 hover:text-red-700 border border-red-200 hover:border-red-400 rounded px-2 py-1 transition-colors disabled:opacity-40"
+                            title="Delete PO (Admin only)"
+                          >
+                            🗑️
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}

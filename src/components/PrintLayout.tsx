@@ -167,12 +167,16 @@ export const PRINT_CSS = `
 .p-terms-label{font-weight:700;color:#374151;margin-right:4pt}
 
 /* ── Payment details ── */
-.p-payment-section{margin-top:12pt;border-top:.4pt solid #e5e7eb;padding-top:8pt}
-.p-payment-title{font-size:9pt;font-weight:800;color:#0c2340;margin-bottom:6pt}
-.p-payment-tbl{border-collapse:collapse}
-.p-payment-tbl td{border:none!important;padding:1.5pt 0;font-size:9pt;background:transparent!important}
-.p-pay-label{color:#6b7280;padding-right:16pt;white-space:nowrap}
-.p-pay-val{font-weight:700;font-family:monospace}
+.p-payment-section{margin-top:14pt;border-top:.4pt solid #e5e7eb;padding-top:10pt}
+.p-payment-title{font-size:9pt;font-weight:800;color:#0c2340;margin-bottom:8pt;
+  text-transform:uppercase;letter-spacing:.5pt}
+.p-payment-box{display:inline-block;background:#f8fafc;border:.5pt solid #cbd5e1;
+  border-radius:4pt;padding:10pt 14pt;min-width:220pt}
+.p-payment-tbl{border-collapse:collapse;width:100%}
+.p-payment-tbl td{border:none!important;padding:4pt 0;font-size:9.5pt;
+  background:transparent!important;vertical-align:middle}
+.p-pay-label{color:#64748b;padding-right:24pt;white-space:nowrap;font-size:9pt}
+.p-pay-val{font-weight:700;font-family:monospace;font-size:10pt;color:#0f172a}
 
 /* ── e-POD ── */
 .p-epod-section{margin-top:12pt;border-top:.4pt solid #d1d5db;padding-top:8pt}
@@ -450,34 +454,36 @@ export const PrintLayout = forwardRef<HTMLDivElement, PrintLayoutProps>(
           {type === "Invoice" && (co.bankName || co.bankAccountNo) && (
             <div className="p-payment-section">
               <div className="p-payment-title">Payment Details</div>
-              <table className="p-payment-tbl">
-                <tbody>
-                  {co.bankName        && (
-                    <tr>
-                      <td className="p-pay-label">Bank</td>
-                      <td className="p-pay-val">{co.bankName}</td>
-                    </tr>
-                  )}
-                  {co.bankAccountName && (
-                    <tr>
-                      <td className="p-pay-label">Account Name</td>
-                      <td className="p-pay-val">{co.bankAccountName}</td>
-                    </tr>
-                  )}
-                  {co.bankAccountNo   && (
-                    <tr>
-                      <td className="p-pay-label">Account No.</td>
-                      <td className="p-pay-val">{co.bankAccountNo}</td>
-                    </tr>
-                  )}
-                  {co.bankSwiftCode   && (
-                    <tr>
-                      <td className="p-pay-label">SWIFT / BIC</td>
-                      <td className="p-pay-val">{co.bankSwiftCode}</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+              <div className="p-payment-box">
+                <table className="p-payment-tbl">
+                  <tbody>
+                    {co.bankName        && (
+                      <tr>
+                        <td className="p-pay-label">Bank</td>
+                        <td className="p-pay-val">{co.bankName}</td>
+                      </tr>
+                    )}
+                    {co.bankAccountName && (
+                      <tr>
+                        <td className="p-pay-label">Account Name</td>
+                        <td className="p-pay-val">{co.bankAccountName}</td>
+                      </tr>
+                    )}
+                    {co.bankAccountNo   && (
+                      <tr>
+                        <td className="p-pay-label">Account No.</td>
+                        <td className="p-pay-val">{co.bankAccountNo}</td>
+                      </tr>
+                    )}
+                    {co.bankSwiftCode   && (
+                      <tr>
+                        <td className="p-pay-label">SWIFT / BIC</td>
+                        <td className="p-pay-val">{co.bankSwiftCode}</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
 

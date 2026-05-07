@@ -13,7 +13,7 @@
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import type { CrudFilters } from "@refinedev/core";
-import { useList, useUpdate, useGetIdentity } from "@refinedev/core";
+import { useList, useUpdate, useDelete, useGetIdentity } from "@refinedev/core";
 import { supabaseClient } from "../../supabaseClient";
 import type { StaffRole } from "../../types/staff";
 import { PrintLayout, PRINT_CSS } from "../../components/PrintLayout";
@@ -462,17 +462,20 @@ export function DOListPage() {
   const canSeeAll   = isAdmin || isHR;
   const canApprove  = isAdmin || isHR;
 
-  const [tab,            setTab]            = useState<DOType>("Invoice");
-  const [statusFilter,   setStatusFilter]   = useState<DOStatus | "">("");
-  const [page,           setPage]           = useState(1);
-  const [epodTarget,     setEpodTarget]     = useState<RichDO | null>(null);
-  const [previewLoading, setPreviewLoading] = useState<string | null>(null); // do ID being fetched
-  const [previewJob,     setPreviewJob]     = useState<PrintJob | null>(null); // modal open
-  const [printJob,       setPrintJob]       = useState<PrintJob | null>(null); // triggers window.print()
-  const [companyInfo,    setCompanyInfo]    = useState<CompanyInfo>({ name: "Equimed Supply Enterprise" });
+  const [tab,             setTab]             = useState<DOType>("Invoice");
+  const [statusFilter,    setStatusFilter]    = useState<DOStatus | "">("");
+  const [page,            setPage]            = useState(1);
+  const [epodTarget,      setEpodTarget]      = useState<RichDO | null>(null);
+  const [previewLoading,  setPreviewLoading]  = useState<string | null>(null); // do ID being fetched
+  const [previewJob,      setPreviewJob]      = useState<PrintJob | null>(null); // modal open
+  const [printJob,        setPrintJob]        = useState<PrintJob | null>(null); // triggers window.print()
+  const [companyInfo,     setCompanyInfo]     = useState<CompanyInfo>({ name: "Equimed Supply Enterprise" });
+  const [confirmDeleteDO, setConfirmDeleteDO] = useState<RichDO | null>(null);
+  const [deletingId,      setDeletingId]      = useState<string | null>(null);
   const PAGE_SIZE = 25;
 
   const { mutate: updateDO } = useUpdate();
+  const { mutate: deleteDO } = useDelete();
 
   // ── Fetch company settings once on mount ─────────────────────────────────
   useEffect(() => {
@@ -670,6 +673,22 @@ export function DOListPage() {
     refetch();
   };
 
+  const handleDeleteDOConfirm = () => {
+    if (!confirmDeleteDO) return;
+    setDeletingId(confirmDeleteDO.id);
+    setConfirmDeleteDO(null);
+    deleteDO(
+      { resource: "delivery_orders", id: confirmDeleteDO.id },
+      {
+        onSuccess: () => { setDeletingId(null); refetch(); },
+        onError:   (err) => {
+          setDeletingId(null);
+          alert((err as unknown as Error).message ?? "Delete failed. Please try again.");
+        },
+      }
+    );
+  };
+
   return (
     <div className="space-y-4">
 
@@ -692,6 +711,43 @@ export function DOListPage() {
       {/* ePOD Modal */}
       {epodTarget && (
         <EPODModal do_={epodTarget} onClose={() => setEpodTarget(null)} onSuccess={handleEpodSuccess} />
+      )}
+
+      {/* Confirm Delete DO dialog */}
+      {confirmDeleteDO && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4">
+            <div className="flex items-start gap-3">
+              <span className="text-2xl">🗑️</span>
+              <div>
+                <h2 className="text-base font-bold text-gray-900">Delete Delivery Order</h2>
+                <p className="text-sm text-gray-500 mt-1">
+                  Permanently delete <span className="font-mono font-semibold text-gray-800">{confirmDeleteDO.do_no}</span>?
+                  {confirmDeleteDO.type === "Invoice" && (
+                    <span className="block mt-1 text-amber-700 font-medium text-xs">
+                      ⚠ This is an Invoice-type DO — the linked invoice is NOT deleted.
+                    </span>
+                  )}
+                  {" "}<span className="text-red-600 font-medium">Cannot be undone.</span>
+                </p>
+              </div>
+            </div>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setConfirmDeleteDO(null)}
+                className="px-4 py-2 text-sm text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteDOConfirm}
+                className="px-4 py-2 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
+              >
+                Delete DO
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Header */}
@@ -766,14 +822,16 @@ export function DOListPage() {
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {orders.map((do_) => {
-                  const isDelivered   = do_.status === "Delivered";
-                  const isCancelled   = do_.status === "Cancelled";
-                  const isLocked      = isDelivered || isCancelled;
-                  const canAdvance    = !isLocked && (canSeeAll || isLogistics);
-                  const isLoadingThis = previewLoading === do_.id;
+                  const isDelivered    = do_.status === "Delivered";
+                  const isCancelled    = do_.status === "Cancelled";
+                  const isLocked       = isDelivered || isCancelled;
+                  const canAdvance     = !isLocked && (canSeeAll || isLogistics);
+                  const isLoadingThis  = previewLoading === do_.id;
+                  const canDeleteThis  = isAdmin && (do_.status === "Pending" || do_.status === "Cancelled");
+                  const isBeingDeleted = deletingId === do_.id;
 
                   return (
-                    <tr key={do_.id} className="hover:bg-gray-50 transition-colors">
+                    <tr key={do_.id} className={`hover:bg-gray-50 transition-colors ${isBeingDeleted ? "opacity-40" : ""}`}>
                       <td className="px-4 py-3">
                         <button
                           onClick={() => handlePreview(do_)}
@@ -829,6 +887,16 @@ export function DOListPage() {
                           </button>
                         )}
                         {isDelivered && <span className="text-xs text-gray-400">🔒 Locked</span>}
+                        {canDeleteThis && (
+                          <button
+                            onClick={() => setConfirmDeleteDO(do_)}
+                            disabled={isBeingDeleted}
+                            className="text-xs text-red-500 hover:text-red-700 border border-red-200 hover:border-red-400 rounded px-2 py-0.5 transition-colors disabled:opacity-40"
+                            title="Delete DO (Admin only)"
+                          >
+                            🗑️
+                          </button>
+                        )}
                       </td>
                     </tr>
                   );

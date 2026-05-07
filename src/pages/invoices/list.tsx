@@ -690,6 +690,15 @@ export function InvoiceListPage() {
 
       const subtotal = lineItems.reduce((s, it) => s + it.qty * it.selling_price, 0);
 
+      // Fallback: compute total from line items when total_amount is null/0
+      // (pre-M031 invoices never had the denormalized column populated)
+      const discountAmt    = inv.discount       ?? 0;
+      const deliveryAmt    = inv.delivery_charge ?? 0;
+      const computedTotal  = Math.max(0, subtotal - discountAmt + deliveryAmt);
+      const resolvedTotal  = (inv.total_amount != null && inv.total_amount > 0)
+        ? inv.total_amount
+        : computedTotal;
+
       const docDate = new Date(inv.created_at).toLocaleDateString("en-MY", {
         day: "2-digit", month: "long", year: "numeric",
       });
@@ -723,9 +732,9 @@ export function InvoiceListPage() {
         })),
 
         subtotal,
-        discount:       inv.discount ?? 0,
-        deliveryCharge: inv.delivery_charge ?? 0,
-        total:          inv.total_amount,
+        discount:       discountAmt > 0 ? discountAmt : undefined,
+        deliveryCharge: deliveryAmt > 0 ? deliveryAmt : undefined,
+        total:          resolvedTotal,
 
         notes: inv.paid_at
           ? `Paid on ${new Date(inv.paid_at).toLocaleDateString("en-MY", { day: "2-digit", month: "long", year: "numeric" })}`
