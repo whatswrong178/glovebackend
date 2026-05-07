@@ -280,9 +280,8 @@ function CompanyProfileTab() {
     refetchSettings();
   }, [refetch, refetchSettings]);
 
-  if (isLoading) return <div className="flex items-center justify-center h-48 text-sm text-gray-400">Loading…</div>;
-
-  // Use || not ?? so that empty-string form.logo_url falls through to record value
+  // ── These must stay ABOVE any conditional return (Rules of Hooks) ──────────
+  // Use || not ?? so empty-string form.logo_url falls through to DB value
   const logoUrl = form.logo_url || record?.logo_url || "";
 
   // Convert remote URL → base64 data URL so the <img> preview never hits CORS
@@ -290,6 +289,9 @@ function CompanyProfileTab() {
     if (!logoUrl) { setLogoDataUrl(""); return; }
     toDataUrl(logoUrl).then(setLogoDataUrl);
   }, [logoUrl]);
+  // ────────────────────────────────────────────────────────────────────────────
+
+  if (isLoading) return <div className="flex items-center justify-center h-48 text-sm text-gray-400">Loading…</div>;
 
   return (
     <div className="space-y-6 max-w-3xl">

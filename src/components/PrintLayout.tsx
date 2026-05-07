@@ -279,7 +279,7 @@ export const PrintLayout = forwardRef<HTMLDivElement, PrintLayoutProps>(
                   src={co.logoUrl}
                   alt={co.name}
                   style={{
-                    maxHeight: "52pt", maxWidth: "160pt", objectFit: "contain",
+                    maxHeight: "72pt", maxWidth: "200pt", objectFit: "contain",
                     display: "block", marginBottom: "6pt",
                   }}
                 />
