@@ -310,7 +310,7 @@ function EditInvoiceModal({ invoice, onClose, onSaved }: EditModalProps) {
         product_name:        hit.name,
         sku:                 hit.sku,
         qty:                 1,
-        unit:                "Carton",
+        unit:                "Box",
         selling_price:       "",
         cost_price_snapshot: hit.cost_price,
       },

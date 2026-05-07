@@ -22,9 +22,9 @@ import type { Client } from "../../types/client";
 import type { StaffRole, Staff } from "../../types/staff";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
-const UNIT_OPTIONS = ["Carton", "Box", "Pack", "Can", "Piece", "Bag", "Roll"] as const;
-const MIN_ORDER_QTY   = 3;   // cartons
-const FREE_SHIP_QTY   = 5;   // cartons (West Malaysia)
+// M036: unit-based system. All qty and prices are per-unit (box).
+const MIN_ORDER_QTY = 30;  // units (≈ 3 cartons × 10 units/carton — adjust as needed)
+const FREE_SHIP_QTY = 50;  // units (≈ 5 cartons × 10 units/carton — West Malaysia)
 
 interface ProductOption {
   id:                string;
@@ -132,6 +132,7 @@ export function InvoiceCreatePage() {
   };
 
   // ── Line item handlers ────────────────────────────────────────────────────────
+  // M036: all prices are per-unit. No carton conversion.
   const addProduct = (p: ProductOption) => {
     if (closeTimer.current) clearTimeout(closeTimer.current);
     setShowProductDropdown(false);
@@ -143,14 +144,10 @@ export function InvoiceCreatePage() {
         product_name:      p.name,
         sku:               p.sku,
         qty:               1,
-        unit:                "Carton",
-        _baseSuggestedPrice: p.suggested_price,
-        _baseMinPrice:       p.min_selling_price,
-        // Default unit = Carton → multiply per-unit DB price by units_per_carton
-        selling_price:       (p.suggested_price * (p.units_per_carton ?? 1)).toFixed(2),
-        min_selling_price:   p.min_selling_price * (p.units_per_carton ?? 1),
-        suggested_price:     p.suggested_price * (p.units_per_carton ?? 1),
-        units_per_carton:    p.units_per_carton ?? 1,
+        selling_price:     p.suggested_price.toFixed(2),  // per-unit, direct from DB
+        min_selling_price: p.min_selling_price,            // per-unit, direct from DB
+        suggested_price:   p.suggested_price,
+        units_per_carton:  p.units_per_carton ?? 1,
       },
     ]);
     setProductSearch("");
@@ -159,7 +156,7 @@ export function InvoiceCreatePage() {
 
   const updateLine = (
     idx: number,
-    field: "qty" | "selling_price" | "unit",
+    field: "qty" | "selling_price",
     value: string
   ) => {
     setLineItems((prev) => {
@@ -167,18 +164,6 @@ export function InvoiceCreatePage() {
       const li   = { ...next[idx] };
       if (field === "qty") {
         li.qty = Math.max(1, parseInt(value) || 1);
-      } else if (field === "unit") {
-        li.unit = value;
-        // Always derive from immutable _base* prices — never mutate them
-        const upc  = li.units_per_carton ?? 1;
-        const base = li._baseSuggestedPrice ?? li.suggested_price / upc;
-        const baseMin = li._baseMinPrice ?? li.min_selling_price / upc;
-        const pricePerUnit = value === "Carton" ? base * upc : base;
-        const minPerUnit   = value === "Carton" ? baseMin * upc : baseMin;
-        li.selling_price     = pricePerUnit.toFixed(2);
-        li.suggested_price   = pricePerUnit;
-        li.min_selling_price = minPerUnit;
-        li._error = undefined;
       } else {
         li.selling_price = value;
         const sp = parseFloat(value);
@@ -203,7 +188,7 @@ export function InvoiceCreatePage() {
     if (!clientId)              newErrors.clientId = "Client is required";
     if (lineItems.length === 0) newErrors.items    = "At least one product is required";
     if (totalQty < MIN_ORDER_QTY)
-      newErrors.boxes = `Minimum ${MIN_ORDER_QTY} cartons required (currently ${totalQty})`;
+      newErrors.boxes = `Minimum ${MIN_ORDER_QTY} units required (currently ${totalQty})`;
     if (lineItems.some((li) => li._error))
       newErrors.priceErrors = "Fix price errors above";
     if (isJointOrder && !coCreatedBy)
@@ -226,7 +211,7 @@ export function InvoiceCreatePage() {
           product_id:    li.product_id,
           qty:           li.qty,
           selling_price: parseFloat(li.selling_price),
-          unit:          li.unit,
+          unit:          "Box",   // M036: always unit-based
         })),
         p_discount:        parseFloat(discount) || 0,
         p_delivery_charge: effectiveDelivery,
@@ -394,10 +379,10 @@ export function InvoiceCreatePage() {
           {/* Promo notice */}
           <div className="flex gap-4 text-xs">
             <span className="bg-amber-50 border border-amber-200 text-amber-700 rounded-lg px-3 py-1.5 font-medium">
-              📦 Min order: {MIN_ORDER_QTY} cartons
+              📦 Min order: {MIN_ORDER_QTY} units
             </span>
             <span className="bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-lg px-3 py-1.5 font-medium">
-              🚚 Free shipping: West Malaysia ≥{FREE_SHIP_QTY} cartons
+              🚚 Free shipping: West Malaysia ≥{FREE_SHIP_QTY} units
             </span>
           </div>
 
@@ -471,9 +456,8 @@ export function InvoiceCreatePage() {
                 <thead className="bg-gray-50">
                   <tr className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
                     <th className="text-left px-4 py-2.5">Product / SKU</th>
-                    <th className="text-center px-2 py-2.5 w-20">Qty</th>
-                    <th className="text-center px-2 py-2.5 w-28">Unit</th>
-                    <th className="text-right px-2 py-2.5 w-36">Selling Price (RM)</th>
+                    <th className="text-center px-2 py-2.5 w-24">Qty (Units)</th>
+                    <th className="text-right px-2 py-2.5 w-36">Price/Unit (RM)</th>
                     <th className="text-right px-4 py-2.5 w-28">Subtotal</th>
                     <th className="py-2.5 w-8"></th>
                   </tr>
@@ -499,21 +483,7 @@ export function InvoiceCreatePage() {
                         />
                       </td>
 
-                      {/* Unit dropdown */}
-                      <td className="px-2 py-3 text-center">
-                        <select
-                          value={li.unit}
-                          onChange={(e) => updateLine(idx, "unit", e.target.value)}
-                          className="w-full text-sm border border-gray-300 rounded-lg px-2 py-1.5
-                                     focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                        >
-                          {UNIT_OPTIONS.map((u) => (
-                            <option key={u} value={u}>{u}</option>
-                          ))}
-                        </select>
-                      </td>
-
-                      {/* Selling price */}
+                      {/* Price per unit */}
                       <td className="px-2 py-3">
                         <div className="flex flex-col items-end">
                           <input
@@ -562,17 +532,17 @@ export function InvoiceCreatePage() {
             <div className="space-y-1.5">
               {totalQty < MIN_ORDER_QTY && (
                 <div className="flex items-center gap-2 text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
-                  ⚠️ {MIN_ORDER_QTY - totalQty} more carton{MIN_ORDER_QTY - totalQty !== 1 ? "s" : ""} needed to meet minimum order.
+                  ⚠️ {MIN_ORDER_QTY - totalQty} more unit{MIN_ORDER_QTY - totalQty !== 1 ? "s" : ""} needed to meet minimum order.
                 </div>
               )}
               {totalQty >= MIN_ORDER_QTY && totalQty < FREE_SHIP_QTY && selectedClient?.region === "West Malaysia" && (
                 <div className="flex items-center gap-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                  🚚 Add {FREE_SHIP_QTY - totalQty} more carton{FREE_SHIP_QTY - totalQty !== 1 ? "s" : ""} to unlock free shipping (West Malaysia).
+                  🚚 Add {FREE_SHIP_QTY - totalQty} more unit{FREE_SHIP_QTY - totalQty !== 1 ? "s" : ""} to unlock free shipping (West Malaysia).
                 </div>
               )}
               {freeShipping && (
                 <div className="flex items-center gap-2 text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2">
-                  🎉 Free shipping unlocked — West Malaysia ≥{FREE_SHIP_QTY} cartons!
+                  🎉 Free shipping unlocked — West Malaysia ≥{FREE_SHIP_QTY} units!
                 </div>
               )}
             </div>
@@ -638,7 +608,7 @@ export function InvoiceCreatePage() {
             </div>
             <div className="flex justify-between text-xs text-gray-400 pt-1">
               <span>
-                {lineItems.map((li) => `${li.qty} ${li.unit}`).join(" + ")}
+                {lineItems.map((li) => `${li.sku}: ${li.qty}u`).join("  ·  ")}
               </span>
               <span>{totalQty} unit{totalQty !== 1 ? "s" : ""} total</span>
             </div>

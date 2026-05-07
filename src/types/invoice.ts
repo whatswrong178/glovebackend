@@ -35,19 +35,17 @@ export interface InvoiceItem {
 }
 
 // Line item used in the create form (before submission)
+// M036: all quantities and prices are now per-unit (box). No carton conversion.
 export interface InvoiceLineItem {
-  product_id:          string;
-  product_name:        string;
-  sku:                 string;
-  qty:                 number;
-  unit:                string;         // e.g. Carton, Box, Pack, Can, Piece
-  selling_price:       string;         // string for input control
-  min_selling_price:   number;         // current per-unit min (adjusted for selected unit)
-  suggested_price:     number;         // current per-unit suggested (adjusted for selected unit)
-  _baseSuggestedPrice: number;         // IMMUTABLE: per-Carton suggested price from DB
-  _baseMinPrice:       number;         // IMMUTABLE: per-Carton min price from DB
-  units_per_carton:    number;         // how many sub-units per Carton
-  _error?:             string;
+  product_id:        string;
+  product_name:      string;
+  sku:               string;
+  qty:               number;
+  selling_price:     string;   // string for input control; per-unit
+  min_selling_price: number;   // per-unit min from products table
+  suggested_price:   number;   // per-unit suggested from products table
+  units_per_carton:  number;   // reference only (display how many boxes per carton)
+  _error?:           string;
 }
 
 // Payload sent to create_invoice_atomic RPC

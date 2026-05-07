@@ -7,6 +7,8 @@
 // Status advance: Draft → Approved → Sent.
 // Edit PO: full add/remove products + edit qty/unit_cost (Admin, Draft/Approved).
 // Delete PO: Admin only, Draft/Approved only.
+//
+// M036: purchase_order_items.qty is now in UNITS (boxes). All totals = qty × unit_cost.
 // ══════════════════════════════════════════════════════════════════════════════
 
 import React, { useRef, useState, useEffect, useCallback } from "react";
@@ -191,8 +193,8 @@ function EditPOModal({
     setError("");
   };
 
-  // unit_cost is per-UNIT; qty is in CARTONS → line total = qty × units_per_carton × unit_cost
-  const subtotal = rows.reduce((s, r) => s + n(r.qty) * r.unitsPerCarton * n(r.unit_cost), 0);
+  // M036: qty is in UNITS → line total = qty × unit_cost
+  const subtotal = rows.reduce((s, r) => s + n(r.qty) * n(r.unit_cost), 0);
   const fmt = (v: number) => v.toLocaleString("en-MY", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   // ── Diff-based save ────────────────────────────────────────────────────────
@@ -283,8 +285,8 @@ function EditPOModal({
           <div className="flex items-start gap-2 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-800">
             <span className="mt-0.5 shrink-0">💡</span>
             <span>
-              <strong>Cost per Unit</strong> — enter the supplier's quoted price per individual unit (e.g. RM 16.90 / glove).
-              The system automatically computes <strong>cost per carton</strong> and the correct line total using units_per_carton.
+              <strong>Cost per Unit</strong> — enter the supplier's quoted price per individual unit/box (e.g. RM 16.90 / glove).
+              <strong>Qty</strong> is in units (boxes). Line total = Qty × Cost/Unit.
               Saving updates <strong>products.cost_price</strong> and recalculates the GP for all open invoices.
             </span>
           </div>
@@ -328,7 +330,7 @@ function EditPOModal({
                           <span className="font-mono text-xs text-gray-400 shrink-0">{hit.sku}</span>
                           {alreadyAdded && (
                             <span className="text-[10px] bg-blue-100 text-blue-700 rounded px-1.5 py-0.5 font-semibold shrink-0">
-                              +1 carton
+                              +1 box
                             </span>
                           )}
                         </div>
@@ -359,7 +361,7 @@ function EditPOModal({
                 <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wide pb-2 pl-0 pr-3">SKU</th>
                 <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wide pb-2 pr-3">Product</th>
                 <th className="text-center text-xs font-semibold text-gray-500 uppercase tracking-wide pb-2 pr-3 w-20">Units/<br/>Carton</th>
-                <th className="text-right text-xs font-semibold text-gray-500 uppercase tracking-wide pb-2 pr-3 w-24">Qty<br/>(Cartons)</th>
+                <th className="text-right text-xs font-semibold text-gray-500 uppercase tracking-wide pb-2 pr-3 w-24">Qty<br/>(Units)</th>
                 <th className="text-right text-xs font-semibold text-gray-500 uppercase tracking-wide pb-2 pr-3 w-40">Cost/Unit (RM)</th>
                 <th className="text-right text-xs font-semibold text-gray-500 uppercase tracking-wide pb-2 w-28">Line Total</th>
                 <th className="pb-2 w-8"></th>
@@ -367,10 +369,8 @@ function EditPOModal({
             </thead>
             <tbody className="divide-y divide-gray-50">
               {rows.map((row) => {
-                const upc           = row.unitsPerCarton > 0 ? row.unitsPerCarton : 1;
-                const costPerCarton = n(row.unit_cost) * upc;
-                const lineTotal     = n(row.qty) * costPerCarton;
-                const isNew          = row.id === null;
+                const lineTotal = n(row.qty) * n(row.unit_cost); // M036: qty × unit_cost
+                const isNew     = row.id === null;
                 return (
                   <tr key={row._key} className={`hover:bg-gray-50 ${isNew ? "bg-blue-50/30" : ""}`}>
                     <td className="py-3 pr-3 font-mono text-xs text-gray-500">
@@ -400,11 +400,6 @@ function EditPOModal({
                         onChange={(e) => updateField(row._key, "unit_cost", e.target.value)}
                         className="w-full text-right text-sm border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-400 tabular-nums"
                       />
-                      {n(row.unit_cost) > 0 && (
-                        <p className="text-right text-[10px] text-gray-400 tabular-nums mt-0.5">
-                          = RM {costPerCarton.toLocaleString("en-MY", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} / carton
-                        </p>
-                      )}
                     </td>
                     <td className="py-3 text-right tabular-nums font-semibold text-gray-900">
                       {fmt(lineTotal)}
@@ -563,9 +558,8 @@ export function POShowPage() {
   const items = itemsData?.data ?? [];
 
   // ── Derived totals ─────────────────────────────────────────────────────────
-  // unit_cost is per-UNIT; qty is in CARTONS → total = qty × units_per_carton × unit_cost
-  const upc       = (item: POItem) => item.product?.units_per_carton ?? 1;
-  const totalCost = items.reduce((sum, i) => sum + i.qty * upc(i) * i.unit_cost, 0);
+  // M036: qty is now in UNITS (boxes). total = qty × unit_cost.
+  const totalCost = items.reduce((sum, i) => sum + i.qty * i.unit_cost, 0);
 
   // ── Build PrintDocData ──────────────────────────────────────────────────────
   const companyInfo: CompanyInfo = {
@@ -582,18 +576,15 @@ export function POShowPage() {
     website: settings?.website         ?? "",
   };
 
-  const printItems: PrintLineItem[] = items.map((item, idx) => {
-    const unitsPerCarton  = item.product?.units_per_carton ?? 1;
-    const costPerCarton   = item.unit_cost * unitsPerCarton;
-    return {
-      no:          idx + 1,
-      description: item.product?.name ?? "Unknown Product",
-      sku:         item.product?.sku  ?? "—",
-      qty:         item.qty,
-      unitPrice:   costPerCarton,   // per-carton cost for the printed PO
-      amount:      item.qty * costPerCarton,
-    };
-  });
+  // M036: qty is in units, unit_cost is per unit → amount = qty × unit_cost
+  const printItems: PrintLineItem[] = items.map((item, idx) => ({
+    no:          idx + 1,
+    description: item.product?.name ?? "Unknown Product",
+    sku:         item.product?.sku  ?? "—",
+    qty:         item.qty,
+    unitPrice:   item.unit_cost,
+    amount:      item.qty * item.unit_cost,
+  }));
 
   const printDoc: PrintDocData | null = po ? {
     docNumber: po.po_no,
@@ -750,28 +741,25 @@ export function POShowPage() {
                   <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wide px-4 py-3">#</th>
                   <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wide px-4 py-3">SKU</th>
                   <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wide px-4 py-3">Product</th>
-                  <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wide px-4 py-3">Qty (Cartons)</th>
+                  <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wide px-4 py-3">Qty (Units)</th>
                   <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wide px-4 py-3">Cost / Unit</th>
-                  <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wide px-4 py-3">Cost / Carton</th>
+                  <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wide px-4 py-3">Ref: Cost / Carton</th>
                   <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wide px-4 py-3">Total</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {items.map((item, idx) => {
                   const unitsPerCarton = item.product?.units_per_carton ?? 1;
-                  const costPerCarton  = item.unit_cost * unitsPerCarton;
-                  const lineTotal      = item.qty * costPerCarton;
+                  const costPerCarton  = item.unit_cost * unitsPerCarton; // reference only
+                  const lineTotal      = item.qty * item.unit_cost;       // M036: qty is units
                   return (
                   <tr key={item.id} className="hover:bg-gray-50">
                     <td className="px-4 py-3 text-gray-400 text-xs">{idx + 1}</td>
                     <td className="px-4 py-3 font-mono text-xs text-gray-600">{item.product?.sku ?? "—"}</td>
                     <td className="px-4 py-3 text-gray-800">{item.product?.name ?? "—"}</td>
                     <td className="px-4 py-3 tabular-nums">{item.qty}</td>
-                    <td className="px-4 py-3 tabular-nums text-gray-500">
-                      RM {fmt(item.unit_cost)}
-                      <span className="text-[10px] text-gray-400 ml-1">× {unitsPerCarton}u</span>
-                    </td>
-                    <td className="px-4 py-3 tabular-nums text-gray-700 font-medium">RM {fmt(costPerCarton)}</td>
+                    <td className="px-4 py-3 tabular-nums text-gray-500">RM {fmt(item.unit_cost)}</td>
+                    <td className="px-4 py-3 tabular-nums text-gray-400">RM {fmt(costPerCarton)}</td>
                     <td className="px-4 py-3 tabular-nums font-semibold">RM {fmt(lineTotal)}</td>
                   </tr>
                   );
