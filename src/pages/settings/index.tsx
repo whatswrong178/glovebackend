@@ -182,7 +182,6 @@ function CompanyProfileTab() {
   const [saved,       setSaved]       = useState(false);
   const [logoUploading, setLogoUploading] = useState(false);
   const [logoError,   setLogoError]   = useState("");
-  const [imgError,    setImgError]    = useState(false);
   const fileInputRef  = useRef<HTMLInputElement>(null);
 
   // Initialise form from fetched data (only once)
@@ -294,21 +293,18 @@ function CompanyProfileTab() {
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 space-y-4">
         <h3 className="text-sm font-bold text-gray-900">Company Logo</h3>
         <div className="flex items-start gap-5">
-          {/* Preview — dark bg so white/light logos are visible */}
+          {/* Preview — dark bg so white/transparent logos are visible */}
           <div className="w-36 h-20 border border-gray-200 rounded-lg bg-gray-900 flex items-center justify-center overflow-hidden flex-shrink-0">
-            {logoUrl && !imgError
+            {logoUrl
               ? (
                 <img
                   src={logoUrl}
                   alt="Company Logo"
                   className="max-w-full max-h-full object-contain p-2"
-                  onError={() => setImgError(true)}
                 />
               )
               : (
-                <span className="text-xs text-gray-400 text-center px-2">
-                  {imgError ? "⚠ Failed to load" : "No logo uploaded"}
-                </span>
+                <span className="text-xs text-gray-400 text-center px-2">No logo uploaded</span>
               )
             }
           </div>
@@ -317,7 +313,7 @@ function CompanyProfileTab() {
               ref={fileInputRef}
               type="file"
               accept="image/*"
-              onChange={(e) => { setImgError(false); handleLogoUpload(e); }}
+              onChange={handleLogoUpload}
               className="hidden"
             />
             <button
@@ -335,7 +331,7 @@ function CompanyProfileTab() {
               <input
                 type="text"
                 value={logoUrl}
-                onChange={(e) => { setImgError(false); set("logo_url")(e.target.value); }}
+                onChange={(e) => set("logo_url")(e.target.value)}
                 placeholder="Or paste a public image URL"
                 className="flex-1 text-xs border border-gray-200 rounded px-2 py-1 text-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-400"
               />
