@@ -199,7 +199,7 @@ const COMPANY_FALLBACK: CompanyInfo = {
 };
 
 const DOC_LABELS: Record<PrintDocType, string> = {
-  Invoice:       "TAX INVOICE",
+  Invoice:       "PROFORMA INVOICE",
   DeliveryOrder: "DELIVERY ORDER",
   PurchaseOrder: "PURCHASE ORDER",
   Receipt:       "OFFICIAL RECEIPT",

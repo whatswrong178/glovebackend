@@ -9,7 +9,8 @@
 //   4. Email Templates — HTML template editor with variable toolbar
 // ══════════════════════════════════════════════════════════════════════════════
 
-import React, { useState, useRef, useCallback } from "react";
+import React, { useState, useRef, useCallback, useEffect } from "react";
+import { toDataUrl } from "../../lib/print/toDataUrl";
 import {
   useList,
   useCreate,
@@ -182,6 +183,7 @@ function CompanyProfileTab() {
   const [saved,       setSaved]       = useState(false);
   const [logoUploading, setLogoUploading] = useState(false);
   const [logoError,   setLogoError]   = useState("");
+  const [logoDataUrl, setLogoDataUrl] = useState<string>("");
   const fileInputRef  = useRef<HTMLInputElement>(null);
 
   // Initialise form from fetched data (only once)
@@ -283,6 +285,12 @@ function CompanyProfileTab() {
   // Use || not ?? so that empty-string form.logo_url falls through to record value
   const logoUrl = form.logo_url || record?.logo_url || "";
 
+  // Convert remote URL → base64 data URL so the <img> preview never hits CORS
+  useEffect(() => {
+    if (!logoUrl) { setLogoDataUrl(""); return; }
+    toDataUrl(logoUrl).then(setLogoDataUrl);
+  }, [logoUrl]);
+
   return (
     <div className="space-y-6 max-w-3xl">
       <div className="bg-blue-50 border border-blue-100 rounded-lg px-4 py-3 text-xs text-blue-700">
@@ -295,13 +303,17 @@ function CompanyProfileTab() {
         <div className="flex items-start gap-5">
           {/* Preview — dark bg so white/transparent logos are visible */}
           <div className="w-36 h-20 border border-gray-200 rounded-lg bg-gray-900 flex items-center justify-center overflow-hidden flex-shrink-0">
-            {logoUrl
+            {logoDataUrl
               ? (
                 <img
-                  src={logoUrl}
+                  src={logoDataUrl}
                   alt="Company Logo"
                   className="max-w-full max-h-full object-contain p-2"
                 />
+              )
+              : logoUrl
+              ? (
+                <span className="text-xs text-gray-400 animate-pulse px-2">Loading…</span>
               )
               : (
                 <span className="text-xs text-gray-400 text-center px-2">No logo uploaded</span>

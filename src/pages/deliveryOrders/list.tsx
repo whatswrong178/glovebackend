@@ -18,6 +18,7 @@ import { supabaseClient } from "../../supabaseClient";
 import type { StaffRole } from "../../types/staff";
 import { PrintLayout, PRINT_CSS } from "../../components/PrintLayout";
 import type { PrintDocData, PrintDocType, CompanyInfo } from "../../components/PrintLayout";
+import { toDataUrl } from "../../lib/print/toDataUrl";
 
 
 type DOType   = "Invoice" | "Sample";
@@ -511,13 +512,25 @@ export function DOListPage() {
   // ── Print (clean popup window — no app chrome) ───────────────────────────
   const printRef = useRef<HTMLDivElement>(null);
 
-  const openPrintWindow = (content: string, title: string) => {
+  const openPrintWindow = async (content: string, title: string) => {
     const win = window.open("", "_blank", "width=900,height=1200");
     if (!win) return;
+    const parser = new DOMParser();
+    const doc    = parser.parseFromString(`<div>${content}</div>`, "text/html");
+    const imgs   = Array.from(doc.querySelectorAll("img[src]"));
+    await Promise.all(
+      imgs.map(async (img) => {
+        const src = img.getAttribute("src") ?? "";
+        if (src.startsWith("http")) {
+          img.setAttribute("src", await toDataUrl(src));
+        }
+      })
+    );
+    const resolvedContent = doc.body.firstElementChild?.innerHTML ?? content;
     win.document.write(`<!DOCTYPE html><html><head>
       <title>${title}</title>
       <style>@page{size:A4;margin:15mm 14mm}body{margin:0}${PRINT_CSS}</style>
-    </head><body><div class="print-area">${content}</div></body></html>`);
+    </head><body><div class="print-area">${resolvedContent}</div></body></html>`);
     win.document.close();
     win.focus();
     setTimeout(() => { win.print(); }, 400);
