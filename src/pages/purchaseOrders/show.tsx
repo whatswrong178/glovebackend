@@ -152,11 +152,17 @@ function EditPOModal({
   }, []);
 
   const addProduct = (hit: ProductSearchHit) => {
-    // Prevent duplicate
-    if (rows.some(r => r.product_id === hit.id)) {
-      setError(`${hit.sku} is already in the list.`);
-      setShowDropdown(false);
+    const existing = rows.find(r => r.product_id === hit.id);
+    if (existing) {
+      // Product already in PO — increment qty by 1 instead of blocking
+      setRows(prev => prev.map(r =>
+        r._key === existing._key
+          ? { ...r, qty: String(n(r.qty) + 1) }
+          : r
+      ));
       setSearchQuery("");
+      setShowDropdown(false);
+      setError("");
       return;
     }
     setRows(prev => [...prev, {
@@ -314,20 +320,15 @@ function EditPOModal({
                       key={hit.id}
                       type="button"
                       onClick={() => addProduct(hit)}
-                      disabled={alreadyAdded}
-                      className={`w-full text-left px-4 py-3 transition-colors flex items-start justify-between gap-3
-                        ${alreadyAdded
-                          ? "bg-gray-50 cursor-not-allowed opacity-50"
-                          : "hover:bg-blue-50 cursor-pointer"
-                        }`}
+                      className="w-full text-left px-4 py-3 transition-colors flex items-start justify-between gap-3 hover:bg-blue-50 cursor-pointer"
                     >
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <span className="font-medium text-sm text-gray-800 truncate">{hit.name}</span>
                           <span className="font-mono text-xs text-gray-400 shrink-0">{hit.sku}</span>
                           {alreadyAdded && (
-                            <span className="text-[10px] bg-amber-100 text-amber-700 rounded px-1.5 py-0.5 font-semibold shrink-0">
-                              Already in PO
+                            <span className="text-[10px] bg-blue-100 text-blue-700 rounded px-1.5 py-0.5 font-semibold shrink-0">
+                              +1 carton
                             </span>
                           )}
                         </div>
