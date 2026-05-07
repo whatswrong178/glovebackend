@@ -236,32 +236,53 @@ function CompanyProfileTab() {
     setLogoError("");
     setLogoUploading(true);
 
-    const ext      = file.name.split(".").pop();
-    const path     = `logos/company-logo.${ext}`;
-    const { error } = await supabaseClient.storage
+    // Always store as fixed filename (no ext in path so upsert replaces the same key)
+    const ext  = file.name.split(".").pop()?.toLowerCase() ?? "png";
+    const path = `logos/company-logo.${ext}`;
+
+    // Step 1: upload file
+    const { error: uploadError } = await supabaseClient.storage
       .from("product-images")
       .upload(path, file, { upsert: true, contentType: file.type });
 
-    if (error) {
-      setLogoError(error.message);
+    if (uploadError) {
+      setLogoError(uploadError.message);
       setLogoUploading(false);
       return;
     }
 
+    // Step 2: get public URL (no cache-bust query param — breaks some img renderers)
     const { data: urlData } = supabaseClient.storage
       .from("product-images")
       .getPublicUrl(path);
 
-    // Bust cache with timestamp
-    const publicUrl = `${urlData.publicUrl}?t=${Date.now()}`;
+    const publicUrl = urlData.publicUrl;
+
+    // Step 3: auto-save logo_url to DB immediately (no manual Save click needed)
+    const { error: saveError } = await supabaseClient
+      .from("company_settings")
+      .update({ logo_url: publicUrl, updated_at: new Date().toISOString() })
+      .eq("id", COMPANY_SINGLETON_ID);
+
+    if (saveError) {
+      setLogoError(`Uploaded but failed to save URL: ${saveError.message}`);
+      setLogoUploading(false);
+      return;
+    }
+
+    // Step 4: update local form state + refetch so preview renders from DB
     set("logo_url")(publicUrl);
-    setSaved(false);
+    setSaved(true);
     setLogoUploading(false);
-  }, []);
+    refetch();
+    refetchSettings();
+  }, [refetch, refetchSettings]);
 
   if (isLoading) return <div className="flex items-center justify-center h-48 text-sm text-gray-400">Loading…</div>;
 
-  const logoUrl = form.logo_url ?? record?.logo_url ?? "";
+  // Use || not ?? so that empty-string form.logo_url falls through to record value
+  const logoUrl = form.logo_url || record?.logo_url || "";
+  const [imgError, setImgError] = React.useState(false);
 
   return (
     <div className="space-y-6 max-w-3xl">
@@ -273,11 +294,22 @@ function CompanyProfileTab() {
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 space-y-4">
         <h3 className="text-sm font-bold text-gray-900">Company Logo</h3>
         <div className="flex items-start gap-5">
-          {/* Preview */}
-          <div className="w-32 h-20 border border-gray-200 rounded-lg bg-gray-50 flex items-center justify-center overflow-hidden flex-shrink-0">
-            {logoUrl
-              ? <img src={logoUrl} alt="Logo" className="max-w-full max-h-full object-contain p-1" />
-              : <span className="text-xs text-gray-400 text-center px-2">No logo uploaded</span>
+          {/* Preview — dark bg so white/light logos are visible */}
+          <div className="w-36 h-20 border border-gray-200 rounded-lg bg-gray-900 flex items-center justify-center overflow-hidden flex-shrink-0">
+            {logoUrl && !imgError
+              ? (
+                <img
+                  src={logoUrl}
+                  alt="Company Logo"
+                  className="max-w-full max-h-full object-contain p-2"
+                  onError={() => setImgError(true)}
+                />
+              )
+              : (
+                <span className="text-xs text-gray-400 text-center px-2">
+                  {imgError ? "⚠ Failed to load" : "No logo uploaded"}
+                </span>
+              )
             }
           </div>
           <div className="flex-1 space-y-2">
@@ -285,7 +317,7 @@ function CompanyProfileTab() {
               ref={fileInputRef}
               type="file"
               accept="image/*"
-              onChange={handleLogoUpload}
+              onChange={(e) => { setImgError(false); handleLogoUpload(e); }}
               className="hidden"
             />
             <button
@@ -298,26 +330,27 @@ function CompanyProfileTab() {
             </button>
             <p className="text-xs text-gray-400">PNG or SVG recommended. Max 2 MB. Displayed on letterhead at ~120×48 px.</p>
             {logoError && <p className="text-xs text-red-500">{logoError}</p>}
-            {logoUrl && (
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={logoUrl}
-                  onChange={(e) => set("logo_url")(e.target.value)}
-                  placeholder="Or paste a public image URL"
-                  className="flex-1 text-xs border border-gray-200 rounded px-2 py-1 text-gray-500 focus:outline-none"
-                />
-              </div>
-            )}
-            {!logoUrl && (
+            {/* Single URL input always visible */}
+            <div className="flex items-center gap-2">
               <input
                 type="text"
-                value={form.logo_url ?? ""}
-                onChange={(e) => set("logo_url")(e.target.value)}
+                value={logoUrl}
+                onChange={(e) => { setImgError(false); set("logo_url")(e.target.value); }}
                 placeholder="Or paste a public image URL"
-                className="w-full text-xs border border-gray-200 rounded px-2 py-1 text-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-400"
+                className="flex-1 text-xs border border-gray-200 rounded px-2 py-1 text-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-400"
               />
-            )}
+              {logoUrl && (
+                <a
+                  href={logoUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-xs text-blue-500 hover:underline whitespace-nowrap"
+                  title="Open image in new tab"
+                >
+                  Test ↗
+                </a>
+              )}
+            </div>
           </div>
         </div>
       </div>

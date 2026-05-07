@@ -274,16 +274,23 @@ export const PrintLayout = forwardRef<HTMLDivElement, PrintLayoutProps>(
 
             {/* Company / Logo */}
             <div>
-              {co.logoUrl ? (
+              {co.logoUrl && (
                 <img
                   src={co.logoUrl}
                   alt={co.name}
-                  style={{ maxHeight: "38pt", maxWidth: "140pt", objectFit: "contain",
-                           display: "block", marginBottom: "5pt" }}
+                  style={{
+                    maxHeight: "52pt", maxWidth: "160pt", objectFit: "contain",
+                    display: "block", marginBottom: "6pt",
+                  }}
                 />
-              ) : (
-                <div className="p-co-name">{co.name}</div>
               )}
+              {/* Always show company name — under logo if logo present, as primary if not */}
+              <div
+                className="p-co-name"
+                style={co.logoUrl ? { fontSize: "11pt", fontWeight: 700, color: "#334155" } : undefined}
+              >
+                {co.name}
+              </div>
               {coSubLines.length > 0 && (
                 <div className="p-co-sub">
                   {coSubLines.map((line, i) => (
