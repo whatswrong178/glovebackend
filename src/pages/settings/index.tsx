@@ -184,7 +184,9 @@ function CompanyProfileTab() {
   const [logoUploading, setLogoUploading] = useState(false);
   const [logoError,   setLogoError]   = useState("");
   const [logoDataUrl, setLogoDataUrl] = useState<string>("");
-  const fileInputRef  = useRef<HTMLInputElement>(null);
+  const fileInputRef    = useRef<HTMLInputElement>(null);
+  // Prevents useEffect from overwriting a freshly-uploaded base64 with a stale cached fetch
+  const logoJustUploaded = useRef(false);
 
   // Initialise form from fetched data (only once)
   const record = data?.data;
@@ -272,7 +274,11 @@ function CompanyProfileTab() {
       return;
     }
 
-    // Step 4: update local form state + refetch so preview renders from DB
+    // Step 4: fetch fresh base64 immediately (same URL = browser would return cached)
+    // Use a cache-bust query param for the fetch, but store clean URL in DB/form
+    const freshDataUrl = await toDataUrl(`${publicUrl}?v=${Date.now()}`);
+    logoJustUploaded.current = true; // tell useEffect to skip this one cycle
+    setLogoDataUrl(freshDataUrl);
     set("logo_url")(publicUrl);
     setSaved(true);
     setLogoUploading(false);
@@ -284,8 +290,10 @@ function CompanyProfileTab() {
   // Use || not ?? so empty-string form.logo_url falls through to DB value
   const logoUrl = form.logo_url || record?.logo_url || "";
 
-  // Convert remote URL → base64 data URL so the <img> preview never hits CORS
+  // Convert remote URL → base64 data URL so the <img> preview never hits CORS.
+  // Skip when logoJustUploaded=true — the upload handler already set a fresh base64.
   useEffect(() => {
+    if (logoJustUploaded.current) { logoJustUploaded.current = false; return; }
     if (!logoUrl) { setLogoDataUrl(""); return; }
     toDataUrl(logoUrl).then(setLogoDataUrl);
   }, [logoUrl]);

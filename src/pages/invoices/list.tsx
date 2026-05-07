@@ -20,6 +20,7 @@ import { supabaseClient } from "../../supabaseClient";
 import { PrintLayout, PRINT_CSS } from "../../components/PrintLayout";
 import type { PrintDocData, CompanyInfo } from "../../components/PrintLayout";
 import { toDataUrl } from "../../lib/print/toDataUrl";
+import { processLogoForPrint } from "../../lib/print/processLogo";
 
 
 type Tab = "active" | "completed";
@@ -634,7 +635,9 @@ export function InvoiceListPage() {
       imgs.map(async (img) => {
         const src = img.getAttribute("src") ?? "";
         if (src.startsWith("http")) {
-          img.setAttribute("src", await toDataUrl(src));
+          // Logo images get background-removal + darkening for clean B&W print
+          const isLogo = src.includes("/logos/");
+          img.setAttribute("src", isLogo ? await processLogoForPrint(src) : await toDataUrl(src));
         }
       })
     );

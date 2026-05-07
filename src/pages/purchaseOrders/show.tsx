@@ -17,6 +17,7 @@ import { useParams } from "react-router-dom";
 import { PrintLayout, PRINT_CSS } from "../../components/PrintLayout";
 import type { PrintDocData, PrintLineItem, CompanyInfo } from "../../components/PrintLayout";
 import { toDataUrl } from "../../lib/print/toDataUrl";
+import { processLogoForPrint } from "../../lib/print/processLogo";
 import { useCompanySettings } from "../../context/CompanySettingsContext";
 import { supabaseClient } from "../../supabaseClient";
 import type { StaffRole } from "../../types/staff";
@@ -471,7 +472,8 @@ function usePrint() {
       imgs.map(async (img) => {
         const src = img.getAttribute("src") ?? "";
         if (src.startsWith("http")) {
-          img.setAttribute("src", await toDataUrl(src));
+          const isLogo = src.includes("/logos/");
+          img.setAttribute("src", isLogo ? await processLogoForPrint(src) : await toDataUrl(src));
         }
       })
     );

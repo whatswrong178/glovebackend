@@ -119,20 +119,20 @@ export const PRINT_CSS = `
 .p-meta-label{color:#444;padding-right:12pt;white-space:nowrap;font-weight:500}
 .p-meta-value{text-align:right;font-weight:700;color:#000}
 
-/* ── Badge — solid borders so they survive grayscale ── */
+/* ── Badge — transparent background, solid border ── */
 .p-badge{display:inline-block;padding:2pt 7pt;border-radius:3pt;
   font-size:8.5pt;font-weight:800;text-transform:uppercase;letter-spacing:.3pt;
-  border:1pt solid #000}
-.p-badge-draft{background:#e5e5e5;color:#000}
-.p-badge-active{background:#d0d0d0;color:#000}
-.p-badge-paid{background:#b0b0b0;color:#000}
-.p-badge-sent{background:#b0b0b0;color:#000}
-.p-badge-approved{background:#d0d0d0;color:#000}
-.p-badge-cancelled{background:#f0f0f0;color:#444}
-.p-badge-pending{background:#e5e5e5;color:#000}
-.p-badge-delivered{background:#b0b0b0;color:#000}
-.p-badge-in-transit{background:#d0d0d0;color:#000}
-.p-badge-sample{background:#e8e8e8;color:#000}
+  background:transparent;border:1.5pt solid #000;color:#000}
+.p-badge-draft{border-color:#000}
+.p-badge-active{border-color:#000}
+.p-badge-paid{border-color:#000}
+.p-badge-sent{border-color:#000}
+.p-badge-approved{border-color:#000}
+.p-badge-cancelled{color:#555;border-color:#555}
+.p-badge-pending{border-color:#000}
+.p-badge-delivered{border-color:#000}
+.p-badge-in-transit{border-color:#000}
+.p-badge-sample{border-color:#000}
 
 /* ── Party grid ── */
 .p-party-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10pt;margin-bottom:14pt}
@@ -152,9 +152,9 @@ export const PRINT_CSS = `
   text-align:left;border-right:1pt solid #444}
 .p-table thead th.r{text-align:right}
 /* Zebra rows — neutral grays survive grayscale perfectly */
-.p-table tbody tr{border-bottom:1pt solid #ccc}
 .p-table tbody tr:nth-child(even){background:#f0f0f0}
-.p-table tbody td{font-size:10pt;padding:6.5pt 8pt;color:#000;border-right:1pt solid #e0e0e0}
+/* td borders on all 4 sides ensures visible grid in every print mode */
+.p-table tbody td{font-size:10pt;padding:6.5pt 8pt;color:#000;border:1pt solid #ccc}
 .p-table tbody td.r{text-align:right}
 .p-table tbody td.mono{font-family:monospace;font-size:9.5pt;color:#000;font-weight:600}
 .p-table tbody td.num{text-align:right;font-weight:700;color:#000}
@@ -301,7 +301,7 @@ export const PrintLayout = forwardRef<HTMLDivElement, PrintLayoutProps>(
               {/* Always show company name — under logo if logo present, as primary if not */}
               <div
                 className="p-co-name"
-                style={co.logoUrl ? { fontSize: "11pt", fontWeight: 700, color: "#334155" } : undefined}
+                style={co.logoUrl ? { fontSize: "11pt", fontWeight: 700, color: "#000" } : undefined}
               >
                 {co.name}
               </div>
