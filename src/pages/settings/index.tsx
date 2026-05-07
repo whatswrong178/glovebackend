@@ -182,6 +182,7 @@ function CompanyProfileTab() {
   const [saved,       setSaved]       = useState(false);
   const [logoUploading, setLogoUploading] = useState(false);
   const [logoError,   setLogoError]   = useState("");
+  const [imgError,    setImgError]    = useState(false);
   const fileInputRef  = useRef<HTMLInputElement>(null);
 
   // Initialise form from fetched data (only once)
@@ -282,7 +283,6 @@ function CompanyProfileTab() {
 
   // Use || not ?? so that empty-string form.logo_url falls through to record value
   const logoUrl = form.logo_url || record?.logo_url || "";
-  const [imgError, setImgError] = React.useState(false);
 
   return (
     <div className="space-y-6 max-w-3xl">
