@@ -1,1391 +1,1765 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Equimed Supply — 马来西亚中小企业采购联盟</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap" rel="stylesheet" />
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Equimed — For the hands that shape the world</title>
+<meta name="description" content="Medical-grade nitrile and latex gloves for surgeons, tattoo artists, chefs, and laboratories. We don't make gloves. We make confidence.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500;1,600&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+<style>
 
-    :root {
-      --navy:       #0a1929;
-      --navy-mid:   #0d2137;
-      --navy-light: #132f4c;
-      --blue:       #1565c0;
-      --teal:       #0891b2;
-      --teal-light: #06b6d4;
-      --gold:       #f59e0b;
-      --white:      #ffffff;
-      --gray-50:    #f8fafc;
-      --gray-100:   #f1f5f9;
-      --gray-200:   #e2e8f0;
-      --gray-400:   #94a3b8;
-      --gray-500:   #64748b;
-      --gray-700:   #334155;
-      --gray-900:   #0f172a;
-      --font:       'Inter', 'Noto Sans SC', system-ui, sans-serif;
-      --radius:     12px;
-      --radius-lg:  20px;
-      --shadow:     0 4px 20px rgba(0,0,0,0.08);
-      --shadow-lg:  0 8px 40px rgba(0,0,0,0.14);
-    }
+/* ─── Reset & Base ─────────────────────────────────────────────────────── */
+*,*::before,*::after { margin:0; padding:0; box-sizing:border-box; }
 
-    html { scroll-behavior: smooth; }
-    body { font-family: var(--font); color: var(--gray-900); line-height: 1.6; -webkit-font-smoothing: antialiased; }
+:root {
+  --navy:    #0B1B2A;
+  --ivory:   #F5F2ED;
+  --gold:    #C9A96E;
+  --mist:    #E8E3D7;
+  --charcoal:#2C2C2C;
+  --navy-60: rgba(11,27,42,0.6);
+  --ivory-40:rgba(245,242,237,0.4);
+  --gold-20: rgba(201,169,110,0.2);
+  --gold-08: rgba(201,169,110,0.08);
+  --gold-03: rgba(201,169,110,0.03);
+}
 
-    /* ── Language system ── */
-    html[lang="en"] .zh { display: none !important; }
-    html[lang="zh"] .en { display: none !important; }
+html {
+  scroll-behavior: smooth;
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
 
-    /* ── Typography ── */
-    .eyebrow {
-      font-size: 0.72rem; font-weight: 700; letter-spacing: 0.15em;
-      text-transform: uppercase; color: var(--teal-light);
-    }
-    h1 { font-size: clamp(2.4rem, 5vw, 3.8rem); font-weight: 900; line-height: 1.1; }
-    h2 { font-size: clamp(1.75rem, 3.5vw, 2.6rem); font-weight: 800; line-height: 1.2; }
-    h3 { font-size: 1.15rem; font-weight: 700; }
-    p  { color: var(--gray-500); line-height: 1.75; }
+body {
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 300;
+  background: var(--ivory);
+  color: var(--charcoal);
+  overflow-x: hidden;
+  line-height: 1.7;
+}
 
-    /* ── Layout ── */
-    .container { max-width: 1160px; margin: 0 auto; padding: 0 24px; }
-    .section { padding: 100px 0; }
-    .section--dark { background: var(--navy); color: white; }
-    .section--dark p { color: rgba(255,255,255,0.6); }
-    .section--gray { background: var(--gray-50); }
-    .section--teal { background: linear-gradient(135deg, #0c4a6e 0%, #0891b2 100%); color: white; }
-    .section--teal p { color: rgba(255,255,255,0.8); }
+/* ─── Navigation ───────────────────────────────────────────────────────── */
+.nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  padding: 0 clamp(24px, 5vw, 80px);
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: background 0.5s ease, border-color 0.5s ease, box-shadow 0.5s ease;
+  border-bottom: 0.5px solid transparent;
+}
 
-    /* ── Buttons ── */
-    .btn {
-      display: inline-flex; align-items: center; gap: 8px;
-      padding: 14px 28px; border-radius: 50px;
-      font-size: 0.9375rem; font-weight: 600; font-family: var(--font);
-      text-decoration: none; transition: all 0.2s;
-      cursor: pointer; border: none; white-space: nowrap;
-    }
-    .btn-primary { background: var(--teal-light); color: white; box-shadow: 0 4px 14px rgba(6,182,212,0.4); }
-    .btn-primary:hover { background: var(--teal); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(6,182,212,0.5); }
-    .btn-outline { background: transparent; color: white; border: 2px solid rgba(255,255,255,0.4); }
-    .btn-outline:hover { border-color: white; background: rgba(255,255,255,0.1); }
-    .btn-dark { background: var(--navy); color: white; }
-    .btn-dark:hover { background: var(--navy-light); transform: translateY(-1px); }
+.nav.scrolled {
+  background: rgba(245,242,237,0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom-color: var(--mist);
+  box-shadow: 0 1px 0 rgba(11,27,42,0.04);
+}
 
-    /* ══════════════════════════════════════════════════════
-       NAVBAR
-    ══════════════════════════════════════════════════════ */
-    .navbar {
-      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-      padding: 22px 0; transition: all 0.3s;
-    }
-    .navbar.scrolled {
-      background: rgba(10,25,41,0.96); backdrop-filter: blur(12px);
-      padding: 14px 0; box-shadow: 0 1px 24px rgba(0,0,0,0.35);
-    }
-    .navbar__inner { display: flex; align-items: center; justify-content: space-between; }
-    .navbar__logo { font-size: 1.4rem; font-weight: 900; color: white; text-decoration: none; letter-spacing: -0.5px; }
-    .navbar__logo span { color: var(--teal-light); }
-    .navbar__links { display: flex; align-items: center; gap: 32px; list-style: none; }
-    .navbar__links a { color: rgba(255,255,255,0.7); text-decoration: none; font-size: 0.875rem; font-weight: 500; transition: color 0.2s; }
-    .navbar__links a:hover { color: white; }
-    .navbar__right { display: flex; align-items: center; gap: 14px; }
-    .lang-toggle { display: flex; background: rgba(255,255,255,0.1); border-radius: 50px; padding: 4px; gap: 2px; }
-    .lang-toggle button {
-      padding: 5px 14px; border-radius: 50px; border: none;
-      font-size: 0.78rem; font-weight: 700; cursor: pointer;
-      transition: all 0.2s; background: transparent; color: rgba(255,255,255,0.55); font-family: var(--font);
-    }
-    .lang-toggle button.active { background: white; color: var(--navy); }
-    @media (max-width: 768px) { .navbar__links { display: none; } }
+.nav-brand {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 400;
+  font-size: 13px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--navy);
+  text-decoration: none;
+  user-select: none;
+}
 
-    /* ══════════════════════════════════════════════════════
-       HERO
-    ══════════════════════════════════════════════════════ */
-    .hero {
-      min-height: 100vh;
-      background: linear-gradient(140deg, #060f1c 0%, #0a1f3d 45%, #09294f 100%);
-      display: flex; align-items: center; position: relative; overflow: hidden;
-      padding-top: 80px;
-    }
-    .hero::before {
-      content: '';
-      position: absolute; inset: 0;
-      background: radial-gradient(ellipse at 75% 45%, rgba(6,182,212,0.1) 0%, transparent 65%);
-    }
-    .hero__grid {
-      position: absolute; inset: 0; opacity: 0.03;
-      background-image: linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px),
-                        linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px);
-      background-size: 60px 60px;
-    }
-    .hero__content { position: relative; z-index: 1; max-width: 760px; }
-    .hero__eyebrow { margin-bottom: 28px; display: flex; align-items: center; gap: 12px; }
-    .hero__eyebrow::after {
-      content: ''; flex: 1; max-width: 60px; height: 1px;
-      background: linear-gradient(90deg, var(--teal-light), transparent);
-    }
-    .hero__title { color: white; margin-bottom: 28px; }
-    .hero__title em { font-style: normal; color: var(--teal-light); }
-    .hero__subtitle {
-      font-size: 1.1rem; color: rgba(255,255,255,0.6);
-      max-width: 580px; margin-bottom: 44px; line-height: 1.75;
-    }
-    .hero__ctas { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 72px; }
-    .hero__scroll { display: flex; align-items: center; gap: 14px; color: rgba(255,255,255,0.35); font-size: 0.78rem; }
-    .hero__scroll-line { width: 36px; height: 1px; background: rgba(255,255,255,0.2); }
+.nav-brand .g { color: var(--gold); }
 
-    /* Floating promise card */
-    .hero__card {
-      position: absolute; right: 0; top: 50%; transform: translateY(-50%);
-      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1);
-      border-radius: var(--radius-lg); padding: 36px;
-      backdrop-filter: blur(12px); max-width: 280px; display: none;
-    }
-    @media (min-width: 1100px) { .hero__card { display: block; } }
-    .hero__card-quote { font-size: 1.6rem; font-weight: 900; color: white; line-height: 1.3; margin-bottom: 18px; }
-    .hero__card-quote span { color: var(--gold); }
-    .hero__card-sub { font-size: 0.78rem; color: rgba(255,255,255,0.4); }
-    .hero__card-divider { width: 32px; height: 2px; background: var(--teal-light); margin: 14px 0; border-radius: 2px; }
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: clamp(20px, 3vw, 40px);
+  list-style: none;
+}
 
-    /* ══════════════════════════════════════════════════════
-       PAIN POINTS
-    ══════════════════════════════════════════════════════ */
-    .pain__header { text-align: center; max-width: 600px; margin: 0 auto 72px; }
-    .pain__header h2 { margin: 14px 0 16px; }
-    .pain__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; }
-    .pain-card {
-      background: white; border-radius: var(--radius-lg);
-      padding: 40px 34px; border: 1px solid var(--gray-200);
-      box-shadow: var(--shadow); transition: transform 0.25s, box-shadow 0.25s;
-    }
-    .pain-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-lg); }
-    .pain-card__icon {
-      width: 54px; height: 54px; border-radius: 14px;
-      background: #fef2f2; display: flex; align-items: center; justify-content: center;
-      font-size: 1.6rem; margin-bottom: 22px;
-    }
-    .pain-card h3 { margin-bottom: 10px; color: var(--gray-900); }
-    .pain-card p { font-size: 0.9rem; }
+.nav-links a {
+  font-size: 9px;
+  font-weight: 400;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: rgba(11,27,42,0.45);
+  text-decoration: none;
+  transition: color 0.25s;
+}
 
-    /* ══════════════════════════════════════════════════════
-       SOLUTION
-    ══════════════════════════════════════════════════════ */
-    .solution__inner {
-      display: grid; grid-template-columns: 1fr 1fr;
-      gap: 80px; align-items: center;
-    }
-    @media (max-width: 800px) { .solution__inner { grid-template-columns: 1fr; gap: 48px; } }
-    .solution__label { margin-bottom: 14px; }
-    .solution__title { margin-bottom: 22px; }
-    .solution__text { margin-bottom: 36px; font-size: 1.05rem; }
-    .solution__visual {
-      background: linear-gradient(145deg, #0c2d52 0%, #0a3d6e 100%);
-      border-radius: var(--radius-lg); padding: 52px 40px;
-      box-shadow: var(--shadow-lg); position: relative; overflow: hidden;
-    }
-    .solution__visual::before {
-      content: ''; position: absolute; top: -40px; right: -40px;
-      width: 180px; height: 180px;
-      background: radial-gradient(circle, rgba(6,182,212,0.18) 0%, transparent 70%);
-      border-radius: 50%;
-    }
-    .alliance-viz { display: flex; flex-direction: column; align-items: center; gap: 14px; position: relative; z-index: 1; }
-    .alliance-viz__row { display: flex; gap: 10px; justify-content: center; }
-    .alliance-viz__node {
-      width: 46px; height: 46px; border-radius: 50%;
-      background: rgba(255,255,255,0.09); border: 1.5px solid rgba(255,255,255,0.18);
-      display: flex; align-items: center; justify-content: center; font-size: 1.1rem;
-    }
-    .alliance-viz__center {
-      width: 78px; height: 78px; border-radius: 50%;
-      background: linear-gradient(135deg, var(--teal-light), var(--blue));
-      display: flex; align-items: center; justify-content: center;
-      font-size: 2rem; box-shadow: 0 0 40px rgba(6,182,212,0.45);
-    }
-    .alliance-viz__stat { text-align: center; margin-top: 6px; }
-    .alliance-viz__num { font-size: 2.2rem; font-weight: 900; color: var(--gold); line-height: 1; }
-    .alliance-viz__label { font-size: 0.78rem; color: rgba(255,255,255,0.5); margin-top: 6px; }
+.nav-links a:hover { color: var(--navy); }
 
-    /* ══════════════════════════════════════════════════════
-       VISION / MISSION / PROMISE
-    ══════════════════════════════════════════════════════ */
-    .vmp__header { text-align: center; margin-bottom: 64px; }
-    .vmp__header h2 { color: white; margin: 14px 0 0; }
-    .vmp__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
-    .vmp-card {
-      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1);
-      border-radius: var(--radius-lg); padding: 44px 36px;
-      transition: background 0.2s, transform 0.2s;
-    }
-    .vmp-card:hover { background: rgba(255,255,255,0.07); transform: translateY(-3px); }
-    .vmp-card__tag {
-      display: inline-block; font-size: 0.68rem; font-weight: 700;
-      letter-spacing: 0.12em; text-transform: uppercase;
-      color: var(--teal-light); background: rgba(6,182,212,0.15);
-      border-radius: 50px; padding: 4px 14px; margin-bottom: 22px;
-    }
-    .vmp-card h3 { color: white; font-size: 1.35rem; margin-bottom: 0; line-height: 1.4; }
-    .vmp-card p { color: rgba(255,255,255,0.55); font-size: 0.9rem; margin-top: 10px; }
+.nav-contact-btn {
+  font-size: 9px;
+  font-weight: 400;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--navy) !important;
+  border: 0.5px solid rgba(11,27,42,0.25);
+  padding: 8px 18px;
+  transition: border-color 0.25s, color 0.25s !important;
+}
 
-    /* ══════════════════════════════════════════════════════
-       HOW IT WORKS
-    ══════════════════════════════════════════════════════ */
-    .hiw__header { text-align: center; max-width: 560px; margin: 0 auto 80px; }
-    .hiw__header h2 { margin: 14px 0 16px; }
-    .hiw__steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
-    .hiw-step { text-align: center; padding: 44px 28px; border-radius: var(--radius-lg); background: white; border: 1px solid var(--gray-200); box-shadow: var(--shadow); transition: transform 0.2s; }
-    .hiw-step:hover { transform: translateY(-4px); }
-    .hiw-step__num {
-      width: 60px; height: 60px; border-radius: 50%;
-      background: linear-gradient(135deg, var(--teal-light), var(--blue));
-      color: white; font-size: 1.4rem; font-weight: 900;
-      display: flex; align-items: center; justify-content: center;
-      margin: 0 auto 24px; box-shadow: 0 4px 20px rgba(6,182,212,0.35);
-    }
-    .hiw-step h3 { margin-bottom: 12px; }
-    .hiw-step p { font-size: 0.88rem; }
+.nav-contact-btn:hover {
+  border-color: var(--gold) !important;
+  color: var(--gold) !important;
+}
 
-    /* ══════════════════════════════════════════════════════
-       BENEFITS
-    ══════════════════════════════════════════════════════ */
-    .benefits__header { text-align: center; max-width: 540px; margin: 0 auto 68px; }
-    .benefits__header h2 { margin: 14px 0 16px; }
-    .benefits__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; }
-    .benefit-card {
-      padding: 28px 26px; border-radius: var(--radius); border: 1px solid var(--gray-200);
-      display: flex; gap: 16px; align-items: flex-start;
-      background: var(--gray-50); transition: all 0.2s;
-    }
-    .benefit-card:hover { background: white; box-shadow: var(--shadow); transform: translateY(-2px); }
-    .benefit-card__icon {
-      font-size: 1.4rem; flex-shrink: 0; width: 46px; height: 46px;
-      background: linear-gradient(135deg, rgba(6,182,212,0.1), rgba(21,101,192,0.1));
-      border-radius: 11px; display: flex; align-items: center; justify-content: center;
-    }
-    .benefit-card h3 { font-size: 0.975rem; margin-bottom: 6px; }
-    .benefit-card p { font-size: 0.84rem; }
+.nav-hamburger {
+  display: none;
+  flex-direction: column;
+  gap: 5px;
+  cursor: pointer;
+  padding: 4px;
+  background: none;
+  border: none;
+}
 
-    /* ══════════════════════════════════════════════════════
-       INDUSTRIES
-    ══════════════════════════════════════════════════════ */
-    .industries__header { text-align: center; margin-bottom: 52px; }
-    .industries__header h2 { color: white; margin: 14px 0 0; }
-    .industries__tags { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
-    .industry-tag {
-      background: rgba(255,255,255,0.09); border: 1px solid rgba(255,255,255,0.18);
-      color: white; border-radius: 50px;
-      padding: 10px 22px; font-size: 0.9rem; font-weight: 500;
-      transition: all 0.2s; cursor: default;
-    }
-    .industry-tag:hover { background: rgba(255,255,255,0.18); transform: scale(1.03); }
+.nav-hamburger span {
+  display: block;
+  width: 22px;
+  height: 0.5px;
+  background: var(--navy);
+  transition: all 0.3s;
+}
 
-    /* ══════════════════════════════════════════════════════
-       CTA
-    ══════════════════════════════════════════════════════ */
-    .cta-section {
-      background: linear-gradient(140deg, #06101e 0%, #0b2748 50%, #0a3060 100%);
-      padding: 108px 0; text-align: center; position: relative; overflow: hidden;
-    }
-    .cta-section::before {
-      content: ''; position: absolute; top: -50%; left: 50%; transform: translateX(-50%);
-      width: 600px; height: 600px;
-      background: radial-gradient(circle, rgba(6,182,212,0.08) 0%, transparent 65%);
-      border-radius: 50%;
-    }
-    .cta-section__inner { position: relative; z-index: 1; }
-    .cta-section h2 { color: white; margin: 14px 0 18px; }
-    .cta-section__sub {
-      color: rgba(255,255,255,0.6); margin-bottom: 44px;
-      font-size: 1.05rem; max-width: 480px; margin-left: auto; margin-right: auto;
-    }
-    .cta-section__btns { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
-    .cta-section__fine { margin-top: 28px; font-size: 0.78rem; color: rgba(255,255,255,0.28); margin-bottom: 0; }
+/* ─── Hero ─────────────────────────────────────────────────────────────── */
+.hero {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  background: var(--ivory);
+  position: relative;
+  overflow: hidden;
+  padding: 120px clamp(24px, 5vw, 80px) 80px;
+}
 
-    /* ══════════════════════════════════════════════════════
-       FOOTER
-    ══════════════════════════════════════════════════════ */
-    .footer { background: #05101a; padding: 64px 0 32px; }
-    .footer__top {
-      display: grid; grid-template-columns: 1.6fr 1fr 1fr;
-      gap: 48px; margin-bottom: 52px;
-      border-bottom: 1px solid rgba(255,255,255,0.07); padding-bottom: 52px;
-    }
-    @media (max-width: 768px) { .footer__top { grid-template-columns: 1fr; gap: 32px; } }
-    .footer__brand-name { font-size: 1.4rem; font-weight: 900; color: white; margin-bottom: 12px; }
-    .footer__brand-name span { color: var(--teal-light); }
-    .footer__brand p { font-size: 0.85rem; color: rgba(255,255,255,0.38); max-width: 280px; line-height: 1.65; }
-    .footer__col h4 { color: rgba(255,255,255,0.6); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 22px; }
-    .footer__col ul { list-style: none; display: flex; flex-direction: column; gap: 12px; }
-    .footer__col ul a { color: rgba(255,255,255,0.42); font-size: 0.875rem; text-decoration: none; transition: color 0.2s; }
-    .footer__col ul a:hover { color: white; }
-    .footer__bottom {
-      display: flex; justify-content: space-between; align-items: center;
-      flex-wrap: wrap; gap: 10px;
-    }
-    .footer__bottom p { font-size: 0.78rem; color: rgba(255,255,255,0.28); }
+.hero::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: radial-gradient(ellipse at 50% 60%, var(--gold-03) 0%, transparent 70%);
+  pointer-events: none;
+}
 
-    /* ── Scroll-reveal ── */
-    .reveal {
-      opacity: 0; transform: translateY(22px);
-      transition: opacity 0.55s ease, transform 0.55s ease;
-    }
-    .reveal.visible { opacity: 1; transform: translateY(0); }
-  </style>
+.hero-eyebrow {
+  font-size: 8px;
+  font-weight: 400;
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 48px;
+  opacity: 0;
+  animation: fadeUp 1.2s 0.2s cubic-bezier(0.16,1,0.3,1) forwards;
+}
+
+.hero-wordmark {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 400;
+  font-size: clamp(52px, 10vw, 120px);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--navy);
+  line-height: 1;
+  margin-bottom: 28px;
+  opacity: 0;
+  animation: fadeUp 1.4s 0.4s cubic-bezier(0.16,1,0.3,1) forwards;
+}
+
+.hero-wordmark .g { color: var(--gold); }
+
+.hero-rule {
+  width: 1px;
+  height: 48px;
+  background: linear-gradient(to bottom, transparent, var(--gold), transparent);
+  margin: 0 auto 28px;
+  opacity: 0;
+  animation: fadeUp 1.2s 0.65s cubic-bezier(0.16,1,0.3,1) forwards;
+}
+
+.hero-tagline {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-weight: 400;
+  font-size: clamp(13px, 2vw, 17px);
+  color: rgba(11,27,42,0.4);
+  letter-spacing: 0.12em;
+  margin-bottom: 72px;
+  opacity: 0;
+  animation: fadeUp 1.2s 0.8s cubic-bezier(0.16,1,0.3,1) forwards;
+}
+
+.hero-scroll-indicator {
+  position: absolute;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  opacity: 0;
+  animation: fadeIn 1s 1.8s ease forwards;
+}
+
+.hero-scroll-indicator span {
+  font-size: 7px;
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  color: rgba(11,27,42,0.2);
+}
+
+.hero-scroll-line {
+  width: 0.5px;
+  height: 32px;
+  background: linear-gradient(to bottom, rgba(11,27,42,0.15), transparent);
+  animation: scrollPulse 2.5s 2s ease-in-out infinite;
+}
+
+/* ─── Philosophy ────────────────────────────────────────────────────────── */
+.philosophy {
+  background: var(--navy);
+  padding: clamp(100px, 15vw, 180px) clamp(24px, 5vw, 120px);
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.philosophy::before {
+  content: '';
+  position: absolute;
+  top: -30%; left: 50%;
+  transform: translateX(-50%);
+  width: 600px; height: 600px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--gold-08) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.philosophy-quote {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-weight: 400;
+  font-size: clamp(26px, 4.5vw, 58px);
+  color: var(--ivory);
+  line-height: 1.35;
+  letter-spacing: 0.02em;
+  max-width: 900px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
+}
+
+.philosophy-quote .em { color: var(--gold); font-style: normal; }
+
+.philosophy-sub {
+  font-size: clamp(9px, 1.2vw, 11px);
+  font-weight: 300;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: rgba(245,242,237,0.2);
+  margin-top: 48px;
+  position: relative;
+  z-index: 1;
+}
+
+/* ─── Vision · Mission · Commitment ─────────────────────────────────────── */
+.pillars-section {
+  background: var(--navy);
+  padding: clamp(80px, 12vw, 140px) clamp(24px, 5vw, 80px);
+}
+
+.pillars-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.pillars-header {
+  margin-bottom: 64px;
+}
+
+.pillars-heading {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 400;
+  font-size: clamp(24px, 3.5vw, 38px);
+  color: var(--ivory);
+  letter-spacing: 0.08em;
+  margin-top: 12px;
+}
+
+.pillars-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0;
+  border-top: 0.5px solid rgba(245,242,237,0.06);
+}
+
+.pillar-item {
+  padding: 48px 40px 48px 0;
+  border-right: 0.5px solid rgba(245,242,237,0.06);
+}
+
+.pillar-item:last-child { border-right: none; padding-right: 0; }
+.pillar-item:not(:first-child) { padding-left: 40px; }
+
+.pillar-icon {
+  font-size: 16px;
+  color: var(--gold);
+  margin-bottom: 20px;
+  opacity: 0.6;
+}
+
+.pillar-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 400;
+  font-size: clamp(16px, 2vw, 20px);
+  color: var(--ivory);
+  letter-spacing: 0.02em;
+  margin-bottom: 16px;
+}
+
+.pillar-body {
+  font-size: 13px;
+  font-weight: 300;
+  color: rgba(245,242,237,0.65);
+  line-height: 1.9;
+  letter-spacing: 0.01em;
+  margin-bottom: 20px;
+}
+
+.pillar-zh {
+  font-size: 12px;
+  font-weight: 300;
+  color: rgba(245,242,237,0.4);
+  line-height: 2;
+  letter-spacing: 0.02em;
+  padding-top: 16px;
+  border-top: 0.5px solid rgba(245,242,237,0.08);
+}
+
+@media (max-width: 900px) {
+  .pillars-grid { grid-template-columns: 1fr; }
+  .pillar-item { border-right: none; border-bottom: 0.5px solid rgba(245,242,237,0.06); padding: 36px 0; }
+  .pillar-item:last-child { border-bottom: none; }
+  .pillar-item:not(:first-child) { padding-left: 0; }
+}
+
+/* ─── Story ─────────────────────────────────────────────────────────────── */
+.story {
+  background: var(--ivory);
+  padding: clamp(80px, 12vw, 160px) clamp(24px, 8vw, 120px);
+}
+
+.story-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(48px, 8vw, 120px);
+  align-items: start;
+}
+
+.story-label {
+  font-size: 8px;
+  font-weight: 400;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 20px;
+}
+
+.story-heading {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 400;
+  font-size: clamp(28px, 4vw, 44px);
+  color: var(--navy);
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+  margin-bottom: 40px;
+}
+
+.story-body {
+  font-size: clamp(13px, 1.4vw, 15px);
+  font-weight: 300;
+  line-height: 1.9;
+  color: rgba(44,44,44,0.75);
+  letter-spacing: 0.01em;
+}
+
+.story-body p { margin-bottom: 20px; }
+.story-body p:last-child { margin-bottom: 0; }
+
+.story-body .em {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  color: var(--navy);
+  font-weight: 400;
+}
+
+.story-zh {
+  padding-top: 60px;
+  border-top: 0.5px solid var(--mist);
+}
+
+.story-zh .story-label { letter-spacing: 0.2em; }
+
+.story-zh .story-body {
+  font-size: clamp(13px, 1.4vw, 14.5px);
+  line-height: 2.1;
+}
+
+/* ─── Products ──────────────────────────────────────────────────────────── */
+.products {
+  background: var(--navy);
+  padding: clamp(80px, 12vw, 160px) clamp(24px, 5vw, 80px);
+}
+
+.products-header {
+  max-width: 1100px;
+  margin: 0 auto 72px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 40px;
+}
+
+.products-header-left .section-label {
+  font-size: 8px;
+  font-weight: 400;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: rgba(201,169,110,0.5);
+  margin-bottom: 16px;
+}
+
+.products-header-left .section-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 400;
+  font-size: clamp(28px, 4vw, 44px);
+  color: var(--ivory);
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+}
+
+.products-header-right {
+  font-size: 12px;
+  font-weight: 300;
+  color: rgba(245,242,237,0.55);
+  max-width: 300px;
+  text-align: right;
+  line-height: 1.8;
+  letter-spacing: 0.02em;
+  flex-shrink: 0;
+}
+
+.products-grid {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5px;
+}
+
+.product-card {
+  aspect-ratio: 3/4;
+  position: relative;
+  overflow: hidden;
+  cursor: default;
+  background: var(--navy);
+  border: 0.5px solid rgba(245,242,237,0.05);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: clamp(24px, 3vw, 40px);
+  transition: border-color 0.4s;
+}
+
+.product-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 80% 20%, var(--gold-08), transparent 60%);
+  opacity: 0;
+  transition: opacity 0.6s;
+}
+
+.product-card:hover { border-color: rgba(201,169,110,0.15); }
+.product-card:hover::before { opacity: 1; }
+
+.product-card.light {
+  background: rgba(245,242,237,0.04);
+}
+
+.product-series {
+  font-size: 8px;
+  font-weight: 300;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: rgba(201,169,110,0.4);
+}
+
+.product-bottom { position: relative; z-index: 1; }
+
+.product-name {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 400;
+  font-size: clamp(28px, 4vw, 48px);
+  color: var(--ivory);
+  letter-spacing: 0.02em;
+  margin-bottom: 12px;
+  line-height: 1;
+}
+
+.product-hairline {
+  width: 24px;
+  height: 0.5px;
+  background: rgba(201,169,110,0.3);
+  margin-bottom: 16px;
+}
+
+.product-material {
+  font-size: 9px;
+  font-weight: 400;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(245,242,237,0.55);
+  margin-bottom: 16px;
+}
+
+.product-desc {
+  font-size: 12px;
+  font-weight: 300;
+  color: rgba(245,242,237,0.7);
+  line-height: 1.85;
+  letter-spacing: 0.01em;
+}
+
+/* ─── Who We Serve ──────────────────────────────────────────────────────── */
+.serve {
+  background: var(--ivory);
+  padding: clamp(80px, 12vw, 160px) clamp(24px, 5vw, 80px);
+}
+
+.serve-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.serve-header {
+  margin-bottom: 80px;
+}
+
+.section-label {
+  font-size: 8px;
+  font-weight: 400;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 16px;
+}
+
+.section-heading {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 400;
+  font-size: clamp(28px, 4vw, 44px);
+  color: var(--navy);
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+}
+
+.serve-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0;
+  border-top: 0.5px solid var(--mist);
+}
+
+.serve-item {
+  padding: 40px 24px 40px 0;
+  border-right: 0.5px solid var(--mist);
+}
+
+.serve-item:last-child {
+  border-right: none;
+  padding-right: 0;
+}
+
+.serve-item:not(:first-child) {
+  padding-left: 24px;
+}
+
+.serve-number {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 400;
+  font-size: 11px;
+  color: var(--gold);
+  letter-spacing: 0.1em;
+  margin-bottom: 20px;
+}
+
+.serve-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 400;
+  font-size: clamp(14px, 1.8vw, 18px);
+  color: var(--navy);
+  letter-spacing: 0.01em;
+  line-height: 1.3;
+  margin-bottom: 12px;
+}
+
+.serve-desc {
+  font-size: 11px;
+  font-weight: 300;
+  color: rgba(44,44,44,0.5);
+  line-height: 1.75;
+  letter-spacing: 0.01em;
+}
+
+/* ─── Standards ─────────────────────────────────────────────────────────── */
+.standards {
+  background: var(--navy);
+  padding: clamp(80px, 12vw, 160px) clamp(24px, 5vw, 80px);
+}
+
+.standards-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.standards-top {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 80px;
+  align-items: end;
+  margin-bottom: 80px;
+  padding-bottom: 80px;
+  border-bottom: 0.5px solid rgba(245,242,237,0.06);
+}
+
+.standards-heading {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 400;
+  font-size: clamp(28px, 4vw, 44px);
+  color: var(--ivory);
+  line-height: 1.25;
+  letter-spacing: 0.01em;
+}
+
+.standards-heading .section-label {
+  color: rgba(201,169,110,0.4);
+  margin-bottom: 16px;
+}
+
+.standards-intro {
+  font-size: 13px;
+  font-weight: 300;
+  color: rgba(245,242,237,0.65);
+  line-height: 1.9;
+  letter-spacing: 0.01em;
+}
+
+.standards-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0;
+}
+
+.standard-item {
+  padding: 40px 48px 40px 0;
+  border-right: 0.5px solid rgba(245,242,237,0.06);
+}
+
+.standard-item:last-child {
+  border-right: none;
+  padding-right: 0;
+}
+
+.standard-item:not(:first-child) {
+  padding-left: 48px;
+}
+
+.standard-num {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 32px;
+  font-weight: 400;
+  color: rgba(201,169,110,0.25);
+  line-height: 1;
+  margin-bottom: 20px;
+}
+
+.standard-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 400;
+  font-size: clamp(14px, 1.6vw, 18px);
+  color: var(--ivory);
+  letter-spacing: 0.02em;
+  margin-bottom: 12px;
+}
+
+.standard-body {
+  font-size: 12px;
+  font-weight: 300;
+  color: rgba(245,242,237,0.65);
+  line-height: 1.8;
+  letter-spacing: 0.01em;
+}
+
+/* ─── Contact ───────────────────────────────────────────────────────────── */
+.contact {
+  background: var(--ivory);
+  padding: clamp(80px, 12vw, 160px) clamp(24px, 5vw, 80px);
+}
+
+.contact-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 80px;
+  align-items: start;
+}
+
+.contact-heading {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 400;
+  font-size: clamp(28px, 4vw, 44px);
+  color: var(--navy);
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+  margin-bottom: 24px;
+}
+
+.contact-body {
+  font-size: 13px;
+  font-weight: 300;
+  color: rgba(44,44,44,0.55);
+  line-height: 1.9;
+  margin-bottom: 40px;
+}
+
+.contact-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 9px;
+  font-weight: 400;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--navy);
+  text-decoration: none;
+  border-bottom: 0.5px solid var(--navy);
+  padding-bottom: 2px;
+  transition: color 0.25s, border-color 0.25s;
+  margin-bottom: 16px;
+}
+
+.contact-link:hover { color: var(--gold); border-color: var(--gold); }
+.contact-link:hover .arrow { transform: translateX(4px); }
+
+.arrow { transition: transform 0.25s; display: inline-block; }
+
+.contact-details {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  border-left: 0.5px solid var(--mist);
+  padding-left: 48px;
+}
+
+.contact-item-label {
+  font-size: 8px;
+  font-weight: 400;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 4px;
+}
+
+.contact-item-value {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 400;
+  font-size: 14px;
+  color: var(--navy);
+  letter-spacing: 0.02em;
+}
+
+.contact-detail-group {
+  padding-bottom: 16px;
+  border-bottom: 0.5px solid var(--mist);
+}
+
+.contact-detail-group:last-child { border-bottom: none; }
+
+/* ─── Careers / Recruitment ─────────────────────────────────────────────── */
+.careers {
+  background: var(--ivory);
+  padding: clamp(80px, 12vw, 160px) clamp(24px, 5vw, 80px);
+  border-top: 0.5px solid var(--mist);
+}
+
+.careers-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.careers-header {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 80px;
+  align-items: end;
+  margin-bottom: 80px;
+  padding-bottom: 64px;
+  border-bottom: 0.5px solid var(--mist);
+}
+
+.careers-heading {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 400;
+  font-size: clamp(28px, 4vw, 44px);
+  color: var(--navy);
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+}
+
+.careers-intro {
+  font-size: 13px;
+  font-weight: 300;
+  color: rgba(44,44,44,0.6);
+  line-height: 1.9;
+  letter-spacing: 0.01em;
+}
+
+.careers-intro .em {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  color: var(--navy);
+  font-weight: 400;
+}
+
+/* Tier cards */
+.tier-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.5px;
+  margin-bottom: 64px;
+  background: var(--mist);
+}
+
+.tier-card {
+  background: var(--ivory);
+  padding: 36px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: background 0.3s;
+}
+
+.tier-card:hover { background: #EFECE6; }
+
+.tier-pct {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 400;
+  font-size: clamp(36px, 5vw, 52px);
+  color: var(--navy);
+  line-height: 1;
+  letter-spacing: -0.01em;
+}
+
+.tier-pct .g { color: var(--gold); }
+
+.tier-range {
+  font-size: 9px;
+  font-weight: 300;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: rgba(44,44,44,0.4);
+  margin-top: 4px;
+}
+
+.tier-label {
+  font-size: 9px;
+  font-weight: 400;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+/* Income table */
+.income-block {
+  margin-bottom: 64px;
+}
+
+.income-block-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.income-block-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 400;
+  font-size: 18px;
+  color: var(--navy);
+  letter-spacing: 0.02em;
+}
+
+.income-block-note {
+  font-size: 9px;
+  font-weight: 300;
+  color: rgba(44,44,44,0.35);
+  letter-spacing: 0.1em;
+}
+
+.income-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.income-table th {
+  text-align: left;
+  font-size: 8px;
+  font-weight: 400;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: rgba(44,44,44,0.35);
+  padding: 0 16px 16px 0;
+  border-bottom: 0.5px solid var(--mist);
+}
+
+.income-table th:last-child { padding-right: 0; text-align: right; }
+
+.income-table td {
+  padding: 16px 16px 16px 0;
+  border-bottom: 0.5px solid var(--mist);
+  font-size: 13px;
+  font-weight: 300;
+  color: rgba(44,44,44,0.65);
+  vertical-align: middle;
+}
+
+.income-table td:last-child { padding-right: 0; text-align: right; }
+
+.income-table .sales-col {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 400;
+  font-size: 14px;
+  color: var(--navy);
+  letter-spacing: 0.02em;
+}
+
+.income-table .comm-col {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 400;
+  font-size: 15px;
+  color: var(--navy);
+  letter-spacing: 0.01em;
+}
+
+.income-table tr.highlight-row td {
+  background: rgba(201,169,110,0.05);
+}
+
+.income-table tr.highlight-row .comm-col {
+  color: var(--gold);
+  font-size: 17px;
+}
+
+.milestone-badge {
+  display: inline-block;
+  font-size: 8px;
+  font-weight: 400;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--gold);
+  border: 0.5px solid rgba(201,169,110,0.4);
+  padding: 3px 8px;
+  border-radius: 2px;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+/* Perks row */
+.perks-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5px;
+  background: var(--mist);
+  margin-bottom: 64px;
+}
+
+.perk-item {
+  background: var(--navy);
+  padding: 36px 32px;
+}
+
+.perk-num {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 11px;
+  color: rgba(201,169,110,0.3);
+  margin-bottom: 20px;
+  letter-spacing: 0.1em;
+}
+
+.perk-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 400;
+  font-size: clamp(14px, 1.8vw, 18px);
+  color: var(--ivory);
+  margin-bottom: 12px;
+  letter-spacing: 0.02em;
+}
+
+.perk-body {
+  font-size: 12px;
+  font-weight: 300;
+  color: rgba(245,242,237,0.65);
+  line-height: 1.8;
+}
+
+/* Careers CTA */
+.careers-cta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 40px;
+  padding-top: 48px;
+  border-top: 0.5px solid var(--mist);
+}
+
+.careers-cta-text {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-weight: 400;
+  font-size: clamp(18px, 2.5vw, 26px);
+  color: var(--navy);
+  line-height: 1.4;
+  max-width: 520px;
+  letter-spacing: 0.01em;
+}
+
+.careers-cta-action {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.cta-wa-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 32px;
+  background: var(--navy);
+  color: var(--ivory);
+  text-decoration: none;
+  font-size: 9px;
+  font-weight: 400;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  transition: background 0.3s, color 0.3s;
+}
+
+.cta-wa-btn:hover { background: var(--gold); color: var(--navy); }
+
+.cta-wa-btn svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+.careers-cta-note {
+  font-size: 9px;
+  font-weight: 300;
+  color: rgba(44,44,44,0.3);
+  letter-spacing: 0.1em;
+  text-align: right;
+}
+
+@media (max-width: 900px) {
+  .careers-header { grid-template-columns: 1fr; gap: 32px; }
+  .tier-row { grid-template-columns: repeat(2, 1fr); }
+  .perks-row { grid-template-columns: 1fr; }
+  .careers-cta { flex-direction: column; align-items: flex-start; }
+  .careers-cta-action { align-items: flex-start; }
+  .careers-cta-note { text-align: left; }
+  .income-block-header { flex-direction: column; gap: 8px; }
+}
+
+@media (max-width: 540px) {
+  .tier-row { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ─── Footer ────────────────────────────────────────────────────────────── */
+.footer {
+  background: var(--navy);
+  padding: clamp(60px, 8vw, 100px) clamp(24px, 5vw, 80px);
+}
+
+.footer-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.footer-logo {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 400;
+  font-size: 16px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ivory);
+  margin-bottom: 12px;
+}
+
+.footer-logo .g { color: var(--gold); }
+
+.footer-hairline {
+  width: 14px;
+  height: 0.5px;
+  background: rgba(201,169,110,0.3);
+  margin: 0 auto 12px;
+}
+
+.footer-tagline {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-weight: 400;
+  font-size: 10px;
+  color: rgba(245,242,237,0.25);
+  letter-spacing: 0.22em;
+  margin-bottom: 48px;
+}
+
+.footer-nav {
+  display: flex;
+  gap: 32px;
+  list-style: none;
+  margin-bottom: 48px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.footer-nav a {
+  font-size: 8px;
+  font-weight: 400;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: rgba(245,242,237,0.2);
+  text-decoration: none;
+  transition: color 0.25s;
+}
+
+.footer-nav a:hover { color: rgba(245,242,237,0.5); }
+
+.footer-divider {
+  width: 100%;
+  height: 0.5px;
+  background: rgba(245,242,237,0.06);
+  margin-bottom: 32px;
+}
+
+.footer-copy {
+  font-size: 9px;
+  font-weight: 300;
+  color: rgba(245,242,237,0.15);
+  letter-spacing: 0.1em;
+}
+
+/* ─── Animations ────────────────────────────────────────────────────────── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes scrollPulse {
+  0%, 100% { opacity: 0.3; transform: scaleY(1); }
+  50%       { opacity: 0.7; transform: scaleY(0.7); }
+}
+
+.reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.9s cubic-bezier(0.16,1,0.3,1), transform 0.9s cubic-bezier(0.16,1,0.3,1);
+}
+
+.reveal.in-view {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.reveal-delay-1 { transition-delay: 0.1s; }
+.reveal-delay-2 { transition-delay: 0.2s; }
+.reveal-delay-3 { transition-delay: 0.32s; }
+.reveal-delay-4 { transition-delay: 0.44s; }
+.reveal-delay-5 { transition-delay: 0.56s; }
+
+/* ─── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .nav-links { display: none; }
+  .nav-hamburger { display: flex; }
+
+  .story-inner {
+    grid-template-columns: 1fr;
+    gap: 60px;
+  }
+
+  .products-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .products-header-right {
+    text-align: left;
+    max-width: 100%;
+  }
+
+  .products-grid {
+    grid-template-columns: 1fr;
+    gap: 1px;
+  }
+
+  .product-card {
+    aspect-ratio: auto;
+    min-height: 280px;
+  }
+
+  .serve-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0;
+  }
+
+  .serve-item {
+    border-right: none;
+    border-bottom: 0.5px solid var(--mist);
+    padding: 32px 0;
+  }
+
+  .serve-item:last-child { border-bottom: none; }
+
+  .standards-top {
+    grid-template-columns: 1fr;
+    gap: 40px;
+    margin-bottom: 48px;
+    padding-bottom: 48px;
+  }
+
+  .standards-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .standard-item {
+    border-right: none;
+    border-bottom: 0.5px solid rgba(245,242,237,0.06);
+    padding: 32px 0;
+  }
+
+  .standard-item:last-child { border-bottom: none; }
+  .standard-item:not(:first-child) { padding-left: 0; }
+
+  .contact-inner {
+    grid-template-columns: 1fr;
+    gap: 48px;
+  }
+
+  .contact-details {
+    border-left: none;
+    padding-left: 0;
+    border-top: 0.5px solid var(--mist);
+    padding-top: 40px;
+  }
+}
+
+@media (max-width: 540px) {
+  .serve-grid { grid-template-columns: 1fr; }
+  .hero-wordmark { letter-spacing: 0.1em; }
+  .footer-nav { gap: 20px; }
+}
+
+/* ─── Mobile Menu ───────────────────────────────────────────────────────── */
+.mobile-menu {
+  display: none;
+  position: fixed;
+  top: 64px; left: 0; right: 0;
+  background: rgba(245,242,237,0.98);
+  backdrop-filter: blur(20px);
+  border-bottom: 0.5px solid var(--mist);
+  padding: 32px clamp(24px, 5vw, 80px);
+  z-index: 99;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.mobile-menu.open { display: flex; }
+
+.mobile-menu a {
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: rgba(11,27,42,0.5);
+  text-decoration: none;
+  transition: color 0.25s;
+  padding: 4px 0;
+  border-bottom: 0.5px solid var(--mist);
+}
+
+.mobile-menu a:hover { color: var(--navy); }
+
+</style>
 </head>
 <body>
 
-<!-- ══ NAVBAR ══════════════════════════════════════════════════════════════ -->
-<nav class="navbar" id="navbar">
-  <div class="container">
-    <div class="navbar__inner">
-      <a href="#" class="navbar__logo">
-        <span class="zh">Equimed Supply<span style="color:var(--teal-light);">.</span></span>
-        <span class="en">Equimed Supply<span style="color:var(--teal-light);">.</span></span>
-      </a>
-      <ul class="navbar__links">
-        <li><a href="#solution"><span class="zh">关于我们</span><span class="en">About</span></a></li>
-        <li><a href="#hiw"><span class="zh">如何运作</span><span class="en">How It Works</span></a></li>
-        <li><a href="#benefits"><span class="zh">会员权益</span><span class="en">Benefits</span></a></li>
-        <li><a href="#contact"><span class="zh">联系我们</span><span class="en">Contact</span></a></li>
-      </ul>
-      <div class="navbar__right">
-        <div class="lang-toggle">
-          <button id="btn-zh" class="active" onclick="setLang('zh')">中文</button>
-          <button id="btn-en" onclick="setLang('en')">EN</button>
-        </div>
-        <a href="#contact" class="btn btn-primary" style="padding:10px 20px;font-size:0.85rem;">
-          <span class="zh">立即加入</span><span class="en">Join Now</span>
-        </a>
-      </div>
-    </div>
-  </div>
+<!-- ═══ NAVIGATION ═══════════════════════════════════════════════════════ -->
+<nav class="nav" id="nav">
+  <a href="#" class="nav-brand"><span class="g">E</span>QUIMED</a>
+
+  <ul class="nav-links">
+    <li><a href="#story">Story</a></li>
+    <li><a href="#products">Products</a></li>
+    <li><a href="#serve">Disciplines</a></li>
+    <li><a href="#standards">Standards</a></li>
+    <li><a href="#careers">Careers</a></li>
+    <li><a href="#contact" class="nav-contact-btn">Enquire</a></li>
+  </ul>
+
+  <button class="nav-hamburger" id="hamburger" aria-label="Menu">
+    <span></span>
+    <span></span>
+    <span></span>
+  </button>
 </nav>
 
-<!-- ══ HERO ════════════════════════════════════════════════════════════════ -->
-<section class="hero" id="home">
-  <div class="hero__grid"></div>
-  <div class="container" style="position:relative;z-index:1;">
-    <div class="hero__content">
-      <p class="eyebrow hero__eyebrow">
-        <span class="zh">🇲🇾 马来西亚中小企业医疗采购联盟</span>
-        <span class="en">🇲🇾 Malaysia SME Medical Procurement Alliance</span>
-      </p>
-      <h1 class="hero__title">
-        <span class="zh">大企业的<em>议价权</em>，<br>就该属于每一家中小企业。</span>
-        <span class="en">Enterprise <em>Buying Power</em><br>Belongs to Every SME.</span>
-      </h1>
-      <p class="hero__subtitle">
-        <span class="zh">我们联合马来西亚各地医疗中小企业，共同采购，共享优惠——让规模，不再是你的弱点。</span>
-        <span class="en">We unite Malaysian healthcare SMEs to purchase collectively and share savings — so size is never your weakness again.</span>
-      </p>
-      <div class="hero__ctas">
-        <a href="#contact" class="btn btn-primary" style="font-size:1rem;padding:16px 32px;">
-          <span class="zh">加入联盟 →</span>
-          <span class="en">Join the Alliance →</span>
-        </a>
-        <a href="#hiw" class="btn btn-outline" style="font-size:1rem;padding:16px 32px;">
-          <span class="zh">了解更多</span>
-          <span class="en">Learn More</span>
-        </a>
-      </div>
-      <div class="hero__scroll">
-        <div class="hero__scroll-line"></div>
-        <span class="zh">向下探索</span>
-        <span class="en">Scroll to explore</span>
-      </div>
-    </div>
+<div class="mobile-menu" id="mobile-menu">
+  <a href="#story" onclick="closeMobile()">Story</a>
+  <a href="#products" onclick="closeMobile()">Products</a>
+  <a href="#serve" onclick="closeMobile()">Disciplines</a>
+  <a href="#standards" onclick="closeMobile()">Standards</a>
+  <a href="#careers" onclick="closeMobile()">Careers</a>
+  <a href="#contact" onclick="closeMobile()">Enquire</a>
+</div>
 
-    <!-- Floating promise card -->
-    <div class="hero__card">
-      <div class="hero__card-quote">
-        <span class="zh">"小量，<span>不小看。</span>"</span>
-        <span class="en">"Small orders,<br><span>big respect.</span>"</span>
+<!-- ═══ HERO ═════════════════════════════════════════════════════════════ -->
+<section class="hero">
+  <div class="hero-eyebrow">Malaysia · Medical Grade · Est. 2024</div>
+
+  <h1 class="hero-wordmark"><span class="g">E</span>QUIMED</h1>
+
+  <div class="hero-rule"></div>
+
+  <p class="hero-tagline">For the hands that shape the world</p>
+
+  <div class="hero-scroll-indicator">
+    <span>Scroll</span>
+    <div class="hero-scroll-line"></div>
+  </div>
+</section>
+
+<!-- ═══ PHILOSOPHY ═══════════════════════════════════════════════════════ -->
+<section class="philosophy">
+  <blockquote class="philosophy-quote reveal">
+    We don't make gloves.<br>
+    We make <span class="em">confidence</span>.
+  </blockquote>
+  <p class="philosophy-sub reveal reveal-delay-2">Equimed · Medical Grade Gloves · Malaysia</p>
+</section>
+
+<!-- ═══ VISION · MISSION · COMMITMENT ════════════════════════════════════ -->
+<section class="pillars-section">
+  <div class="pillars-inner">
+    <div class="pillars-header reveal">
+      <p class="section-label" style="color:rgba(201,169,110,0.4);">Brand Pillars</p>
+      <h2 class="pillars-heading">Vision · Mission · Commitment</h2>
+    </div>
+    <div class="pillars-grid">
+      <div class="pillar-item reveal">
+        <div class="pillar-icon">✦</div>
+        <h3 class="pillar-title">Vision</h3>
+        <p class="pillar-body">A world where every pair of hands that creates, heals, and transforms moves with absolute confidence — unhindered by the very barrier that protects them.</p>
+        <p class="pillar-zh">一个让每一双创造、治愈、改变的手都能毫无顾虑施展的世界——保护的屏障，不再是阻碍。</p>
       </div>
-      <div class="hero__card-divider"></div>
-      <div class="hero__card-sub">
-        <span class="zh">— 我们对每一位会员的承诺</span>
-        <span class="en">— Our promise to every member</span>
+      <div class="pillar-item reveal reveal-delay-1">
+        <div class="pillar-icon">✦</div>
+        <h3 class="pillar-title">Mission</h3>
+        <p class="pillar-body">To craft the finest medical-grade gloves for every profession that depends on touch — delivering protection so effortless, it becomes invisible. We make confidence.</p>
+        <p class="pillar-zh">为所有依靠触觉的行业，打造最顶级的医疗级手套——提供一种轻若无物的保护，以至于被遗忘。我们制造的是——放心。</p>
+      </div>
+      <div class="pillar-item reveal reveal-delay-2">
+        <div class="pillar-icon">✦</div>
+        <h3 class="pillar-title">Commitment</h3>
+        <p class="pillar-body">Medical grade. Nothing less. Every pair exceeds — not merely meets — industry standards. Consistent batch quality. Transparent. Uncompromising.</p>
+        <p class="pillar-zh">医疗级别。绝无妥协。每一副手套，超越——而非仅仅达到——行业标准。批次稳定。透明。不妥协。</p>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ══ PAIN POINTS ════════════════════════════════════════════════════════ -->
-<section class="section section--gray" id="pain">
-  <div class="container">
-    <div class="pain__header">
-      <p class="eyebrow">
-        <span class="zh">你面临的挑战</span>
-        <span class="en">The SME Challenge</span>
-      </p>
-      <h2>
-        <span class="zh">中小企业，长期在吃亏</span>
-        <span class="en">SMEs Have Always Paid More</span>
-      </h2>
-      <p>
-        <span class="zh">采购量小，话语权弱——这不是你的错，是游戏规则本来就不公平。</span>
-        <span class="en">Small orders, weak bargaining power — the game was never designed to be fair for SMEs.</span>
-      </p>
-    </div>
-    <div class="pain__grid">
-      <div class="pain-card reveal">
-        <div class="pain-card__icon">💸</div>
-        <h3><span class="zh">以零售价格支付商业采购</span><span class="en">Paying Retail for Business Quantities</span></h3>
-        <p>
-          <span class="zh">大公司一次采购数千件，享受超低折扣。你采购几十件，却要付接近零售的价格——同一个产品，不同的待遇。</span>
-          <span class="en">Large companies order thousands and get massive discounts. You order dozens and pay near-retail — same product, completely different treatment.</span>
-        </p>
-      </div>
-      <div class="pain-card reveal">
-        <div class="pain-card__icon">🙈</div>
-        <h3><span class="zh">供应商只看大客户</span><span class="en">Suppliers Only Care About Large Buyers</span></h3>
-        <p>
-          <span class="zh">供货不稳定、响应慢、服务态度差——当你的订单对供应商来说"可有可无"时，这就是你得到的对待。</span>
-          <span class="en">Unreliable supply, slow responses, poor service — when your orders are optional to suppliers, this is what you get.</span>
-        </p>
-      </div>
-      <div class="pain-card reveal">
-        <div class="pain-card__icon">📦</div>
-        <h3><span class="zh">最低订购量压垮现金流</span><span class="en">Minimum Orders Crush Your Cash Flow</span></h3>
-        <p>
-          <span class="zh">你只需要100个，但最低起订是500个。资金被占用，库存积压，本来可以用来发展业务的钱全部锁死。</span>
-          <span class="en">You need 100 units but minimum order is 500. Capital locked up, inventory piling — money that could grow your business, frozen.</span>
-        </p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ══ SOLUTION ═══════════════════════════════════════════════════════════ -->
-<section class="section" id="solution">
-  <div class="container">
-    <div class="solution__inner">
-      <div>
-        <p class="eyebrow solution__label">
-          <span class="zh">我们的解决方案</span>
-          <span class="en">Our Solution</span>
-        </p>
-        <h2 class="solution__title">
-          <span class="zh">联合采购，<br>打破规模歧视</span>
-          <span class="en">Collective Purchasing<br>Breaks the Scale Bias</span>
-        </h2>
-        <p class="solution__text">
-          <span class="zh">我们将数十家、数百家中小企业的采购需求汇聚成一笔大订单，以企业级采购量直接向供应商谈判。你的1,000令吉订单，加上其他会员，就变成了100万令吉的议价筹码。</span>
-          <span class="en">We pool purchasing needs from dozens of SMEs into one large order, negotiating at enterprise-level volume. Your RM1,000 order, combined with fellow members, becomes RM1,000,000 in bargaining power.</span>
-        </p>
-        <a href="#contact" class="btn btn-dark">
-          <span class="zh">申请会员资格 →</span>
-          <span class="en">Apply for Membership →</span>
-        </a>
-      </div>
-      <div class="solution__visual reveal">
-        <div class="alliance-viz">
-          <div class="alliance-viz__row">
-            <div class="alliance-viz__node" title="诊所 / Clinic">🏥</div>
-            <div class="alliance-viz__node" title="药剂行 / Pharmacy">💊</div>
-            <div class="alliance-viz__node" title="零售商 / Retailer">🏪</div>
-          </div>
-          <div class="alliance-viz__center">🤝</div>
-          <div class="alliance-viz__row">
-            <div class="alliance-viz__node" title="牙科 / Dental">🦷</div>
-            <div class="alliance-viz__node" title="美容医疗 / Aesthetic">💉</div>
-            <div class="alliance-viz__node" title="养老院 / Care Home">🩺</div>
-          </div>
-          <div class="alliance-viz__stat">
-            <div class="alliance-viz__num">↓ 30%</div>
-            <div class="alliance-viz__label">
-              <span class="zh">平均采购成本节省</span>
-              <span class="en">Avg. procurement cost reduction</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ══ VISION / MISSION / PROMISE ════════════════════════════════════════ -->
-<section class="section section--dark" id="vmp">
-  <div class="container">
-    <div class="vmp__header">
-      <p class="eyebrow">
-        <span class="zh">我们的核心</span>
-        <span class="en">Our Core</span>
-      </p>
-      <h2>
-        <span class="zh">我们为何而存在</span>
-        <span class="en">Why We Exist</span>
-      </h2>
-    </div>
-    <div class="vmp__grid">
-      <div class="vmp-card reveal">
-        <div class="vmp-card__tag"><span class="zh">愿景</span><span class="en">Vision</span></div>
-        <h3>
-          <span class="zh">让每一家 SME 都拥有和大企业一样的议价权</span>
-          <span class="en">Every SME deserves the same bargaining power as a large corporation</span>
-        </h3>
-      </div>
-      <div class="vmp-card reveal">
-        <div class="vmp-card__tag"><span class="zh">使命</span><span class="en">Mission</span></div>
-        <h3>
-          <span class="zh">联合微小中企业组成采购联盟，打破规模歧视</span>
-          <span class="en">Unite micro and small businesses into a procurement alliance, breaking scale discrimination</span>
-        </h3>
-      </div>
-      <div class="vmp-card reveal">
-        <div class="vmp-card__tag"><span class="zh">承诺</span><span class="en">Promise</span></div>
-        <h3 style="color:white;">
-          <span class="zh">小量，不小看。<br><em style="color:var(--gold);font-style:italic;">Small orders, big respect.</em></span>
-          <span class="en">Small orders, big respect.<br><em style="color:var(--gold);font-style:italic;">小量，不小看。</em></span>
-        </h3>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ══ PRODUCTS ══════════════════════════════════════════════════════════ -->
-<section class="section" id="products">
-  <div class="container">
-    <div style="text-align:center;max-width:580px;margin:0 auto 72px;">
-      <p class="eyebrow">
-        <span class="zh">产品目录</span>
-        <span class="en">Product Catalogue</span>
-      </p>
-      <h2 style="margin:14px 0 16px;">
-        <span class="zh">从手套出发，为你的行业而备</span>
-        <span class="en">Starting with Gloves, Built for Your Industry</span>
-      </h2>
-      <p>
-        <span class="zh">我们精选适合各行各业的手套品类，提供多规格、多材质选择，联盟价格直接到手。</span>
-        <span class="en">We curate glove types for every industry — multiple sizes, materials, and grades available at alliance pricing.</span>
-      </p>
-    </div>
-
-    <!-- ↓ Populated by loadProducts() in <script> at page bottom ↓ -->
-    <div id="product-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:24px;margin-bottom:48px;align-items:start;">
-      <!-- loading skeleton (replaced once fetch completes) -->
-      <div style="border-radius:var(--radius-lg);border:1px solid var(--gray-200);background:white;padding:48px 32px;text-align:center;grid-column:1/-1;">
-        <p style="color:var(--gray-400);font-size:0.9rem;">Loading products…</p>
-      </div>
-    </div>
-
-    <!-- legacy hardcoded cards hidden — JS renders real products above -->
-    <div style="display:none" aria-hidden="true" data-legacy-products="1">
-        <div style="background:linear-gradient(135deg,#0c2d52,#0a3d6e);padding:36px 32px 28px;position:relative;overflow:hidden;">
-          <div style="position:absolute;top:-20px;right:-20px;width:100px;height:100px;background:rgba(6,182,212,0.12);border-radius:50%;"></div>
-          <div style="font-size:2.8rem;margin-bottom:12px;">🧤</div>
-          <h3 style="color:white;font-size:1.2rem;margin-bottom:6px;">
-            <span class="zh">丁腈手套</span><span class="en">Nitrile Gloves</span>
-          </h3>
-          <p style="color:rgba(255,255,255,0.6);font-size:0.82rem;">
-            <span class="zh">Nitrile · 无粉 · 医用级 / 工业级</span>
-            <span class="en">Nitrile · Powder-Free · Medical / Industrial Grade</span>
-          </p>
-        </div>
-        <div style="padding:24px 28px;">
-          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;">
-            <span style="background:#f0f9ff;color:#0369a1;font-size:0.75rem;font-weight:600;padding:4px 10px;border-radius:50px;"><span class="zh">医疗检查</span><span class="en">Medical Exam</span></span>
-            <span style="background:#f0fdf4;color:#166534;font-size:0.75rem;font-weight:600;padding:4px 10px;border-radius:50px;"><span class="zh">食品接触</span><span class="en">Food Safe</span></span>
-            <span style="background:#fef3c7;color:#92400e;font-size:0.75rem;font-weight:600;padding:4px 10px;border-radius:50px;"><span class="zh">工业防护</span><span class="en">Industrial</span></span>
-          </div>
-          <ul style="list-style:none;display:flex;flex-direction:column;gap:8px;">
-            <li style="display:flex;align-items:center;gap:8px;font-size:0.85rem;color:var(--gray-700);"><span style="color:var(--teal-light);font-weight:700;">✓</span><span class="zh">耐化学品，强韧耐用</span><span class="en">Chemical resistant, high durability</span></li>
-            <li style="display:flex;align-items:center;gap:8px;font-size:0.85rem;color:var(--gray-700);"><span style="color:var(--teal-light);font-weight:700;">✓</span><span class="zh">无乳胶过敏风险</span><span class="en">No latex allergy risk</span></li>
-            <li style="display:flex;align-items:center;gap:8px;font-size:0.85rem;color:var(--gray-700);"><span style="color:var(--teal-light);font-weight:700;">✓</span><span class="zh">XS–XL 多规格供应</span><span class="en">Available in XS–XL</span></li>
-          </ul>
-          <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--gray-100);display:flex;justify-content:space-between;align-items:center;">
-            <span style="font-size:0.8rem;color:var(--gray-400);">
-              <span class="zh">最低起订：1箱 (100支)</span>
-              <span class="en">Min. order: 1 box (100 pcs)</span>
-            </span>
-            <a href="#contact" style="font-size:0.82rem;font-weight:700;color:var(--teal);text-decoration:none;">
-              <span class="zh">询价 →</span><span class="en">Enquire →</span>
-            </a>
-          </div>
-        </div>
-      </div>
-
-      <!-- Latex -->
-      <div class="reveal" style="border-radius:var(--radius-lg);border:1px solid var(--gray-200);overflow:hidden;background:white;box-shadow:var(--shadow);transition:transform 0.25s,box-shadow 0.25s;" onmouseenter="this.style.transform='translateY(-5px)';this.style.boxShadow='var(--shadow-lg)'" onmouseleave="this.style.transform='';this.style.boxShadow='var(--shadow)'">
-        <div style="background:linear-gradient(135deg,#1a3a2a,#1d5c3a);padding:36px 32px 28px;position:relative;overflow:hidden;">
-          <div style="position:absolute;top:-20px;right:-20px;width:100px;height:100px;background:rgba(16,185,129,0.12);border-radius:50%;"></div>
-          <div style="font-size:2.8rem;margin-bottom:12px;">🫱</div>
-          <h3 style="color:white;font-size:1.2rem;margin-bottom:6px;">
-            <span class="zh">天然乳胶手套</span><span class="en">Latex Gloves</span>
-          </h3>
-          <p style="color:rgba(255,255,255,0.6);font-size:0.82rem;">
-            <span class="zh">Natural Rubber Latex · 有粉 / 无粉</span>
-            <span class="en">Natural Rubber Latex · Powdered / Powder-Free</span>
-          </p>
-        </div>
-        <div style="padding:24px 28px;">
-          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;">
-            <span style="background:#f0fdf4;color:#166534;font-size:0.75rem;font-weight:600;padding:4px 10px;border-radius:50px;"><span class="zh">医疗检查</span><span class="en">Medical Exam</span></span>
-            <span style="background:#fef3c7;color:#92400e;font-size:0.75rem;font-weight:600;padding:4px 10px;border-radius:50px;"><span class="zh">牙科专用</span><span class="en">Dental</span></span>
-            <span style="background:#fdf4ff;color:#7e22ce;font-size:0.75rem;font-weight:600;padding:4px 10px;border-radius:50px;"><span class="zh">实验室</span><span class="en">Laboratory</span></span>
-          </div>
-          <ul style="list-style:none;display:flex;flex-direction:column;gap:8px;">
-            <li style="display:flex;align-items:center;gap:8px;font-size:0.85rem;color:var(--gray-700);"><span style="color:#10b981;font-weight:700;">✓</span><span class="zh">贴合感强，操作灵活</span><span class="en">Superior fit and tactile sensitivity</span></li>
-            <li style="display:flex;align-items:center;gap:8px;font-size:0.85rem;color:var(--gray-700);"><span style="color:#10b981;font-weight:700;">✓</span><span class="zh">弹性好，长时间佩戴舒适</span><span class="en">High elasticity, comfortable for long wear</span></li>
-            <li style="display:flex;align-items:center;gap:8px;font-size:0.85rem;color:var(--gray-700);"><span style="color:#10b981;font-weight:700;">✓</span><span class="zh">价格经济实惠</span><span class="en">Cost-effective price point</span></li>
-          </ul>
-          <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--gray-100);display:flex;justify-content:space-between;align-items:center;">
-            <span style="font-size:0.8rem;color:var(--gray-400);">
-              <span class="zh">最低起订：1箱 (100支)</span>
-              <span class="en">Min. order: 1 box (100 pcs)</span>
-            </span>
-            <a href="#contact" style="font-size:0.82rem;font-weight:700;color:var(--teal);text-decoration:none;">
-              <span class="zh">询价 →</span><span class="en">Enquire →</span>
-            </a>
-          </div>
-        </div>
-      </div>
-
-      <!-- Vinyl -->
-      <div class="reveal" style="border-radius:var(--radius-lg);border:1px solid var(--gray-200);overflow:hidden;background:white;box-shadow:var(--shadow);transition:transform 0.25s,box-shadow 0.25s;" onmouseenter="this.style.transform='translateY(-5px)';this.style.boxShadow='var(--shadow-lg)'" onmouseleave="this.style.transform='';this.style.boxShadow='var(--shadow)'">
-        <div style="background:linear-gradient(135deg,#3d1f00,#6b3500);padding:36px 32px 28px;position:relative;overflow:hidden;">
-          <div style="position:absolute;top:-20px;right:-20px;width:100px;height:100px;background:rgba(245,158,11,0.15);border-radius:50%;"></div>
-          <div style="font-size:2.8rem;margin-bottom:12px;">🍽️</div>
-          <h3 style="color:white;font-size:1.2rem;margin-bottom:6px;">
-            <span class="zh">乙烯基手套 (PVC)</span><span class="en">Vinyl (PVC) Gloves</span>
-          </h3>
-          <p style="color:rgba(255,255,255,0.6);font-size:0.82rem;">
-            <span class="zh">PVC · 无粉 · 食品级认证</span>
-            <span class="en">PVC · Powder-Free · Food Grade Certified</span>
-          </p>
-        </div>
-        <div style="padding:24px 28px;">
-          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;">
-            <span style="background:#fff7ed;color:#9a3412;font-size:0.75rem;font-weight:600;padding:4px 10px;border-radius:50px;"><span class="zh">餐饮业</span><span class="en">F&amp;B</span></span>
-            <span style="background:#f0fdf4;color:#166534;font-size:0.75rem;font-weight:600;padding:4px 10px;border-radius:50px;"><span class="zh">食品处理</span><span class="en">Food Handling</span></span>
-            <span style="background:#fdf4ff;color:#7e22ce;font-size:0.75rem;font-weight:600;padding:4px 10px;border-radius:50px;"><span class="zh">美容美发</span><span class="en">Beauty</span></span>
-          </div>
-          <ul style="list-style:none;display:flex;flex-direction:column;gap:8px;">
-            <li style="display:flex;align-items:center;gap:8px;font-size:0.85rem;color:var(--gray-700);"><span style="color:var(--gold);font-weight:700;">✓</span><span class="zh">经济实惠，适合高频更换</span><span class="en">Budget-friendly, ideal for high-frequency use</span></li>
-            <li style="display:flex;align-items:center;gap:8px;font-size:0.85rem;color:var(--gray-700);"><span style="color:var(--gold);font-weight:700;">✓</span><span class="zh">食品接触安全认证</span><span class="en">Food contact safety certified</span></li>
-            <li style="display:flex;align-items:center;gap:8px;font-size:0.85rem;color:var(--gray-700);"><span style="color:var(--gold);font-weight:700;">✓</span><span class="zh">适合餐厅、食品加工厂</span><span class="en">Ideal for restaurants and food processors</span></li>
-          </ul>
-          <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--gray-100);display:flex;justify-content:space-between;align-items:center;">
-            <span style="font-size:0.8rem;color:var(--gray-400);">
-              <span class="zh">最低起订：1箱 (100支)</span>
-              <span class="en">Min. order: 1 box (100 pcs)</span>
-            </span>
-            <a href="#contact" style="font-size:0.82rem;font-weight:700;color:var(--teal);text-decoration:none;">
-              <span class="zh">询价 →</span><span class="en">Enquire →</span>
-            </a>
-          </div>
-        </div>
-      </div>
-
-      <!-- PE -->
-      <div class="reveal" style="border-radius:var(--radius-lg);border:1px solid var(--gray-200);overflow:hidden;background:white;box-shadow:var(--shadow);transition:transform 0.25s,box-shadow 0.25s;" onmouseenter="this.style.transform='translateY(-5px)';this.style.boxShadow='var(--shadow-lg)'" onmouseleave="this.style.transform='';this.style.boxShadow='var(--shadow)'">
-        <div style="background:linear-gradient(135deg,#1a2a4a,#233d6b);padding:36px 32px 28px;position:relative;overflow:hidden;">
-          <div style="position:absolute;top:-20px;right:-20px;width:100px;height:100px;background:rgba(99,179,237,0.15);border-radius:50%;"></div>
-          <div style="font-size:2.8rem;margin-bottom:12px;">🛡️</div>
-          <h3 style="color:white;font-size:1.2rem;margin-bottom:6px;">
-            <span class="zh">PE 薄膜手套</span><span class="en">PE Polyethylene Gloves</span>
-          </h3>
-          <p style="color:rgba(255,255,255,0.6);font-size:0.82rem;">
-            <span class="zh">Polyethylene · 一次性 · 轻量防护</span>
-            <span class="en">Polyethylene · Disposable · Lightweight Protection</span>
-          </p>
-        </div>
-        <div style="padding:24px 28px;">
-          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;">
-            <span style="background:#fff7ed;color:#9a3412;font-size:0.75rem;font-weight:600;padding:4px 10px;border-radius:50px;"><span class="zh">快餐业</span><span class="en">Fast Food</span></span>
-            <span style="background:#f0fdf4;color:#166534;font-size:0.75rem;font-weight:600;padding:4px 10px;border-radius:50px;"><span class="zh">食品包装</span><span class="en">Food Packing</span></span>
-            <span style="background:#f0f9ff;color:#0369a1;font-size:0.75rem;font-weight:600;padding:4px 10px;border-radius:50px;"><span class="zh">清洁服务</span><span class="en">Cleaning</span></span>
-          </div>
-          <ul style="list-style:none;display:flex;flex-direction:column;gap:8px;">
-            <li style="display:flex;align-items:center;gap:8px;font-size:0.85rem;color:var(--gray-700);"><span style="color:var(--teal-light);font-weight:700;">✓</span><span class="zh">超低成本，大量采购必备</span><span class="en">Ultra-low cost, perfect for bulk use</span></li>
-            <li style="display:flex;align-items:center;gap:8px;font-size:0.85rem;color:var(--gray-700);"><span style="color:var(--teal-light);font-weight:700;">✓</span><span class="en">Easy-on/off, ambidextrous</span><span class="zh">快戴快脱，左右手通用</span></li>
-            <li style="display:flex;align-items:center;gap:8px;font-size:0.85rem;color:var(--gray-700);"><span style="color:var(--teal-light);font-weight:700;">✓</span><span class="zh">箱装大包，适合餐厅日常</span><span class="en">Bulk box packaging for daily operations</span></li>
-          </ul>
-          <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--gray-100);display:flex;justify-content:space-between;align-items:center;">
-            <span style="font-size:0.8rem;color:var(--gray-400);">
-              <span class="zh">最低起订：1箱 (200支)</span>
-              <span class="en">Min. order: 1 box (200 pcs)</span>
-            </span>
-            <a href="#contact" style="font-size:0.82rem;font-weight:700;color:var(--teal);text-decoration:none;">
-              <span class="zh">询价 →</span><span class="en">Enquire →</span>
-            </a>
-          </div>
-        </div>
-      </div>
-
-      <!-- Industrial / Cut-Resistant -->
-      <div class="reveal" style="border-radius:var(--radius-lg);border:1px solid var(--gray-200);overflow:hidden;background:white;box-shadow:var(--shadow);transition:transform 0.25s,box-shadow 0.25s;" onmouseenter="this.style.transform='translateY(-5px)';this.style.boxShadow='var(--shadow-lg)'" onmouseleave="this.style.transform='';this.style.boxShadow='var(--shadow)'">
-        <div style="background:linear-gradient(135deg,#2a1a00,#4a3000);padding:36px 32px 28px;position:relative;overflow:hidden;">
-          <div style="position:absolute;top:-20px;right:-20px;width:100px;height:100px;background:rgba(245,158,11,0.15);border-radius:50%;"></div>
-          <div style="font-size:2.8rem;margin-bottom:12px;">⚙️</div>
-          <h3 style="color:white;font-size:1.2rem;margin-bottom:6px;">
-            <span class="zh">工业防护手套</span><span class="en">Industrial Safety Gloves</span>
-          </h3>
-          <p style="color:rgba(255,255,255,0.6);font-size:0.82rem;">
-            <span class="zh">防割 / 防化 / 耐高温 · 可重复使用</span>
-            <span class="en">Cut-Resistant / Chemical / Heat-Resistant · Reusable</span>
-          </p>
-        </div>
-        <div style="padding:24px 28px;">
-          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;">
-            <span style="background:#fef3c7;color:#92400e;font-size:0.75rem;font-weight:600;padding:4px 10px;border-radius:50px;"><span class="zh">制造业</span><span class="en">Manufacturing</span></span>
-            <span style="background:#fff7ed;color:#9a3412;font-size:0.75rem;font-weight:600;padding:4px 10px;border-radius:50px;"><span class="zh">汽车维修</span><span class="en">Automotive</span></span>
-            <span style="background:#f1f5f9;color:#334155;font-size:0.75rem;font-weight:600;padding:4px 10px;border-radius:50px;"><span class="zh">建筑工程</span><span class="en">Construction</span></span>
-          </div>
-          <ul style="list-style:none;display:flex;flex-direction:column;gap:8px;">
-            <li style="display:flex;align-items:center;gap:8px;font-size:0.85rem;color:var(--gray-700);"><span style="color:var(--gold);font-weight:700;">✓</span><span class="zh">高强度防切割保护</span><span class="en">High-strength cut protection</span></li>
-            <li style="display:flex;align-items:center;gap:8px;font-size:0.85rem;color:var(--gray-700);"><span style="color:var(--gold);font-weight:700;">✓</span><span class="zh">可重复清洗，耐久使用</span><span class="en">Washable and durable for long-term use</span></li>
-            <li style="display:flex;align-items:center;gap:8px;font-size:0.85rem;color:var(--gray-700);"><span style="color:var(--gold);font-weight:700;">✓</span><span class="zh">符合马来西亚工业安全标准</span><span class="en">Compliant with Malaysian safety standards</span></li>
-          </ul>
-          <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--gray-100);display:flex;justify-content:space-between;align-items:center;">
-            <span style="font-size:0.8rem;color:var(--gray-400);">
-              <span class="zh">最低起订：12双</span>
-              <span class="en">Min. order: 12 pairs</span>
-            </span>
-            <a href="#contact" style="font-size:0.82rem;font-weight:700;color:var(--teal);text-decoration:none;">
-              <span class="zh">询价 →</span><span class="en">Enquire →</span>
-            </a>
-          </div>
-        </div>
-      </div>
-
-      <!-- Custom / More coming -->
-      <div class="reveal" style="border-radius:var(--radius-lg);border:2px dashed var(--gray-200);overflow:hidden;background:var(--gray-50);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:52px 32px;text-align:center;min-height:360px;">
-        <div style="font-size:2.8rem;margin-bottom:16px;">🔍</div>
-        <h3 style="margin-bottom:10px;">
-          <span class="zh">找不到你需要的？</span>
-          <span class="en">Can't Find What You Need?</span>
-        </h3>
-        <p style="font-size:0.88rem;margin-bottom:24px;">
-          <span class="zh">我们持续扩充产品目录。联系我们，告诉我们你的需求，我们为你寻源。</span>
-          <span class="en">We're constantly expanding our catalogue. Contact us with your requirements — we'll source it for you.</span>
-        </p>
-        <a href="#contact" class="btn btn-dark" style="font-size:0.875rem;padding:12px 24px;">
-          <span class="zh">告诉我们你的需求 →</span>
-          <span class="en">Tell Us What You Need →</span>
-        </a>
-      </div>
-    </div><!-- /data-legacy-products -->
-
-    <!-- Price note -->
-    <div style="text-align:center;padding:24px 32px;background:linear-gradient(135deg,rgba(6,182,212,0.08),rgba(21,101,192,0.08));border-radius:var(--radius-lg);border:1px solid rgba(6,182,212,0.2);">
-      <p style="color:var(--gray-700);font-size:0.9rem;margin:0;">
-        <span style="color:var(--teal);font-weight:700;">💡 </span>
-        <span class="zh">所有价格为<strong>联盟会员专属价格</strong>，比市场零售价低 15–40%。非会员可先免费咨询，了解加入方式。</span>
-        <span class="en">All prices are <strong>exclusive to alliance members</strong>, 15–40% below market retail. Non-members may enquire for free to learn how to join.</span>
-      </p>
-    </div>
-  </div>
-</section>
-
-<!-- ══ HOW IT WORKS ═══════════════════════════════════════════════════════ -->
-<section class="section section--gray" id="hiw">
-  <div class="container">
-    <div class="hiw__header">
-      <p class="eyebrow">
-        <span class="zh">操作流程</span>
-        <span class="en">How It Works</span>
-      </p>
-      <h2>
-        <span class="zh">三步，享受联盟价格</span>
-        <span class="en">Three Steps to Alliance Pricing</span>
-      </h2>
-      <p>
-        <span class="zh">无需复杂流程，快速加入，立即受益。</span>
-        <span class="en">No complex processes. Join quickly, benefit immediately.</span>
-      </p>
-    </div>
-    <div class="hiw__steps">
-      <div class="hiw-step reveal">
-        <div class="hiw-step__num">1</div>
-        <h3><span class="zh">申请加入</span><span class="en">Apply to Join</span></h3>
-        <p>
-          <span class="zh">提交你的企业资料，我们的团队会在24小时内联系你，评估会员资格，完全免费。</span>
-          <span class="en">Submit your business details. Our team contacts you within 24 hours to assess membership eligibility — completely free.</span>
-        </p>
-      </div>
-      <div class="hiw-step reveal">
-        <div class="hiw-step__num">2</div>
-        <h3><span class="zh">提交采购需求</span><span class="en">Submit Your Orders</span></h3>
-        <p>
-          <span class="zh">告诉我们你需要什么产品和数量。我们将你的订单与其他会员合并，形成强大的集体采购力。</span>
-          <span class="en">Tell us what products and quantities you need. We combine your order with other members to create powerful collective buying force.</span>
-        </p>
-      </div>
-      <div class="hiw-step reveal">
-        <div class="hiw-step__num">3</div>
-        <h3><span class="zh">享受联盟优惠价</span><span class="en">Enjoy Alliance Pricing</span></h3>
-        <p>
-          <span class="zh">凭借集体议价力，我们为你争取最优惠的价格，按时配送到你的门店。</span>
-          <span class="en">Leveraging collective bargaining power, we secure the best prices and deliver on time to your premises.</span>
-        </p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ══ BENEFITS ═══════════════════════════════════════════════════════════ -->
-<section class="section" id="benefits">
-  <div class="container">
-    <div class="benefits__header">
-      <p class="eyebrow">
-        <span class="zh">会员权益</span>
-        <span class="en">Member Benefits</span>
-      </p>
-      <h2>
-        <span class="zh">加入联盟，你能获得什么</span>
-        <span class="en">What You Get as a Member</span>
-      </h2>
-      <p>
-        <span class="zh">超越价格优惠——我们为你的业务提供全方位支持。</span>
-        <span class="en">Beyond better prices — full support for your business at every level.</span>
-      </p>
-    </div>
-    <div class="benefits__grid">
-      <div class="benefit-card reveal">
-        <div class="benefit-card__icon">💰</div>
-        <div>
-          <h3><span class="zh">更低的采购价格</span><span class="en">Lower Purchase Prices</span></h3>
-          <p><span class="zh">享受原本只有大企业才能获得的批发折扣价格。</span><span class="en">Access wholesale discounts previously only available to large corporations.</span></p>
-        </div>
-      </div>
-      <div class="benefit-card reveal">
-        <div class="benefit-card__icon">📦</div>
-        <div>
-          <h3><span class="zh">无最低订购量限制</span><span class="en">No Minimum Order Requirements</span></h3>
-          <p><span class="zh">按需采购，告别库存积压，保持健康的现金流。</span><span class="en">Order exactly what you need. No stockpiling, healthy cash flow preserved.</span></p>
-        </div>
-      </div>
-      <div class="benefit-card reveal">
-        <div class="benefit-card__icon">🚚</div>
-        <div>
-          <h3><span class="zh">稳定可靠的供应链</span><span class="en">Reliable Supply Chain</span></h3>
-          <p><span class="zh">联盟体量确保优先供货，不再担心缺货断货。</span><span class="en">Alliance volume ensures priority fulfillment — no more stockout worries.</span></p>
-        </div>
-      </div>
-      <div class="benefit-card reveal">
-        <div class="benefit-card__icon">🤝</div>
-        <div>
-          <h3><span class="zh">专属客户经理</span><span class="en">Dedicated Account Manager</span></h3>
-          <p><span class="zh">每位会员都有专属经理跟进，确保你的需求得到即时回应。</span><span class="en">Every member gets a dedicated manager — your needs are always heard and acted on.</span></p>
-        </div>
-      </div>
-      <div class="benefit-card reveal">
-        <div class="benefit-card__icon">📊</div>
-        <div>
-          <h3><span class="zh">透明定价，零隐藏费</span><span class="en">Transparent Pricing, Zero Hidden Fees</span></h3>
-          <p><span class="zh">所有价格清晰透明，你永远知道自己在为什么付钱。</span><span class="en">All pricing is clear and transparent — you always know exactly what you're paying for.</span></p>
-        </div>
-      </div>
-      <div class="benefit-card reveal">
-        <div class="benefit-card__icon">🌐</div>
-        <div>
-          <h3><span class="zh">扩大供应商网络</span><span class="en">Wider Supplier Network</span></h3>
-          <p><span class="zh">通过联盟接触更多优质供应商，获得更广泛的产品选择。</span><span class="en">Access more quality suppliers and a broader product range through the alliance.</span></p>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ══ INDUSTRIES ════════════════════════════════════════════════════════ -->
-<section class="section section--teal" id="industries">
-  <div class="container">
-    <div class="industries__header">
-      <p class="eyebrow" style="color:rgba(255,255,255,0.65);">
-        <span class="zh">服务对象</span>
-        <span class="en">Who We Serve</span>
-      </p>
-      <h2>
-        <span class="zh">只要你的行业用得上手套</span>
-        <span class="en">Any Industry That Uses Gloves</span>
-      </h2>
-      <p style="color:rgba(255,255,255,0.65);max-width:560px;margin:14px auto 0;">
-        <span class="zh">从医疗到餐饮，从工业到美容——我们从手套出发，覆盖所有需要防护用品的中小企业。</span>
-        <span class="en">From healthcare to F&amp;B, industrial to beauty — starting with gloves, serving every SME that needs protective supplies.</span>
-      </p>
-    </div>
-    <div style="margin-bottom:24px;">
-      <p style="text-align:center;font-size:0.72rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.4);margin-bottom:16px;">
-        <span class="zh">医疗与健康</span><span class="en">Healthcare &amp; Medical</span>
-      </p>
-      <div class="industries__tags" style="margin-bottom:0;">
-        <div class="industry-tag"><span class="zh">🏥 私人诊所</span><span class="en">🏥 Private Clinics</span></div>
-        <div class="industry-tag"><span class="zh">💊 零售药剂行</span><span class="en">💊 Retail Pharmacies</span></div>
-        <div class="industry-tag"><span class="zh">🏨 私人医院</span><span class="en">🏨 Private Hospitals</span></div>
-        <div class="industry-tag"><span class="zh">🦷 牙科诊所</span><span class="en">🦷 Dental Clinics</span></div>
-        <div class="industry-tag"><span class="zh">💆 美容医疗</span><span class="en">💆 Aesthetic Clinics</span></div>
-        <div class="industry-tag"><span class="zh">🏡 养老护理院</span><span class="en">🏡 Nursing Homes</span></div>
-        <div class="industry-tag"><span class="zh">🔬 医疗实验室</span><span class="en">🔬 Laboratories</span></div>
-        <div class="industry-tag"><span class="zh">🐾 兽医诊所</span><span class="en">🐾 Vet Clinics</span></div>
-      </div>
-    </div>
-    <div style="margin-bottom:24px;">
-      <p style="text-align:center;font-size:0.72rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.4);margin-bottom:16px;">
-        <span class="zh">餐饮与食品</span><span class="en">Food &amp; Beverage</span>
-      </p>
-      <div class="industries__tags" style="margin-bottom:0;">
-        <div class="industry-tag"><span class="zh">🍽️ 餐厅与食堂</span><span class="en">🍽️ Restaurants &amp; Canteens</span></div>
-        <div class="industry-tag"><span class="zh">🏭 食品加工厂</span><span class="en">🏭 Food Processing</span></div>
-        <div class="industry-tag"><span class="zh">🍰 烘焙与糕点</span><span class="en">🍰 Bakeries &amp; Confectionery</span></div>
-        <div class="industry-tag"><span class="zh">🧃 饮料生产商</span><span class="en">🧃 Beverage Producers</span></div>
-        <div class="industry-tag"><span class="zh">🚚 餐饮外卖配送</span><span class="en">🚚 Catering &amp; Delivery</span></div>
-      </div>
-    </div>
-    <div style="margin-bottom:24px;">
-      <p style="text-align:center;font-size:0.72rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.4);margin-bottom:16px;">
-        <span class="zh">美容与护理</span><span class="en">Beauty &amp; Personal Care</span>
-      </p>
-      <div class="industries__tags" style="margin-bottom:0;">
-        <div class="industry-tag"><span class="zh">💅 美甲沙龙</span><span class="en">💅 Nail Salons</span></div>
-        <div class="industry-tag"><span class="zh">✂️ 美发理发</span><span class="en">✂️ Hair Salons &amp; Barbers</span></div>
-        <div class="industry-tag"><span class="zh">🧖 水疗 SPA</span><span class="en">🧖 Spas &amp; Wellness</span></div>
-        <div class="industry-tag"><span class="zh">🏋️ 健身与运动</span><span class="en">🏋️ Gyms &amp; Fitness</span></div>
-        <div class="industry-tag"><span class="zh">🧴 美容产品零售</span><span class="en">🧴 Beauty Retail</span></div>
-      </div>
-    </div>
+<!-- ═══ STORY ════════════════════════════════════════════════════════════ -->
+<section class="story" id="story">
+  <div class="story-inner">
+    <!-- English -->
     <div>
-      <p style="text-align:center;font-size:0.72rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.4);margin-bottom:16px;">
-        <span class="zh">工业与服务</span><span class="en">Industrial &amp; Services</span>
-      </p>
-      <div class="industries__tags">
-        <div class="industry-tag"><span class="zh">🏭 制造与组装</span><span class="en">🏭 Manufacturing &amp; Assembly</span></div>
-        <div class="industry-tag"><span class="zh">🔧 汽车维修</span><span class="en">🔧 Automotive Workshops</span></div>
-        <div class="industry-tag"><span class="zh">🧹 清洁与物业</span><span class="en">🧹 Cleaning &amp; Facilities</span></div>
-        <div class="industry-tag"><span class="zh">🌿 农业与园艺</span><span class="en">🌿 Agriculture &amp; Horticulture</span></div>
-        <div class="industry-tag"><span class="zh">⚗️ 化工与实验</span><span class="en">⚗️ Chemical &amp; Research</span></div>
-        <div class="industry-tag"><span class="zh">🏗️ 建筑与工程</span><span class="en">🏗️ Construction &amp; Engineering</span></div>
+      <p class="story-label reveal">Brand Story</p>
+      <h2 class="story-heading reveal reveal-delay-1">The world is shaped<br>by hands.</h2>
+      <div class="story-body">
+        <p class="reveal reveal-delay-2">The surgeon's steady hand. The tattoo artist's precise line. The chef's intuitive touch. The barber's confident scissor work. The laboratory researcher's careful measure.</p>
+        <p class="reveal reveal-delay-3">These hands do not merely work. They create. They heal. They transform. And they deserve more than a commodity barrier between them and their craft.</p>
+        <p class="reveal reveal-delay-4"><span class="em">The best glove is the one you forget you're wearing.</span></p>
+        <p class="reveal reveal-delay-5">Every pair we craft is born from a single conviction: that protecting the hands that create is not just our job — it is our belief. Medical-grade nitrile and latex. Sourced from the finest raw materials. Tested not just to pass standards, but to exceed them.</p>
+        <p class="reveal">Because for us, quality is not a specification. It is a promise written in the quiet certainty of a glove that fits perfectly, performs flawlessly, and asks nothing in return but to be trusted.</p>
+        <p class="reveal"><span class="em">Equimed. For the hands that shape the world.</span></p>
+      </div>
+    </div>
+
+    <!-- Chinese -->
+    <div class="story-zh">
+      <p class="story-label reveal">品牌故事</p>
+      <h2 class="story-heading reveal reveal-delay-1">世界，<br>由双手塑造。</h2>
+      <div class="story-body">
+        <p class="reveal reveal-delay-2">外科医生沉稳的手。纹身师精准的线。厨师直觉般的触感。理发师自信的剪刀。实验室研究员谨慎的度量。</p>
+        <p class="reveal reveal-delay-3">这些手不是在「工作」——它们在创造。在治愈。在改变。它们值得的，不应该是一层敷衍的商品。</p>
+        <p class="reveal reveal-delay-4"><span class="em">最好的手套，是让你忘记它的存在。</span></p>
+        <p class="reveal reveal-delay-5">每一双手套，都源于一个信念：保护创造的手，是我们的使命。医疗级丁腈与乳胶，甄选最上乘的原料，通过的不只是标准测试，而是超越标准的锤炼。</p>
+        <p class="reveal">因为对我们而言，品质不是一个参数。它是一个承诺——写在手套贴合指尖的那一刻，写在毫无瑕疵的每一次使用中。</p>
+        <p class="reveal"><span class="em">Equimed。予手以安。</span></p>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ══ CTA ════════════════════════════════════════════════════════════════ -->
-<section class="cta-section" id="contact">
-  <div class="container">
-    <div class="cta-section__inner">
-      <p class="eyebrow" style="margin-bottom:16px;">
-        <span class="zh">现在就行动</span>
-        <span class="en">Take Action Now</span>
+<!-- ═══ PRODUCTS ══════════════════════════════════════════════════════════ -->
+<section class="products" id="products">
+  <div class="products-header">
+    <div class="products-header-left reveal">
+      <p class="section-label">The Collection</p>
+      <h2 class="section-title">Three series.<br>One standard.</h2>
+    </div>
+    <p class="products-header-right reveal reveal-delay-2">Medical grade. Nothing less. Each series is engineered for a specific discipline — but all share a single uncompromising threshold.</p>
+  </div>
+
+  <div class="products-grid">
+    <!-- Nitrile -->
+    <div class="product-card reveal">
+      <p class="product-series">Series 01</p>
+      <div class="product-bottom">
+        <h3 class="product-name">Nitrile</h3>
+        <div class="product-hairline"></div>
+        <p class="product-material">Powder-Free · Latex-Free · Medical Grade</p>
+        <p class="product-desc">Superior barrier strength without allergenic risk. Textured fingertips for reliable grip. Available in standard and extended cuff lengths. Certified to FDA 510(K), EN455, and ASTM D6319. For those who demand precision — from operating theatres to tattoo studios.</p>
+      </div>
+    </div>
+
+    <!-- Latex -->
+    <div class="product-card light reveal reveal-delay-1">
+      <p class="product-series">Series 02</p>
+      <div class="product-bottom">
+        <h3 class="product-name">Latex</h3>
+        <div class="product-hairline"></div>
+        <p class="product-material">Natural Rubber · Powder-Free · Medical Grade</p>
+        <p class="product-desc">Natural rubber latex — the original choice of surgeons. Unmatched elasticity and form-fit conformity. Light but strong. The tactile benchmark against which all other gloves are measured. For clinicians who trust their hands above everything.</p>
+      </div>
+    </div>
+
+    <!-- Antimicrobial Nitrile -->
+    <div class="product-card reveal reveal-delay-2">
+      <p class="product-series">Series 03</p>
+      <div class="product-bottom">
+        <h3 class="product-name">Antimicrobial<br>Nitrile</h3>
+        <div class="product-hairline"></div>
+        <p class="product-material">AMG™ · Non-Leaching · Medical Grade</p>
+        <p class="product-desc">The world's first non-leaching antimicrobial examination glove. A photosensitiser on the outer surface generates singlet oxygen upon light exposure — killing up to 99.999% of microbes on contact, including Human Coronavirus. The glove itself is a line of defence.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ WHO WE SERVE ══════════════════════════════════════════════════════ -->
+<section class="serve" id="serve">
+  <div class="serve-inner">
+    <div class="serve-header">
+      <p class="section-label reveal">Disciplines</p>
+      <h2 class="section-heading reveal reveal-delay-1">For every hand<br>that creates.</h2>
+    </div>
+
+    <div class="serve-grid">
+      <div class="serve-item reveal">
+        <p class="serve-number">01</p>
+        <h3 class="serve-title">Surgery &amp; Medical</h3>
+        <p class="serve-desc">Where a perfect fit is not a comfort — it is a clinical necessity. Every millimetre of tactile feedback matters.</p>
+      </div>
+
+      <div class="serve-item reveal reveal-delay-1">
+        <p class="serve-number">02</p>
+        <h3 class="serve-title">Tattoo &amp; Body Art</h3>
+        <p class="serve-desc">Precision demands presence. Our gloves disappear on the hand so the artist can be fully present in the work.</p>
+      </div>
+
+      <div class="serve-item reveal reveal-delay-2">
+        <p class="serve-number">03</p>
+        <h3 class="serve-title">Culinary &amp; Kitchen</h3>
+        <p class="serve-desc">Food safety without sacrificing the chef's connection to texture, temperature, and the craft of the plate.</p>
+      </div>
+
+      <div class="serve-item reveal reveal-delay-3">
+        <p class="serve-number">04</p>
+        <h3 class="serve-title">Laboratories</h3>
+        <p class="serve-desc">Consistent batch quality. Chemical resistance where it counts. Protection you can trust across every experiment.</p>
+      </div>
+
+      <div class="serve-item reveal reveal-delay-4">
+        <p class="serve-number">05</p>
+        <h3 class="serve-title">Grooming &amp; Barbering</h3>
+        <p class="serve-desc">Dexterous enough for the finest detail work. Durable enough for a full day's appointments.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ STANDARDS ═════════════════════════════════════════════════════════ -->
+<section class="standards" id="standards">
+  <div class="standards-inner">
+    <div class="standards-top">
+      <div>
+        <p class="section-label reveal" style="color:rgba(201,169,110,0.4);">Quality Commitment</p>
+        <h2 class="standards-heading reveal reveal-delay-1">Not standards.<br>Convictions.</h2>
+      </div>
+      <p class="standards-intro reveal reveal-delay-2">
+        We do not manufacture to a minimum threshold. We source, test, and deliver to a conviction — that the hand wearing our glove should never, for a single moment, doubt its protection.
       </p>
-      <h2>
-        <span class="zh">准备好改变采购方式了吗？</span>
-        <span class="en">Ready to Change How You Purchase?</span>
-      </h2>
-      <p class="cta-section__sub">
-        <span class="zh">加入联盟，与马来西亚各地中小企业一起，享受你本来就该有的价格。</span>
-        <span class="en">Join the alliance and purchase alongside Malaysian SMEs at prices you've always deserved.</span>
+    </div>
+
+    <div class="standards-grid">
+      <div class="standard-item reveal">
+        <div class="standard-num">I</div>
+        <h3 class="standard-title">Medical Grade. Always.</h3>
+        <p class="standard-body">Every series carries full medical certification. We do not offer a non-certified line. If it carries the Equimed name, it meets — and exceeds — the standard.</p>
+      </div>
+
+      <div class="standard-item reveal reveal-delay-1">
+        <div class="standard-num">II</div>
+        <h3 class="standard-title">Consistent Across Batches.</h3>
+        <p class="standard-body">The glove from box 1,000 performs identically to the glove from box 1. Quality is not a launch promise. It is a production discipline maintained in every run.</p>
+      </div>
+
+      <div class="standard-item reveal reveal-delay-2">
+        <div class="standard-num">III</div>
+        <h3 class="standard-title">Transparent. Uncompromising.</h3>
+        <p class="standard-body">We share our testing data. We name our materials. We welcome scrutiny — because a glove worn against human skin in a clinical environment demands nothing less than complete honesty.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ CONTACT ═══════════════════════════════════════════════════════════ -->
+<section class="contact" id="contact">
+  <div class="contact-inner">
+    <div>
+      <p class="section-label reveal">Contact</p>
+      <h2 class="contact-heading reveal reveal-delay-1">Begin a conversation.</h2>
+      <p class="contact-body reveal reveal-delay-2">
+        Whether you are sourcing for a clinic, a kitchen, a studio, or a laboratory — we are here to find the right product for your discipline. No minimum order pressure. Just the right fit.
       </p>
-      <div class="cta-section__btns">
-        <a href="mailto:sales.imedicinternational@gmail.com" class="btn btn-primary" style="font-size:1rem;padding:16px 36px;">
-          <span class="zh">📧 发送邮件咨询</span>
-          <span class="en">📧 Email Us Now</span>
+
+      <div class="reveal reveal-delay-3" style="display:flex;flex-direction:column;gap:0;margin-top:8px;">
+        <a href="https://wa.me/60109781788" class="contact-link" target="_blank">
+          WhatsApp <span class="arrow">→</span>
         </a>
-        <a href="https://wa.me/60" class="btn btn-outline" style="font-size:1rem;padding:16px 36px;">
-          <span class="zh">📱 WhatsApp 咨询</span>
-          <span class="en">📱 WhatsApp Us</span>
-        </a>
       </div>
-      <p class="cta-section__fine">
-        <span class="zh">我们承诺在24小时内回复你的询问。</span>
-        <span class="en">We commit to responding within 24 hours.</span>
+    </div>
+
+    <div class="contact-details reveal reveal-delay-2">
+      <div class="contact-detail-group">
+        <p class="contact-item-label">Company</p>
+        <p class="contact-item-value">Equimed Sdn Bhd</p>
+      </div>
+      <div class="contact-detail-group">
+        <p class="contact-item-label">Location</p>
+        <p class="contact-item-value">Kuala Lumpur, Malaysia</p>
+      </div>
+      <div class="contact-detail-group">
+        <p class="contact-item-label">Products</p>
+        <p class="contact-item-value">Tact · Shield · Pro</p>
+      </div>
+      <div class="contact-detail-group">
+        <p class="contact-item-label">Certification</p>
+        <p class="contact-item-value">Medical Grade · EN455 · ASTM</p>
+      </div>
+      <div class="contact-detail-group">
+        <p class="contact-item-label">WhatsApp</p>
+        <p class="contact-item-value">010-978 1788</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ CAREERS ══════════════════════════════════════════════════════════ -->
+<section class="careers" id="careers">
+  <div class="careers-inner">
+
+    <!-- Header -->
+    <div class="careers-header">
+      <div>
+        <p class="section-label reveal">Join Equimed</p>
+        <h2 class="careers-heading reveal reveal-delay-1">
+          Your income has<br>no ceiling.
+        </h2>
+      </div>
+      <div class="careers-intro reveal reveal-delay-2">
+        <p>Medical gloves are not a luxury purchase — they are a clinical necessity. Every clinic, every tattoo studio, every kitchen, every laboratory reorders every month without fail.</p>
+        <br>
+        <p>That predictability is your income. Build a client base and the money arrives whether you make a single call that month or not. <span class="em">Recurring orders. Transparent commissions. No cap on what you earn.</span></p>
+        <br>
+        <p>We do not offer a salary. We offer something better: the direct relationship between your effort and your income — with a structure that rewards you more as you grow.</p>
+      </div>
+    </div>
+
+    <!-- Commission Tiers -->
+    <p class="section-label reveal" style="margin-bottom:20px;">Progressive Commission Tiers</p>
+    <div class="tier-row reveal">
+      <div class="tier-card">
+        <div class="tier-label">Tier 1</div>
+        <div class="tier-pct">4<span class="g">%</span></div>
+        <div class="tier-range">First RM 50,000</div>
+      </div>
+      <div class="tier-card">
+        <div class="tier-label">Tier 2</div>
+        <div class="tier-pct">5<span class="g">%</span></div>
+        <div class="tier-range">RM 50k – 100k</div>
+      </div>
+      <div class="tier-card">
+        <div class="tier-label">Tier 3</div>
+        <div class="tier-pct">6<span class="g">%</span></div>
+        <div class="tier-range">RM 100k – 200k</div>
+      </div>
+      <div class="tier-card">
+        <div class="tier-label">Tier 4</div>
+        <div class="tier-pct">7<span class="g">%</span></div>
+        <div class="tier-range">Above RM 200k</div>
+      </div>
+    </div>
+
+    <p style="font-size:10px;font-weight:300;color:rgba(44,44,44,0.4);letter-spacing:0.05em;margin-bottom:64px;margin-top:-48px;" class="reveal">
+      Progressive tiers — like income tax, but in your favour. Each bracket applies only to the sales within it. Exceed a threshold and that portion earns the higher rate automatically.
+    </p>
+
+    <!-- Perks / Why Join -->
+    <p class="section-label reveal" style="margin-bottom:20px;">Beyond Commission</p>
+    <div class="perks-row reveal">
+      <div class="perk-item">
+        <div class="perk-num">I</div>
+        <h3 class="perk-title">New Client Bonus</h3>
+        <p class="perk-body">Earn an additional bonus for every new clinic, studio, or business you onboard — up to RM 400 per client, on top of your regular commission. Building your book has an immediate reward.</p>
+      </div>
+      <div class="perk-item">
+        <div class="perk-num">II</div>
+        <h3 class="perk-title">Team Override</h3>
+        <p class="perk-body">Graduate to Leader status and earn 1% on every ringgit your team closes. Your experience compounds into passive income. The people you bring on become an asset you carry permanently.</p>
+      </div>
+      <div class="perk-item">
+        <div class="perk-num">III</div>
+        <h3 class="perk-title">Mentor Royalty</h3>
+        <p class="perk-body">Develop a salesperson who builds their own team, and receive 0.5% of that team's revenue — indefinitely. Plant once. Compound forever. This is the structure designed for people who think long term.</p>
+      </div>
+    </div>
+
+    <!-- CTA -->
+    <div class="careers-cta reveal">
+      <p class="careers-cta-text">
+        "Medical consumables. Monthly reorders. Clients who need you as much as you need them."
       </p>
-    </div>
-  </div>
-</section>
-
-<!-- ══ ADMIN PANEL (hidden — access via #admin in URL) ════════════════════ -->
-<section id="admin-panel" style="display:none;background:#0f172a;padding:60px 0;">
-  <div class="container">
-
-    <!-- Login state -->
-    <div id="admin-login" style="max-width:400px;margin:0 auto;">
-      <h2 style="color:white;margin-bottom:8px;font-size:1.4rem;">🔐 Admin — Product Images</h2>
-      <p style="color:rgba(255,255,255,0.5);font-size:0.85rem;margin-bottom:24px;">Log in with your ERP account to upload product images to the public website.</p>
-      <div style="display:flex;flex-direction:column;gap:12px;">
-        <input id="admin-email" type="email" placeholder="email@equimedsupply.com"
-          style="padding:10px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.07);color:white;font-size:0.9rem;outline:none;" />
-        <input id="admin-pw" type="password" placeholder="Password"
-          style="padding:10px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.07);color:white;font-size:0.9rem;outline:none;" />
-        <button id="admin-login-btn" onclick="adminLogin()"
-          style="padding:11px;border-radius:8px;background:#06b6d4;color:white;font-weight:700;border:none;cursor:pointer;font-size:0.9rem;">
-          Sign In
-        </button>
-        <p id="admin-login-err" style="color:#f87171;font-size:0.8rem;display:none;"></p>
-      </div>
-    </div>
-
-    <!-- Authenticated state -->
-    <div id="admin-dashboard" style="display:none;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:32px;">
-        <h2 style="color:white;font-size:1.4rem;">📸 Product Image Manager</h2>
-        <button onclick="adminLogout()"
-          style="padding:8px 16px;border-radius:8px;background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.15);cursor:pointer;font-size:0.8rem;">
-          Sign Out
-        </button>
-      </div>
-      <div id="admin-product-list" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;">
-        <p style="color:rgba(255,255,255,0.4);">Loading products…</p>
+      <div class="careers-cta-action">
+        <a href="https://wa.me/60109781788" class="cta-wa-btn" target="_blank">
+          <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+          </svg>
+          WhatsApp 010-978 1788
+        </a>
+        <p class="careers-cta-note">No cold form. Message directly. We respond.</p>
       </div>
     </div>
 
   </div>
 </section>
 
-<!-- ══ FOOTER ════════════════════════════════════════════════════════════ -->
+<!-- ═══ FOOTER ════════════════════════════════════════════════════════════ -->
 <footer class="footer">
-  <div class="container">
-    <div class="footer__top">
-      <div class="footer__brand">
-        <div class="footer__brand-name">
-          <span class="zh">Equimed Supply<span>.</span></span>
-          <span class="en">Equimed Supply<span>.</span></span>
-        </div>
-        <p>
-          <span class="zh">马来西亚中小企业医疗采购联盟——联合采购，共享优惠，打破规模歧视。</span>
-          <span class="en">Malaysia's SME medical procurement alliance — collective purchasing, shared savings, zero scale discrimination.</span>
-        </p>
-      </div>
-      <div class="footer__col">
-        <h4><span class="zh">快速链接</span><span class="en">Quick Links</span></h4>
-        <ul>
-          <li><a href="#solution"><span class="zh">关于我们</span><span class="en">About Us</span></a></li>
-          <li><a href="#hiw"><span class="zh">如何运作</span><span class="en">How It Works</span></a></li>
-          <li><a href="#benefits"><span class="zh">会员权益</span><span class="en">Benefits</span></a></li>
-          <li><a href="#industries"><span class="zh">服务行业</span><span class="en">Industries</span></a></li>
-          <li><a href="#contact"><span class="zh">联系我们</span><span class="en">Contact</span></a></li>
-        </ul>
-      </div>
-      <div class="footer__col">
-        <h4><span class="zh">联系方式</span><span class="en">Get in Touch</span></h4>
-        <ul>
-          <li><a href="mailto:sales.imedicinternational@gmail.com">sales.imedicinternational<br>@gmail.com</a></li>
-          <li><a href="https://wa.me/60"><span class="zh">📱 WhatsApp 联系我们</span><span class="en">📱 WhatsApp Us</span></a></li>
-          <li><a href="#"><span class="zh">📍 马来西亚</span><span class="en">📍 Malaysia</span></a></li>
-        </ul>
-      </div>
-    </div>
-    <div class="footer__bottom">
-      <p>© 2026 <span class="zh">Equimed Supply。保留所有权利。</span><span class="en">Equimed Supply. All rights reserved.</span></p>
-      <p><span class="zh">马来西亚注册公司</span><span class="en">Registered in Malaysia</span></p>
-      <p style="margin-top:8px;">
-        <a href="#admin" onclick="document.getElementById('admin-panel').style.display='block';window.scrollTo({top:document.getElementById('admin-panel').offsetTop,behavior:'smooth'});return false;"
-          style="font-size:0.7rem;color:rgba(255,255,255,0.2);text-decoration:none;">Admin</a>
-      </p>
-    </div>
+  <div class="footer-inner">
+    <div class="footer-logo"><span class="g">E</span>QUIMED</div>
+    <div class="footer-hairline"></div>
+    <p class="footer-tagline">For the hands that shape the world</p>
+
+    <ul class="footer-nav">
+      <li><a href="#story">Story</a></li>
+      <li><a href="#products">Products</a></li>
+      <li><a href="#serve">Disciplines</a></li>
+      <li><a href="#standards">Standards</a></li>
+      <li><a href="#careers">Careers</a></li>
+      <li><a href="#contact">Contact</a></li>
+    </ul>
+
+    <div class="footer-divider"></div>
+    <p class="footer-copy">© 2026 Equimed Sdn Bhd · Kuala Lumpur, Malaysia · All rights reserved</p>
   </div>
 </footer>
 
 <script>
-  // ══════════════════════════════════════════════════════════════════════════
-  // CONFIG — update these two values before deploying
-  // ══════════════════════════════════════════════════════════════════════════
-  const SUPABASE_URL  = "https://YOUR_PROJECT_REF.supabase.co";
-  const SUPABASE_ANON = "YOUR_ANON_KEY";
+// ── Nav scroll state ──────────────────────────────────────────────────────
+const nav = document.getElementById('nav');
+window.addEventListener('scroll', () => {
+  nav.classList.toggle('scrolled', window.scrollY > 60);
+}, { passive: true });
 
-  // ── Language toggle ──────────────────────────────────────────────────────
-  function setLang(lang) {
-    document.documentElement.lang = lang;
-    document.getElementById('btn-zh').classList.toggle('active', lang === 'zh');
-    document.getElementById('btn-en').classList.toggle('active', lang === 'en');
-    try { localStorage.setItem('lang', lang); } catch(e) {}
+// ── Mobile menu ───────────────────────────────────────────────────────────
+const hamburger = document.getElementById('hamburger');
+const mobileMenu = document.getElementById('mobile-menu');
+let menuOpen = false;
+
+hamburger.addEventListener('click', () => {
+  menuOpen = !menuOpen;
+  mobileMenu.classList.toggle('open', menuOpen);
+  const spans = hamburger.querySelectorAll('span');
+  if (menuOpen) {
+    spans[0].style.transform = 'rotate(45deg) translate(5px, 5px)';
+    spans[1].style.opacity   = '0';
+    spans[2].style.transform = 'rotate(-45deg) translate(5px, -5px)';
+  } else {
+    spans.forEach(s => { s.style.transform = ''; s.style.opacity = ''; });
   }
-  try {
-    const saved = localStorage.getItem('lang');
-    if (saved === 'en') setLang('en');
-  } catch(e) {}
+});
 
-  // ── Navbar scroll ────────────────────────────────────────────────────────
-  const navbar = document.getElementById('navbar');
-  window.addEventListener('scroll', () => {
-    navbar.classList.toggle('scrolled', window.scrollY > 50);
-  }, { passive: true });
+function closeMobile() {
+  menuOpen = false;
+  mobileMenu.classList.remove('open');
+  hamburger.querySelectorAll('span').forEach(s => { s.style.transform = ''; s.style.opacity = ''; });
+}
 
-  // ── Scroll-reveal ────────────────────────────────────────────────────────
-  const revealObserver = new IntersectionObserver((entries) => {
-    entries.forEach((entry, i) => {
-      if (entry.isIntersecting) {
-        setTimeout(() => entry.target.classList.add('visible'), i * 80);
-        revealObserver.unobserve(entry.target);
-      }
-    });
-  }, { threshold: 0.12 });
-  document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
-
-  // ── Smooth scroll for anchor links ───────────────────────────────────────
-  document.querySelectorAll('a[href^="#"]').forEach(a => {
-    a.addEventListener('click', e => {
-      const target = document.querySelector(a.getAttribute('href'));
-      if (target) {
-        e.preventDefault();
-        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-    });
+// ── Scroll reveal ─────────────────────────────────────────────────────────
+const revealObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('in-view');
+      revealObserver.unobserve(entry.target);
+    }
   });
+}, { threshold: 0.08, rootMargin: '0px 0px -48px 0px' });
 
-  // ══════════════════════════════════════════════════════════════════════════
-  // DYNAMIC PRODUCT CATALOGUE — fetches from Supabase public REST API
-  // ══════════════════════════════════════════════════════════════════════════
-
-  const CARD_GRADIENTS = [
-    "linear-gradient(135deg,#0c2d52,#0a3d6e)",
-    "linear-gradient(135deg,#1a3a2a,#1d5c3a)",
-    "linear-gradient(135deg,#3d1f00,#6b3500)",
-    "linear-gradient(135deg,#1a2a4a,#233d6b)",
-    "linear-gradient(135deg,#2a1a00,#4a3000)",
-    "linear-gradient(135deg,#2a0a3a,#4a1a5a)",
-  ];
-  const CARD_EMOJIS = ["🧤","🫱","🍽️","🛡️","⚙️","📦"];
-
-  function buildProductCard(p, idx) {
-    const gradient = CARD_GRADIENTS[idx % CARD_GRADIENTS.length];
-    const emoji    = CARD_EMOJIS[idx % CARD_EMOJIS.length];
-    const lang     = document.documentElement.lang || 'zh';
-    const name     = p.name || (lang === 'zh' ? '产品' : 'Product');
-    const desc     = p.description ? p.description.slice(0, 100) : '';
-    const sku      = p.sku ? `SKU: ${p.sku}` : '';
-
-    const imageBlock = p.image_url
-      ? `<div style="height:180px;overflow:hidden;background:${gradient};">
-           <img src="${p.image_url}" alt="${name}"
-             style="width:100%;height:100%;object-fit:cover;display:block;"
-             onerror="this.parentElement.innerHTML='<div style=\\'font-size:2.8rem;padding:40px 0;text-align:center;\\'>${emoji}</div>'" />
-         </div>`
-      : `<div style="${gradient};padding:36px 32px 28px;position:relative;overflow:hidden;">
-           <div style="position:absolute;top:-20px;right:-20px;width:100px;height:100px;background:rgba(255,255,255,0.08);border-radius:50%;"></div>
-           <div style="font-size:2.8rem;margin-bottom:12px;">${emoji}</div>
-           <h3 style="color:white;font-size:1.15rem;margin-bottom:4px;">${name}</h3>
-           ${sku ? `<p style="color:rgba(255,255,255,0.5);font-size:0.78rem;">${sku}</p>` : ''}
-         </div>`;
-
-    return `
-      <div style="border-radius:var(--radius-lg);border:1px solid var(--gray-200);overflow:hidden;
-                  background:white;box-shadow:var(--shadow);transition:transform 0.25s,box-shadow 0.25s;"
-           onmouseenter="this.style.transform='translateY(-5px)';this.style.boxShadow='var(--shadow-lg)'"
-           onmouseleave="this.style.transform='';this.style.boxShadow='var(--shadow)'">
-        ${imageBlock}
-        <div style="padding:20px 24px;">
-          ${p.image_url ? `<h3 style="font-size:1rem;margin-bottom:6px;color:var(--gray-900);">${name}</h3>` : ''}
-          ${desc ? `<p style="font-size:0.84rem;color:var(--gray-500);margin-bottom:12px;line-height:1.6;">${desc}</p>` : ''}
-          <div style="display:flex;justify-content:space-between;align-items:center;padding-top:12px;border-top:1px solid var(--gray-100);">
-            <span style="font-size:0.78rem;color:var(--gray-400);">${sku}</span>
-            <a href="#contact" style="font-size:0.82rem;font-weight:700;color:var(--teal);text-decoration:none;">
-              <span class="zh">询价 →</span><span class="en">Enquire →</span>
-            </a>
-          </div>
-        </div>
-      </div>`;
-  }
-
-  const MORE_CARD = `
-    <div style="border-radius:var(--radius-lg);border:2px dashed var(--gray-200);overflow:hidden;
-                background:var(--gray-50);display:flex;flex-direction:column;align-items:center;
-                justify-content:center;padding:52px 32px;text-align:center;min-height:280px;">
-      <div style="font-size:2.8rem;margin-bottom:16px;">🔍</div>
-      <h3 style="margin-bottom:10px;">
-        <span class="zh">找不到你需要的？</span>
-        <span class="en">Can't Find What You Need?</span>
-      </h3>
-      <p style="font-size:0.88rem;margin-bottom:24px;">
-        <span class="zh">我们持续扩充产品目录。联系我们，告诉我们你的需求，我们为你寻源。</span>
-        <span class="en">We're constantly expanding our catalogue. Contact us with your requirements — we'll source it for you.</span>
-      </p>
-      <a href="#contact" class="btn btn-dark" style="font-size:0.875rem;padding:12px 24px;">
-        <span class="zh">告诉我们你的需求 →</span>
-        <span class="en">Tell Us What You Need →</span>
-      </a>
-    </div>`;
-
-  async function loadProducts() {
-    const grid = document.getElementById('product-grid');
-    if (!grid) return;
-
-    // Skip fetch if config not yet set
-    if (SUPABASE_URL.includes('YOUR_PROJECT_REF')) {
-      grid.innerHTML = MORE_CARD;
-      return;
-    }
-
-    try {
-      const res = await fetch(
-        `${SUPABASE_URL}/rest/v1/products_safe_view?select=id,name,sku,description,image_url&order=name`,
-        { headers: { 'apikey': SUPABASE_ANON, 'Accept': 'application/json' } }
-      );
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const products = await res.json();
-
-      if (!products.length) {
-        grid.innerHTML = MORE_CARD;
-        return;
-      }
-
-      grid.innerHTML = products.map((p, i) => buildProductCard(p, i)).join('') + MORE_CARD;
-
-      // Re-observe newly created .reveal cards
-      grid.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
-
-    } catch (err) {
-      console.warn('Product fetch failed — showing placeholder', err);
-      grid.innerHTML = MORE_CARD;
-    }
-  }
-
-  loadProducts();
-
-  // ══════════════════════════════════════════════════════════════════════════
-  // ADMIN PANEL — product image upload via Supabase Auth + Storage
-  // Access: click "Admin" link in footer (URL hash #admin)
-  // ══════════════════════════════════════════════════════════════════════════
-
-  let _adminToken = null;
-
-  // Show panel when #admin is in URL
-  if (window.location.hash === '#admin') {
-    const panel = document.getElementById('admin-panel');
-    if (panel) panel.style.display = 'block';
-  }
-
-  async function adminLogin() {
-    const email = document.getElementById('admin-email').value.trim();
-    const pw    = document.getElementById('admin-pw').value;
-    const errEl = document.getElementById('admin-login-err');
-    const btn   = document.getElementById('admin-login-btn');
-
-    errEl.style.display = 'none';
-    btn.textContent = 'Signing in…';
-    btn.disabled = true;
-
-    try {
-      const res  = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
-        method:  'POST',
-        headers: { 'apikey': SUPABASE_ANON, 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ email, password: pw }),
-      });
-      const data = await res.json();
-
-      if (!res.ok || !data.access_token) {
-        throw new Error(data.error_description || data.msg || 'Login failed');
-      }
-
-      _adminToken = data.access_token;
-      document.getElementById('admin-login').style.display    = 'none';
-      document.getElementById('admin-dashboard').style.display = 'block';
-      loadAdminProducts();
-
-    } catch (err) {
-      errEl.textContent = err.message;
-      errEl.style.display = 'block';
-    } finally {
-      btn.textContent = 'Sign In';
-      btn.disabled = false;
-    }
-  }
-
-  function adminLogout() {
-    _adminToken = null;
-    document.getElementById('admin-login').style.display    = 'block';
-    document.getElementById('admin-dashboard').style.display = 'none';
-    document.getElementById('admin-email').value = '';
-    document.getElementById('admin-pw').value    = '';
-  }
-
-  async function loadAdminProducts() {
-    const listEl = document.getElementById('admin-product-list');
-    listEl.innerHTML = '<p style="color:rgba(255,255,255,0.4);">Loading…</p>';
-
-    const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/products?select=id,name,sku,image_url&order=name&limit=200`,
-      { headers: { 'apikey': SUPABASE_ANON, 'Authorization': `Bearer ${_adminToken}`, 'Accept': 'application/json' } }
-    );
-    const products = await res.json();
-
-    if (!products.length) {
-      listEl.innerHTML = '<p style="color:rgba(255,255,255,0.4);">No products found.</p>';
-      return;
-    }
-
-    listEl.innerHTML = products.map(p => `
-      <div style="background:rgba(255,255,255,0.06);border-radius:12px;padding:16px;border:1px solid rgba(255,255,255,0.1);">
-        ${p.image_url
-          ? `<img src="${p.image_url}" style="width:100%;height:120px;object-fit:cover;border-radius:8px;margin-bottom:10px;" />`
-          : `<div style="width:100%;height:120px;background:rgba(255,255,255,0.04);border-radius:8px;margin-bottom:10px;display:flex;align-items:center;justify-content:center;">
-               <span style="color:rgba(255,255,255,0.2);font-size:0.8rem;">No image</span>
-             </div>`}
-        <p style="color:white;font-weight:600;font-size:0.875rem;margin-bottom:2px;">${p.name}</p>
-        <p style="color:rgba(255,255,255,0.4);font-size:0.75rem;margin-bottom:10px;">${p.sku || ''}</p>
-        <label style="display:block;padding:8px;background:rgba(6,182,212,0.2);border:1px solid rgba(6,182,212,0.4);
-                      border-radius:8px;cursor:pointer;text-align:center;color:#06b6d4;font-size:0.8rem;font-weight:600;">
-          📤 Upload Image
-          <input type="file" accept="image/*" style="display:none;" onchange="uploadProductImage(this,'${p.id}','${p.name}')" />
-        </label>
-        <p id="up-status-${p.id}" style="color:#34d399;font-size:0.75rem;margin-top:6px;display:none;"></p>
-      </div>`).join('');
-  }
-
-  async function uploadProductImage(input, productId, productName) {
-    const file = input.files[0];
-    if (!file) return;
-
-    const statusEl = document.getElementById(`up-status-${productId}`);
-    statusEl.style.display = 'block';
-    statusEl.style.color   = '#94a3b8';
-    statusEl.textContent   = 'Uploading…';
-
-    const ext  = file.name.split('.').pop() || 'jpg';
-    const path = `products/${productId}.${ext}`;
-
-    // Upload to Supabase Storage via REST
-    const upRes = await fetch(`${SUPABASE_URL}/storage/v1/object/product-images/${path}`, {
-      method:  'POST',
-      headers: {
-        'apikey':        SUPABASE_ANON,
-        'Authorization': `Bearer ${_adminToken}`,
-        'x-upsert':      'true',
-        'Content-Type':  file.type,
-      },
-      body: file,
-    });
-
-    if (!upRes.ok) {
-      const err = await upRes.json().catch(() => ({}));
-      statusEl.style.color = '#f87171';
-      statusEl.textContent = `Upload failed: ${err.message || upRes.status}`;
-      return;
-    }
-
-    // Build public URL and save to products table
-    const cacheBust = Date.now();
-    const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/product-images/${path}?t=${cacheBust}`;
-
-    const patchRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/products?id=eq.${productId}`,
-      {
-        method:  'PATCH',
-        headers: {
-          'apikey':         SUPABASE_ANON,
-          'Authorization':  `Bearer ${_adminToken}`,
-          'Content-Type':   'application/json',
-          'Prefer':         'return=minimal',
-        },
-        body: JSON.stringify({ image_url: publicUrl }),
-      }
-    );
-
-    if (!patchRes.ok) {
-      statusEl.style.color = '#f87171';
-      statusEl.textContent = 'Image uploaded but failed to save URL. Refresh ERP.';
-      return;
-    }
-
-    statusEl.style.color = '#34d399';
-    statusEl.textContent = '✓ Saved! Reload the page to see it on the website.';
-
-    // Reload admin product list to show new image
-    setTimeout(loadAdminProducts, 1500);
-  }
+document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
 </script>
 </body>
 </html>
