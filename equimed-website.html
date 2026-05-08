@@ -1,0 +1,1765 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Equimed — For the hands that shape the world</title>
+<meta name="description" content="Medical-grade nitrile and latex gloves for surgeons, tattoo artists, chefs, and laboratories. We don't make gloves. We make confidence.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500;1,600&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+<style>
+
+/* ─── Reset & Base ─────────────────────────────────────────────────────── */
+*,*::before,*::after { margin:0; padding:0; box-sizing:border-box; }
+
+:root {
+  --navy:    #0B1B2A;
+  --ivory:   #F5F2ED;
+  --gold:    #C9A96E;
+  --mist:    #E8E3D7;
+  --charcoal:#2C2C2C;
+  --navy-60: rgba(11,27,42,0.6);
+  --ivory-40:rgba(245,242,237,0.4);
+  --gold-20: rgba(201,169,110,0.2);
+  --gold-08: rgba(201,169,110,0.08);
+  --gold-03: rgba(201,169,110,0.03);
+}
+
+html {
+  scroll-behavior: smooth;
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 300;
+  background: var(--ivory);
+  color: var(--charcoal);
+  overflow-x: hidden;
+  line-height: 1.7;
+}
+
+/* ─── Navigation ───────────────────────────────────────────────────────── */
+.nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  padding: 0 clamp(24px, 5vw, 80px);
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: background 0.5s ease, border-color 0.5s ease, box-shadow 0.5s ease;
+  border-bottom: 0.5px solid transparent;
+}
+
+.nav.scrolled {
+  background: rgba(245,242,237,0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom-color: var(--mist);
+  box-shadow: 0 1px 0 rgba(11,27,42,0.04);
+}
+
+.nav-brand {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 400;
+  font-size: 13px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--navy);
+  text-decoration: none;
+  user-select: none;
+}
+
+.nav-brand .g { color: var(--gold); }
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: clamp(20px, 3vw, 40px);
+  list-style: none;
+}
+
+.nav-links a {
+  font-size: 9px;
+  font-weight: 400;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: rgba(11,27,42,0.45);
+  text-decoration: none;
+  transition: color 0.25s;
+}
+
+.nav-links a:hover { color: var(--navy); }
+
+.nav-contact-btn {
+  font-size: 9px;
+  font-weight: 400;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--navy) !important;
+  border: 0.5px solid rgba(11,27,42,0.25);
+  padding: 8px 18px;
+  transition: border-color 0.25s, color 0.25s !important;
+}
+
+.nav-contact-btn:hover {
+  border-color: var(--gold) !important;
+  color: var(--gold) !important;
+}
+
+.nav-hamburger {
+  display: none;
+  flex-direction: column;
+  gap: 5px;
+  cursor: pointer;
+  padding: 4px;
+  background: none;
+  border: none;
+}
+
+.nav-hamburger span {
+  display: block;
+  width: 22px;
+  height: 0.5px;
+  background: var(--navy);
+  transition: all 0.3s;
+}
+
+/* ─── Hero ─────────────────────────────────────────────────────────────── */
+.hero {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  background: var(--ivory);
+  position: relative;
+  overflow: hidden;
+  padding: 120px clamp(24px, 5vw, 80px) 80px;
+}
+
+.hero::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: radial-gradient(ellipse at 50% 60%, var(--gold-03) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.hero-eyebrow {
+  font-size: 8px;
+  font-weight: 400;
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 48px;
+  opacity: 0;
+  animation: fadeUp 1.2s 0.2s cubic-bezier(0.16,1,0.3,1) forwards;
+}
+
+.hero-wordmark {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 400;
+  font-size: clamp(52px, 10vw, 120px);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--navy);
+  line-height: 1;
+  margin-bottom: 28px;
+  opacity: 0;
+  animation: fadeUp 1.4s 0.4s cubic-bezier(0.16,1,0.3,1) forwards;
+}
+
+.hero-wordmark .g { color: var(--gold); }
+
+.hero-rule {
+  width: 1px;
+  height: 48px;
+  background: linear-gradient(to bottom, transparent, var(--gold), transparent);
+  margin: 0 auto 28px;
+  opacity: 0;
+  animation: fadeUp 1.2s 0.65s cubic-bezier(0.16,1,0.3,1) forwards;
+}
+
+.hero-tagline {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-weight: 400;
+  font-size: clamp(13px, 2vw, 17px);
+  color: rgba(11,27,42,0.4);
+  letter-spacing: 0.12em;
+  margin-bottom: 72px;
+  opacity: 0;
+  animation: fadeUp 1.2s 0.8s cubic-bezier(0.16,1,0.3,1) forwards;
+}
+
+.hero-scroll-indicator {
+  position: absolute;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  opacity: 0;
+  animation: fadeIn 1s 1.8s ease forwards;
+}
+
+.hero-scroll-indicator span {
+  font-size: 7px;
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  color: rgba(11,27,42,0.2);
+}
+
+.hero-scroll-line {
+  width: 0.5px;
+  height: 32px;
+  background: linear-gradient(to bottom, rgba(11,27,42,0.15), transparent);
+  animation: scrollPulse 2.5s 2s ease-in-out infinite;
+}
+
+/* ─── Philosophy ────────────────────────────────────────────────────────── */
+.philosophy {
+  background: var(--navy);
+  padding: clamp(100px, 15vw, 180px) clamp(24px, 5vw, 120px);
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.philosophy::before {
+  content: '';
+  position: absolute;
+  top: -30%; left: 50%;
+  transform: translateX(-50%);
+  width: 600px; height: 600px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--gold-08) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.philosophy-quote {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-weight: 400;
+  font-size: clamp(26px, 4.5vw, 58px);
+  color: var(--ivory);
+  line-height: 1.35;
+  letter-spacing: 0.02em;
+  max-width: 900px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
+}
+
+.philosophy-quote .em { color: var(--gold); font-style: normal; }
+
+.philosophy-sub {
+  font-size: clamp(9px, 1.2vw, 11px);
+  font-weight: 300;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: rgba(245,242,237,0.2);
+  margin-top: 48px;
+  position: relative;
+  z-index: 1;
+}
+
+/* ─── Vision · Mission · Commitment ─────────────────────────────────────── */
+.pillars-section {
+  background: var(--navy);
+  padding: clamp(80px, 12vw, 140px) clamp(24px, 5vw, 80px);
+}
+
+.pillars-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.pillars-header {
+  margin-bottom: 64px;
+}
+
+.pillars-heading {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 400;
+  font-size: clamp(24px, 3.5vw, 38px);
+  color: var(--ivory);
+  letter-spacing: 0.08em;
+  margin-top: 12px;
+}
+
+.pillars-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0;
+  border-top: 0.5px solid rgba(245,242,237,0.06);
+}
+
+.pillar-item {
+  padding: 48px 40px 48px 0;
+  border-right: 0.5px solid rgba(245,242,237,0.06);
+}
+
+.pillar-item:last-child { border-right: none; padding-right: 0; }
+.pillar-item:not(:first-child) { padding-left: 40px; }
+
+.pillar-icon {
+  font-size: 16px;
+  color: var(--gold);
+  margin-bottom: 20px;
+  opacity: 0.6;
+}
+
+.pillar-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 400;
+  font-size: clamp(16px, 2vw, 20px);
+  color: var(--ivory);
+  letter-spacing: 0.02em;
+  margin-bottom: 16px;
+}
+
+.pillar-body {
+  font-size: 13px;
+  font-weight: 300;
+  color: rgba(245,242,237,0.65);
+  line-height: 1.9;
+  letter-spacing: 0.01em;
+  margin-bottom: 20px;
+}
+
+.pillar-zh {
+  font-size: 12px;
+  font-weight: 300;
+  color: rgba(245,242,237,0.4);
+  line-height: 2;
+  letter-spacing: 0.02em;
+  padding-top: 16px;
+  border-top: 0.5px solid rgba(245,242,237,0.08);
+}
+
+@media (max-width: 900px) {
+  .pillars-grid { grid-template-columns: 1fr; }
+  .pillar-item { border-right: none; border-bottom: 0.5px solid rgba(245,242,237,0.06); padding: 36px 0; }
+  .pillar-item:last-child { border-bottom: none; }
+  .pillar-item:not(:first-child) { padding-left: 0; }
+}
+
+/* ─── Story ─────────────────────────────────────────────────────────────── */
+.story {
+  background: var(--ivory);
+  padding: clamp(80px, 12vw, 160px) clamp(24px, 8vw, 120px);
+}
+
+.story-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(48px, 8vw, 120px);
+  align-items: start;
+}
+
+.story-label {
+  font-size: 8px;
+  font-weight: 400;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 20px;
+}
+
+.story-heading {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 400;
+  font-size: clamp(28px, 4vw, 44px);
+  color: var(--navy);
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+  margin-bottom: 40px;
+}
+
+.story-body {
+  font-size: clamp(13px, 1.4vw, 15px);
+  font-weight: 300;
+  line-height: 1.9;
+  color: rgba(44,44,44,0.75);
+  letter-spacing: 0.01em;
+}
+
+.story-body p { margin-bottom: 20px; }
+.story-body p:last-child { margin-bottom: 0; }
+
+.story-body .em {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  color: var(--navy);
+  font-weight: 400;
+}
+
+.story-zh {
+  padding-top: 60px;
+  border-top: 0.5px solid var(--mist);
+}
+
+.story-zh .story-label { letter-spacing: 0.2em; }
+
+.story-zh .story-body {
+  font-size: clamp(13px, 1.4vw, 14.5px);
+  line-height: 2.1;
+}
+
+/* ─── Products ──────────────────────────────────────────────────────────── */
+.products {
+  background: var(--navy);
+  padding: clamp(80px, 12vw, 160px) clamp(24px, 5vw, 80px);
+}
+
+.products-header {
+  max-width: 1100px;
+  margin: 0 auto 72px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 40px;
+}
+
+.products-header-left .section-label {
+  font-size: 8px;
+  font-weight: 400;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: rgba(201,169,110,0.5);
+  margin-bottom: 16px;
+}
+
+.products-header-left .section-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 400;
+  font-size: clamp(28px, 4vw, 44px);
+  color: var(--ivory);
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+}
+
+.products-header-right {
+  font-size: 12px;
+  font-weight: 300;
+  color: rgba(245,242,237,0.55);
+  max-width: 300px;
+  text-align: right;
+  line-height: 1.8;
+  letter-spacing: 0.02em;
+  flex-shrink: 0;
+}
+
+.products-grid {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5px;
+}
+
+.product-card {
+  aspect-ratio: 3/4;
+  position: relative;
+  overflow: hidden;
+  cursor: default;
+  background: var(--navy);
+  border: 0.5px solid rgba(245,242,237,0.05);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: clamp(24px, 3vw, 40px);
+  transition: border-color 0.4s;
+}
+
+.product-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 80% 20%, var(--gold-08), transparent 60%);
+  opacity: 0;
+  transition: opacity 0.6s;
+}
+
+.product-card:hover { border-color: rgba(201,169,110,0.15); }
+.product-card:hover::before { opacity: 1; }
+
+.product-card.light {
+  background: rgba(245,242,237,0.04);
+}
+
+.product-series {
+  font-size: 8px;
+  font-weight: 300;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: rgba(201,169,110,0.4);
+}
+
+.product-bottom { position: relative; z-index: 1; }
+
+.product-name {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 400;
+  font-size: clamp(28px, 4vw, 48px);
+  color: var(--ivory);
+  letter-spacing: 0.02em;
+  margin-bottom: 12px;
+  line-height: 1;
+}
+
+.product-hairline {
+  width: 24px;
+  height: 0.5px;
+  background: rgba(201,169,110,0.3);
+  margin-bottom: 16px;
+}
+
+.product-material {
+  font-size: 9px;
+  font-weight: 400;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(245,242,237,0.55);
+  margin-bottom: 16px;
+}
+
+.product-desc {
+  font-size: 12px;
+  font-weight: 300;
+  color: rgba(245,242,237,0.7);
+  line-height: 1.85;
+  letter-spacing: 0.01em;
+}
+
+/* ─── Who We Serve ──────────────────────────────────────────────────────── */
+.serve {
+  background: var(--ivory);
+  padding: clamp(80px, 12vw, 160px) clamp(24px, 5vw, 80px);
+}
+
+.serve-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.serve-header {
+  margin-bottom: 80px;
+}
+
+.section-label {
+  font-size: 8px;
+  font-weight: 400;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 16px;
+}
+
+.section-heading {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 400;
+  font-size: clamp(28px, 4vw, 44px);
+  color: var(--navy);
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+}
+
+.serve-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0;
+  border-top: 0.5px solid var(--mist);
+}
+
+.serve-item {
+  padding: 40px 24px 40px 0;
+  border-right: 0.5px solid var(--mist);
+}
+
+.serve-item:last-child {
+  border-right: none;
+  padding-right: 0;
+}
+
+.serve-item:not(:first-child) {
+  padding-left: 24px;
+}
+
+.serve-number {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 400;
+  font-size: 11px;
+  color: var(--gold);
+  letter-spacing: 0.1em;
+  margin-bottom: 20px;
+}
+
+.serve-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 400;
+  font-size: clamp(14px, 1.8vw, 18px);
+  color: var(--navy);
+  letter-spacing: 0.01em;
+  line-height: 1.3;
+  margin-bottom: 12px;
+}
+
+.serve-desc {
+  font-size: 11px;
+  font-weight: 300;
+  color: rgba(44,44,44,0.5);
+  line-height: 1.75;
+  letter-spacing: 0.01em;
+}
+
+/* ─── Standards ─────────────────────────────────────────────────────────── */
+.standards {
+  background: var(--navy);
+  padding: clamp(80px, 12vw, 160px) clamp(24px, 5vw, 80px);
+}
+
+.standards-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.standards-top {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 80px;
+  align-items: end;
+  margin-bottom: 80px;
+  padding-bottom: 80px;
+  border-bottom: 0.5px solid rgba(245,242,237,0.06);
+}
+
+.standards-heading {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 400;
+  font-size: clamp(28px, 4vw, 44px);
+  color: var(--ivory);
+  line-height: 1.25;
+  letter-spacing: 0.01em;
+}
+
+.standards-heading .section-label {
+  color: rgba(201,169,110,0.4);
+  margin-bottom: 16px;
+}
+
+.standards-intro {
+  font-size: 13px;
+  font-weight: 300;
+  color: rgba(245,242,237,0.65);
+  line-height: 1.9;
+  letter-spacing: 0.01em;
+}
+
+.standards-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0;
+}
+
+.standard-item {
+  padding: 40px 48px 40px 0;
+  border-right: 0.5px solid rgba(245,242,237,0.06);
+}
+
+.standard-item:last-child {
+  border-right: none;
+  padding-right: 0;
+}
+
+.standard-item:not(:first-child) {
+  padding-left: 48px;
+}
+
+.standard-num {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 32px;
+  font-weight: 400;
+  color: rgba(201,169,110,0.25);
+  line-height: 1;
+  margin-bottom: 20px;
+}
+
+.standard-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 400;
+  font-size: clamp(14px, 1.6vw, 18px);
+  color: var(--ivory);
+  letter-spacing: 0.02em;
+  margin-bottom: 12px;
+}
+
+.standard-body {
+  font-size: 12px;
+  font-weight: 300;
+  color: rgba(245,242,237,0.65);
+  line-height: 1.8;
+  letter-spacing: 0.01em;
+}
+
+/* ─── Contact ───────────────────────────────────────────────────────────── */
+.contact {
+  background: var(--ivory);
+  padding: clamp(80px, 12vw, 160px) clamp(24px, 5vw, 80px);
+}
+
+.contact-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 80px;
+  align-items: start;
+}
+
+.contact-heading {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 400;
+  font-size: clamp(28px, 4vw, 44px);
+  color: var(--navy);
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+  margin-bottom: 24px;
+}
+
+.contact-body {
+  font-size: 13px;
+  font-weight: 300;
+  color: rgba(44,44,44,0.55);
+  line-height: 1.9;
+  margin-bottom: 40px;
+}
+
+.contact-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 9px;
+  font-weight: 400;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--navy);
+  text-decoration: none;
+  border-bottom: 0.5px solid var(--navy);
+  padding-bottom: 2px;
+  transition: color 0.25s, border-color 0.25s;
+  margin-bottom: 16px;
+}
+
+.contact-link:hover { color: var(--gold); border-color: var(--gold); }
+.contact-link:hover .arrow { transform: translateX(4px); }
+
+.arrow { transition: transform 0.25s; display: inline-block; }
+
+.contact-details {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  border-left: 0.5px solid var(--mist);
+  padding-left: 48px;
+}
+
+.contact-item-label {
+  font-size: 8px;
+  font-weight: 400;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 4px;
+}
+
+.contact-item-value {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 400;
+  font-size: 14px;
+  color: var(--navy);
+  letter-spacing: 0.02em;
+}
+
+.contact-detail-group {
+  padding-bottom: 16px;
+  border-bottom: 0.5px solid var(--mist);
+}
+
+.contact-detail-group:last-child { border-bottom: none; }
+
+/* ─── Careers / Recruitment ─────────────────────────────────────────────── */
+.careers {
+  background: var(--ivory);
+  padding: clamp(80px, 12vw, 160px) clamp(24px, 5vw, 80px);
+  border-top: 0.5px solid var(--mist);
+}
+
+.careers-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.careers-header {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 80px;
+  align-items: end;
+  margin-bottom: 80px;
+  padding-bottom: 64px;
+  border-bottom: 0.5px solid var(--mist);
+}
+
+.careers-heading {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 400;
+  font-size: clamp(28px, 4vw, 44px);
+  color: var(--navy);
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+}
+
+.careers-intro {
+  font-size: 13px;
+  font-weight: 300;
+  color: rgba(44,44,44,0.6);
+  line-height: 1.9;
+  letter-spacing: 0.01em;
+}
+
+.careers-intro .em {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  color: var(--navy);
+  font-weight: 400;
+}
+
+/* Tier cards */
+.tier-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.5px;
+  margin-bottom: 64px;
+  background: var(--mist);
+}
+
+.tier-card {
+  background: var(--ivory);
+  padding: 36px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: background 0.3s;
+}
+
+.tier-card:hover { background: #EFECE6; }
+
+.tier-pct {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 400;
+  font-size: clamp(36px, 5vw, 52px);
+  color: var(--navy);
+  line-height: 1;
+  letter-spacing: -0.01em;
+}
+
+.tier-pct .g { color: var(--gold); }
+
+.tier-range {
+  font-size: 9px;
+  font-weight: 300;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: rgba(44,44,44,0.4);
+  margin-top: 4px;
+}
+
+.tier-label {
+  font-size: 9px;
+  font-weight: 400;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+/* Income table */
+.income-block {
+  margin-bottom: 64px;
+}
+
+.income-block-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.income-block-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 400;
+  font-size: 18px;
+  color: var(--navy);
+  letter-spacing: 0.02em;
+}
+
+.income-block-note {
+  font-size: 9px;
+  font-weight: 300;
+  color: rgba(44,44,44,0.35);
+  letter-spacing: 0.1em;
+}
+
+.income-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.income-table th {
+  text-align: left;
+  font-size: 8px;
+  font-weight: 400;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: rgba(44,44,44,0.35);
+  padding: 0 16px 16px 0;
+  border-bottom: 0.5px solid var(--mist);
+}
+
+.income-table th:last-child { padding-right: 0; text-align: right; }
+
+.income-table td {
+  padding: 16px 16px 16px 0;
+  border-bottom: 0.5px solid var(--mist);
+  font-size: 13px;
+  font-weight: 300;
+  color: rgba(44,44,44,0.65);
+  vertical-align: middle;
+}
+
+.income-table td:last-child { padding-right: 0; text-align: right; }
+
+.income-table .sales-col {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 400;
+  font-size: 14px;
+  color: var(--navy);
+  letter-spacing: 0.02em;
+}
+
+.income-table .comm-col {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 400;
+  font-size: 15px;
+  color: var(--navy);
+  letter-spacing: 0.01em;
+}
+
+.income-table tr.highlight-row td {
+  background: rgba(201,169,110,0.05);
+}
+
+.income-table tr.highlight-row .comm-col {
+  color: var(--gold);
+  font-size: 17px;
+}
+
+.milestone-badge {
+  display: inline-block;
+  font-size: 8px;
+  font-weight: 400;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--gold);
+  border: 0.5px solid rgba(201,169,110,0.4);
+  padding: 3px 8px;
+  border-radius: 2px;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+/* Perks row */
+.perks-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5px;
+  background: var(--mist);
+  margin-bottom: 64px;
+}
+
+.perk-item {
+  background: var(--navy);
+  padding: 36px 32px;
+}
+
+.perk-num {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 11px;
+  color: rgba(201,169,110,0.3);
+  margin-bottom: 20px;
+  letter-spacing: 0.1em;
+}
+
+.perk-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 400;
+  font-size: clamp(14px, 1.8vw, 18px);
+  color: var(--ivory);
+  margin-bottom: 12px;
+  letter-spacing: 0.02em;
+}
+
+.perk-body {
+  font-size: 12px;
+  font-weight: 300;
+  color: rgba(245,242,237,0.65);
+  line-height: 1.8;
+}
+
+/* Careers CTA */
+.careers-cta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 40px;
+  padding-top: 48px;
+  border-top: 0.5px solid var(--mist);
+}
+
+.careers-cta-text {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-weight: 400;
+  font-size: clamp(18px, 2.5vw, 26px);
+  color: var(--navy);
+  line-height: 1.4;
+  max-width: 520px;
+  letter-spacing: 0.01em;
+}
+
+.careers-cta-action {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.cta-wa-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 32px;
+  background: var(--navy);
+  color: var(--ivory);
+  text-decoration: none;
+  font-size: 9px;
+  font-weight: 400;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  transition: background 0.3s, color 0.3s;
+}
+
+.cta-wa-btn:hover { background: var(--gold); color: var(--navy); }
+
+.cta-wa-btn svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+.careers-cta-note {
+  font-size: 9px;
+  font-weight: 300;
+  color: rgba(44,44,44,0.3);
+  letter-spacing: 0.1em;
+  text-align: right;
+}
+
+@media (max-width: 900px) {
+  .careers-header { grid-template-columns: 1fr; gap: 32px; }
+  .tier-row { grid-template-columns: repeat(2, 1fr); }
+  .perks-row { grid-template-columns: 1fr; }
+  .careers-cta { flex-direction: column; align-items: flex-start; }
+  .careers-cta-action { align-items: flex-start; }
+  .careers-cta-note { text-align: left; }
+  .income-block-header { flex-direction: column; gap: 8px; }
+}
+
+@media (max-width: 540px) {
+  .tier-row { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ─── Footer ────────────────────────────────────────────────────────────── */
+.footer {
+  background: var(--navy);
+  padding: clamp(60px, 8vw, 100px) clamp(24px, 5vw, 80px);
+}
+
+.footer-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.footer-logo {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 400;
+  font-size: 16px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ivory);
+  margin-bottom: 12px;
+}
+
+.footer-logo .g { color: var(--gold); }
+
+.footer-hairline {
+  width: 14px;
+  height: 0.5px;
+  background: rgba(201,169,110,0.3);
+  margin: 0 auto 12px;
+}
+
+.footer-tagline {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-weight: 400;
+  font-size: 10px;
+  color: rgba(245,242,237,0.25);
+  letter-spacing: 0.22em;
+  margin-bottom: 48px;
+}
+
+.footer-nav {
+  display: flex;
+  gap: 32px;
+  list-style: none;
+  margin-bottom: 48px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.footer-nav a {
+  font-size: 8px;
+  font-weight: 400;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: rgba(245,242,237,0.2);
+  text-decoration: none;
+  transition: color 0.25s;
+}
+
+.footer-nav a:hover { color: rgba(245,242,237,0.5); }
+
+.footer-divider {
+  width: 100%;
+  height: 0.5px;
+  background: rgba(245,242,237,0.06);
+  margin-bottom: 32px;
+}
+
+.footer-copy {
+  font-size: 9px;
+  font-weight: 300;
+  color: rgba(245,242,237,0.15);
+  letter-spacing: 0.1em;
+}
+
+/* ─── Animations ────────────────────────────────────────────────────────── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes scrollPulse {
+  0%, 100% { opacity: 0.3; transform: scaleY(1); }
+  50%       { opacity: 0.7; transform: scaleY(0.7); }
+}
+
+.reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.9s cubic-bezier(0.16,1,0.3,1), transform 0.9s cubic-bezier(0.16,1,0.3,1);
+}
+
+.reveal.in-view {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.reveal-delay-1 { transition-delay: 0.1s; }
+.reveal-delay-2 { transition-delay: 0.2s; }
+.reveal-delay-3 { transition-delay: 0.32s; }
+.reveal-delay-4 { transition-delay: 0.44s; }
+.reveal-delay-5 { transition-delay: 0.56s; }
+
+/* ─── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .nav-links { display: none; }
+  .nav-hamburger { display: flex; }
+
+  .story-inner {
+    grid-template-columns: 1fr;
+    gap: 60px;
+  }
+
+  .products-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .products-header-right {
+    text-align: left;
+    max-width: 100%;
+  }
+
+  .products-grid {
+    grid-template-columns: 1fr;
+    gap: 1px;
+  }
+
+  .product-card {
+    aspect-ratio: auto;
+    min-height: 280px;
+  }
+
+  .serve-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0;
+  }
+
+  .serve-item {
+    border-right: none;
+    border-bottom: 0.5px solid var(--mist);
+    padding: 32px 0;
+  }
+
+  .serve-item:last-child { border-bottom: none; }
+
+  .standards-top {
+    grid-template-columns: 1fr;
+    gap: 40px;
+    margin-bottom: 48px;
+    padding-bottom: 48px;
+  }
+
+  .standards-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .standard-item {
+    border-right: none;
+    border-bottom: 0.5px solid rgba(245,242,237,0.06);
+    padding: 32px 0;
+  }
+
+  .standard-item:last-child { border-bottom: none; }
+  .standard-item:not(:first-child) { padding-left: 0; }
+
+  .contact-inner {
+    grid-template-columns: 1fr;
+    gap: 48px;
+  }
+
+  .contact-details {
+    border-left: none;
+    padding-left: 0;
+    border-top: 0.5px solid var(--mist);
+    padding-top: 40px;
+  }
+}
+
+@media (max-width: 540px) {
+  .serve-grid { grid-template-columns: 1fr; }
+  .hero-wordmark { letter-spacing: 0.1em; }
+  .footer-nav { gap: 20px; }
+}
+
+/* ─── Mobile Menu ───────────────────────────────────────────────────────── */
+.mobile-menu {
+  display: none;
+  position: fixed;
+  top: 64px; left: 0; right: 0;
+  background: rgba(245,242,237,0.98);
+  backdrop-filter: blur(20px);
+  border-bottom: 0.5px solid var(--mist);
+  padding: 32px clamp(24px, 5vw, 80px);
+  z-index: 99;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.mobile-menu.open { display: flex; }
+
+.mobile-menu a {
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: rgba(11,27,42,0.5);
+  text-decoration: none;
+  transition: color 0.25s;
+  padding: 4px 0;
+  border-bottom: 0.5px solid var(--mist);
+}
+
+.mobile-menu a:hover { color: var(--navy); }
+
+</style>
+</head>
+<body>
+
+<!-- ═══ NAVIGATION ═══════════════════════════════════════════════════════ -->
+<nav class="nav" id="nav">
+  <a href="#" class="nav-brand"><span class="g">E</span>QUIMED</a>
+
+  <ul class="nav-links">
+    <li><a href="#story">Story</a></li>
+    <li><a href="#products">Products</a></li>
+    <li><a href="#serve">Disciplines</a></li>
+    <li><a href="#standards">Standards</a></li>
+    <li><a href="#careers">Careers</a></li>
+    <li><a href="#contact" class="nav-contact-btn">Enquire</a></li>
+  </ul>
+
+  <button class="nav-hamburger" id="hamburger" aria-label="Menu">
+    <span></span>
+    <span></span>
+    <span></span>
+  </button>
+</nav>
+
+<div class="mobile-menu" id="mobile-menu">
+  <a href="#story" onclick="closeMobile()">Story</a>
+  <a href="#products" onclick="closeMobile()">Products</a>
+  <a href="#serve" onclick="closeMobile()">Disciplines</a>
+  <a href="#standards" onclick="closeMobile()">Standards</a>
+  <a href="#careers" onclick="closeMobile()">Careers</a>
+  <a href="#contact" onclick="closeMobile()">Enquire</a>
+</div>
+
+<!-- ═══ HERO ═════════════════════════════════════════════════════════════ -->
+<section class="hero">
+  <div class="hero-eyebrow">Malaysia · Medical Grade · Est. 2024</div>
+
+  <h1 class="hero-wordmark"><span class="g">E</span>QUIMED</h1>
+
+  <div class="hero-rule"></div>
+
+  <p class="hero-tagline">For the hands that shape the world</p>
+
+  <div class="hero-scroll-indicator">
+    <span>Scroll</span>
+    <div class="hero-scroll-line"></div>
+  </div>
+</section>
+
+<!-- ═══ PHILOSOPHY ═══════════════════════════════════════════════════════ -->
+<section class="philosophy">
+  <blockquote class="philosophy-quote reveal">
+    We don't make gloves.<br>
+    We make <span class="em">confidence</span>.
+  </blockquote>
+  <p class="philosophy-sub reveal reveal-delay-2">Equimed · Medical Grade Gloves · Malaysia</p>
+</section>
+
+<!-- ═══ VISION · MISSION · COMMITMENT ════════════════════════════════════ -->
+<section class="pillars-section">
+  <div class="pillars-inner">
+    <div class="pillars-header reveal">
+      <p class="section-label" style="color:rgba(201,169,110,0.4);">Brand Pillars</p>
+      <h2 class="pillars-heading">Vision · Mission · Commitment</h2>
+    </div>
+    <div class="pillars-grid">
+      <div class="pillar-item reveal">
+        <div class="pillar-icon">✦</div>
+        <h3 class="pillar-title">Vision</h3>
+        <p class="pillar-body">A world where every pair of hands that creates, heals, and transforms moves with absolute confidence — unhindered by the very barrier that protects them.</p>
+        <p class="pillar-zh">一个让每一双创造、治愈、改变的手都能毫无顾虑施展的世界——保护的屏障，不再是阻碍。</p>
+      </div>
+      <div class="pillar-item reveal reveal-delay-1">
+        <div class="pillar-icon">✦</div>
+        <h3 class="pillar-title">Mission</h3>
+        <p class="pillar-body">To craft the finest medical-grade gloves for every profession that depends on touch — delivering protection so effortless, it becomes invisible. We make confidence.</p>
+        <p class="pillar-zh">为所有依靠触觉的行业，打造最顶级的医疗级手套——提供一种轻若无物的保护，以至于被遗忘。我们制造的是——放心。</p>
+      </div>
+      <div class="pillar-item reveal reveal-delay-2">
+        <div class="pillar-icon">✦</div>
+        <h3 class="pillar-title">Commitment</h3>
+        <p class="pillar-body">Medical grade. Nothing less. Every pair exceeds — not merely meets — industry standards. Consistent batch quality. Transparent. Uncompromising.</p>
+        <p class="pillar-zh">医疗级别。绝无妥协。每一副手套，超越——而非仅仅达到——行业标准。批次稳定。透明。不妥协。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ STORY ════════════════════════════════════════════════════════════ -->
+<section class="story" id="story">
+  <div class="story-inner">
+    <!-- English -->
+    <div>
+      <p class="story-label reveal">Brand Story</p>
+      <h2 class="story-heading reveal reveal-delay-1">The world is shaped<br>by hands.</h2>
+      <div class="story-body">
+        <p class="reveal reveal-delay-2">The surgeon's steady hand. The tattoo artist's precise line. The chef's intuitive touch. The barber's confident scissor work. The laboratory researcher's careful measure.</p>
+        <p class="reveal reveal-delay-3">These hands do not merely work. They create. They heal. They transform. And they deserve more than a commodity barrier between them and their craft.</p>
+        <p class="reveal reveal-delay-4"><span class="em">The best glove is the one you forget you're wearing.</span></p>
+        <p class="reveal reveal-delay-5">Every pair we craft is born from a single conviction: that protecting the hands that create is not just our job — it is our belief. Medical-grade nitrile and latex. Sourced from the finest raw materials. Tested not just to pass standards, but to exceed them.</p>
+        <p class="reveal">Because for us, quality is not a specification. It is a promise written in the quiet certainty of a glove that fits perfectly, performs flawlessly, and asks nothing in return but to be trusted.</p>
+        <p class="reveal"><span class="em">Equimed. For the hands that shape the world.</span></p>
+      </div>
+    </div>
+
+    <!-- Chinese -->
+    <div class="story-zh">
+      <p class="story-label reveal">品牌故事</p>
+      <h2 class="story-heading reveal reveal-delay-1">世界，<br>由双手塑造。</h2>
+      <div class="story-body">
+        <p class="reveal reveal-delay-2">外科医生沉稳的手。纹身师精准的线。厨师直觉般的触感。理发师自信的剪刀。实验室研究员谨慎的度量。</p>
+        <p class="reveal reveal-delay-3">这些手不是在「工作」——它们在创造。在治愈。在改变。它们值得的，不应该是一层敷衍的商品。</p>
+        <p class="reveal reveal-delay-4"><span class="em">最好的手套，是让你忘记它的存在。</span></p>
+        <p class="reveal reveal-delay-5">每一双手套，都源于一个信念：保护创造的手，是我们的使命。医疗级丁腈与乳胶，甄选最上乘的原料，通过的不只是标准测试，而是超越标准的锤炼。</p>
+        <p class="reveal">因为对我们而言，品质不是一个参数。它是一个承诺——写在手套贴合指尖的那一刻，写在毫无瑕疵的每一次使用中。</p>
+        <p class="reveal"><span class="em">Equimed。予手以安。</span></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ PRODUCTS ══════════════════════════════════════════════════════════ -->
+<section class="products" id="products">
+  <div class="products-header">
+    <div class="products-header-left reveal">
+      <p class="section-label">The Collection</p>
+      <h2 class="section-title">Three series.<br>One standard.</h2>
+    </div>
+    <p class="products-header-right reveal reveal-delay-2">Medical grade. Nothing less. Each series is engineered for a specific discipline — but all share a single uncompromising threshold.</p>
+  </div>
+
+  <div class="products-grid">
+    <!-- Nitrile -->
+    <div class="product-card reveal">
+      <p class="product-series">Series 01</p>
+      <div class="product-bottom">
+        <h3 class="product-name">Nitrile</h3>
+        <div class="product-hairline"></div>
+        <p class="product-material">Powder-Free · Latex-Free · Medical Grade</p>
+        <p class="product-desc">Superior barrier strength without allergenic risk. Textured fingertips for reliable grip. Available in standard and extended cuff lengths. Certified to FDA 510(K), EN455, and ASTM D6319. For those who demand precision — from operating theatres to tattoo studios.</p>
+      </div>
+    </div>
+
+    <!-- Latex -->
+    <div class="product-card light reveal reveal-delay-1">
+      <p class="product-series">Series 02</p>
+      <div class="product-bottom">
+        <h3 class="product-name">Latex</h3>
+        <div class="product-hairline"></div>
+        <p class="product-material">Natural Rubber · Powder-Free · Medical Grade</p>
+        <p class="product-desc">Natural rubber latex — the original choice of surgeons. Unmatched elasticity and form-fit conformity. Light but strong. The tactile benchmark against which all other gloves are measured. For clinicians who trust their hands above everything.</p>
+      </div>
+    </div>
+
+    <!-- Antimicrobial Nitrile -->
+    <div class="product-card reveal reveal-delay-2">
+      <p class="product-series">Series 03</p>
+      <div class="product-bottom">
+        <h3 class="product-name">Antimicrobial<br>Nitrile</h3>
+        <div class="product-hairline"></div>
+        <p class="product-material">AMG™ · Non-Leaching · Medical Grade</p>
+        <p class="product-desc">The world's first non-leaching antimicrobial examination glove. A photosensitiser on the outer surface generates singlet oxygen upon light exposure — killing up to 99.999% of microbes on contact, including Human Coronavirus. The glove itself is a line of defence.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ WHO WE SERVE ══════════════════════════════════════════════════════ -->
+<section class="serve" id="serve">
+  <div class="serve-inner">
+    <div class="serve-header">
+      <p class="section-label reveal">Disciplines</p>
+      <h2 class="section-heading reveal reveal-delay-1">For every hand<br>that creates.</h2>
+    </div>
+
+    <div class="serve-grid">
+      <div class="serve-item reveal">
+        <p class="serve-number">01</p>
+        <h3 class="serve-title">Surgery &amp; Medical</h3>
+        <p class="serve-desc">Where a perfect fit is not a comfort — it is a clinical necessity. Every millimetre of tactile feedback matters.</p>
+      </div>
+
+      <div class="serve-item reveal reveal-delay-1">
+        <p class="serve-number">02</p>
+        <h3 class="serve-title">Tattoo &amp; Body Art</h3>
+        <p class="serve-desc">Precision demands presence. Our gloves disappear on the hand so the artist can be fully present in the work.</p>
+      </div>
+
+      <div class="serve-item reveal reveal-delay-2">
+        <p class="serve-number">03</p>
+        <h3 class="serve-title">Culinary &amp; Kitchen</h3>
+        <p class="serve-desc">Food safety without sacrificing the chef's connection to texture, temperature, and the craft of the plate.</p>
+      </div>
+
+      <div class="serve-item reveal reveal-delay-3">
+        <p class="serve-number">04</p>
+        <h3 class="serve-title">Laboratories</h3>
+        <p class="serve-desc">Consistent batch quality. Chemical resistance where it counts. Protection you can trust across every experiment.</p>
+      </div>
+
+      <div class="serve-item reveal reveal-delay-4">
+        <p class="serve-number">05</p>
+        <h3 class="serve-title">Grooming &amp; Barbering</h3>
+        <p class="serve-desc">Dexterous enough for the finest detail work. Durable enough for a full day's appointments.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ STANDARDS ═════════════════════════════════════════════════════════ -->
+<section class="standards" id="standards">
+  <div class="standards-inner">
+    <div class="standards-top">
+      <div>
+        <p class="section-label reveal" style="color:rgba(201,169,110,0.4);">Quality Commitment</p>
+        <h2 class="standards-heading reveal reveal-delay-1">Not standards.<br>Convictions.</h2>
+      </div>
+      <p class="standards-intro reveal reveal-delay-2">
+        We do not manufacture to a minimum threshold. We source, test, and deliver to a conviction — that the hand wearing our glove should never, for a single moment, doubt its protection.
+      </p>
+    </div>
+
+    <div class="standards-grid">
+      <div class="standard-item reveal">
+        <div class="standard-num">I</div>
+        <h3 class="standard-title">Medical Grade. Always.</h3>
+        <p class="standard-body">Every series carries full medical certification. We do not offer a non-certified line. If it carries the Equimed name, it meets — and exceeds — the standard.</p>
+      </div>
+
+      <div class="standard-item reveal reveal-delay-1">
+        <div class="standard-num">II</div>
+        <h3 class="standard-title">Consistent Across Batches.</h3>
+        <p class="standard-body">The glove from box 1,000 performs identically to the glove from box 1. Quality is not a launch promise. It is a production discipline maintained in every run.</p>
+      </div>
+
+      <div class="standard-item reveal reveal-delay-2">
+        <div class="standard-num">III</div>
+        <h3 class="standard-title">Transparent. Uncompromising.</h3>
+        <p class="standard-body">We share our testing data. We name our materials. We welcome scrutiny — because a glove worn against human skin in a clinical environment demands nothing less than complete honesty.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ CONTACT ═══════════════════════════════════════════════════════════ -->
+<section class="contact" id="contact">
+  <div class="contact-inner">
+    <div>
+      <p class="section-label reveal">Contact</p>
+      <h2 class="contact-heading reveal reveal-delay-1">Begin a conversation.</h2>
+      <p class="contact-body reveal reveal-delay-2">
+        Whether you are sourcing for a clinic, a kitchen, a studio, or a laboratory — we are here to find the right product for your discipline. No minimum order pressure. Just the right fit.
+      </p>
+
+      <div class="reveal reveal-delay-3" style="display:flex;flex-direction:column;gap:0;margin-top:8px;">
+        <a href="https://wa.me/60109781788" class="contact-link" target="_blank">
+          WhatsApp <span class="arrow">→</span>
+        </a>
+      </div>
+    </div>
+
+    <div class="contact-details reveal reveal-delay-2">
+      <div class="contact-detail-group">
+        <p class="contact-item-label">Company</p>
+        <p class="contact-item-value">Equimed Sdn Bhd</p>
+      </div>
+      <div class="contact-detail-group">
+        <p class="contact-item-label">Location</p>
+        <p class="contact-item-value">Kuala Lumpur, Malaysia</p>
+      </div>
+      <div class="contact-detail-group">
+        <p class="contact-item-label">Products</p>
+        <p class="contact-item-value">Tact · Shield · Pro</p>
+      </div>
+      <div class="contact-detail-group">
+        <p class="contact-item-label">Certification</p>
+        <p class="contact-item-value">Medical Grade · EN455 · ASTM</p>
+      </div>
+      <div class="contact-detail-group">
+        <p class="contact-item-label">WhatsApp</p>
+        <p class="contact-item-value">010-978 1788</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ CAREERS ══════════════════════════════════════════════════════════ -->
+<section class="careers" id="careers">
+  <div class="careers-inner">
+
+    <!-- Header -->
+    <div class="careers-header">
+      <div>
+        <p class="section-label reveal">Join Equimed</p>
+        <h2 class="careers-heading reveal reveal-delay-1">
+          Your income has<br>no ceiling.
+        </h2>
+      </div>
+      <div class="careers-intro reveal reveal-delay-2">
+        <p>Medical gloves are not a luxury purchase — they are a clinical necessity. Every clinic, every tattoo studio, every kitchen, every laboratory reorders every month without fail.</p>
+        <br>
+        <p>That predictability is your income. Build a client base and the money arrives whether you make a single call that month or not. <span class="em">Recurring orders. Transparent commissions. No cap on what you earn.</span></p>
+        <br>
+        <p>We do not offer a salary. We offer something better: the direct relationship between your effort and your income — with a structure that rewards you more as you grow.</p>
+      </div>
+    </div>
+
+    <!-- Commission Tiers -->
+    <p class="section-label reveal" style="margin-bottom:20px;">Progressive Commission Tiers</p>
+    <div class="tier-row reveal">
+      <div class="tier-card">
+        <div class="tier-label">Tier 1</div>
+        <div class="tier-pct">4<span class="g">%</span></div>
+        <div class="tier-range">First RM 50,000</div>
+      </div>
+      <div class="tier-card">
+        <div class="tier-label">Tier 2</div>
+        <div class="tier-pct">5<span class="g">%</span></div>
+        <div class="tier-range">RM 50k – 100k</div>
+      </div>
+      <div class="tier-card">
+        <div class="tier-label">Tier 3</div>
+        <div class="tier-pct">6<span class="g">%</span></div>
+        <div class="tier-range">RM 100k – 200k</div>
+      </div>
+      <div class="tier-card">
+        <div class="tier-label">Tier 4</div>
+        <div class="tier-pct">7<span class="g">%</span></div>
+        <div class="tier-range">Above RM 200k</div>
+      </div>
+    </div>
+
+    <p style="font-size:10px;font-weight:300;color:rgba(44,44,44,0.4);letter-spacing:0.05em;margin-bottom:64px;margin-top:-48px;" class="reveal">
+      Progressive tiers — like income tax, but in your favour. Each bracket applies only to the sales within it. Exceed a threshold and that portion earns the higher rate automatically.
+    </p>
+
+    <!-- Perks / Why Join -->
+    <p class="section-label reveal" style="margin-bottom:20px;">Beyond Commission</p>
+    <div class="perks-row reveal">
+      <div class="perk-item">
+        <div class="perk-num">I</div>
+        <h3 class="perk-title">New Client Bonus</h3>
+        <p class="perk-body">Earn an additional bonus for every new clinic, studio, or business you onboard — up to RM 400 per client, on top of your regular commission. Building your book has an immediate reward.</p>
+      </div>
+      <div class="perk-item">
+        <div class="perk-num">II</div>
+        <h3 class="perk-title">Team Override</h3>
+        <p class="perk-body">Graduate to Leader status and earn 1% on every ringgit your team closes. Your experience compounds into passive income. The people you bring on become an asset you carry permanently.</p>
+      </div>
+      <div class="perk-item">
+        <div class="perk-num">III</div>
+        <h3 class="perk-title">Mentor Royalty</h3>
+        <p class="perk-body">Develop a salesperson who builds their own team, and receive 0.5% of that team's revenue — indefinitely. Plant once. Compound forever. This is the structure designed for people who think long term.</p>
+      </div>
+    </div>
+
+    <!-- CTA -->
+    <div class="careers-cta reveal">
+      <p class="careers-cta-text">
+        "Medical consumables. Monthly reorders. Clients who need you as much as you need them."
+      </p>
+      <div class="careers-cta-action">
+        <a href="https://wa.me/60109781788" class="cta-wa-btn" target="_blank">
+          <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+          </svg>
+          WhatsApp 010-978 1788
+        </a>
+        <p class="careers-cta-note">No cold form. Message directly. We respond.</p>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══ FOOTER ════════════════════════════════════════════════════════════ -->
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="footer-logo"><span class="g">E</span>QUIMED</div>
+    <div class="footer-hairline"></div>
+    <p class="footer-tagline">For the hands that shape the world</p>
+
+    <ul class="footer-nav">
+      <li><a href="#story">Story</a></li>
+      <li><a href="#products">Products</a></li>
+      <li><a href="#serve">Disciplines</a></li>
+      <li><a href="#standards">Standards</a></li>
+      <li><a href="#careers">Careers</a></li>
+      <li><a href="#contact">Contact</a></li>
+    </ul>
+
+    <div class="footer-divider"></div>
+    <p class="footer-copy">© 2026 Equimed Sdn Bhd · Kuala Lumpur, Malaysia · All rights reserved</p>
+  </div>
+</footer>
+
+<script>
+// ── Nav scroll state ──────────────────────────────────────────────────────
+const nav = document.getElementById('nav');
+window.addEventListener('scroll', () => {
+  nav.classList.toggle('scrolled', window.scrollY > 60);
+}, { passive: true });
+
+// ── Mobile menu ───────────────────────────────────────────────────────────
+const hamburger = document.getElementById('hamburger');
+const mobileMenu = document.getElementById('mobile-menu');
+let menuOpen = false;
+
+hamburger.addEventListener('click', () => {
+  menuOpen = !menuOpen;
+  mobileMenu.classList.toggle('open', menuOpen);
+  const spans = hamburger.querySelectorAll('span');
+  if (menuOpen) {
+    spans[0].style.transform = 'rotate(45deg) translate(5px, 5px)';
+    spans[1].style.opacity   = '0';
+    spans[2].style.transform = 'rotate(-45deg) translate(5px, -5px)';
+  } else {
+    spans.forEach(s => { s.style.transform = ''; s.style.opacity = ''; });
+  }
+});
+
+function closeMobile() {
+  menuOpen = false;
+  mobileMenu.classList.remove('open');
+  hamburger.querySelectorAll('span').forEach(s => { s.style.transform = ''; s.style.opacity = ''; });
+}
+
+// ── Scroll reveal ─────────────────────────────────────────────────────────
+const revealObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('in-view');
+      revealObserver.unobserve(entry.target);
+    }
+  });
+}, { threshold: 0.08, rootMargin: '0px 0px -48px 0px' });
+
+document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
+</script>
+</body>
+</html>
