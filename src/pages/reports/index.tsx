@@ -397,6 +397,178 @@ function OrgChartTab({ supabase }: { supabase: SupabaseClientType }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// P&L Report Generator — formal print-to-PDF HTML
+// ─────────────────────────────────────────────────────────────────────────────
+const MONTH_NAMES = [
+  "", "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+
+function generatePLReport(data: PLResult, year: number, month: number): void {
+  const rmFmt = (n: number) =>
+    `RM ${n.toLocaleString("en-MY", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const period    = `${MONTH_NAMES[month]} ${year}`;
+  const genDate   = new Date().toLocaleString("en-MY", {
+    day: "2-digit", month: "long", year: "numeric",
+    hour: "2-digit", minute: "2-digit",
+  });
+
+  const skuRows = (data.top_skus ?? []).map((s, i) => `
+    <tr class="${i % 2 === 0 ? "row-even" : "row-odd"}">
+      <td class="mono">${s.sku}</td>
+      <td>${s.name}</td>
+      <td class="num">${s.qty}</td>
+      <td class="num">${rmFmt(s.revenue)}</td>
+      <td class="num">${rmFmt(s.cogs)}</td>
+      <td class="num gp">${rmFmt(s.revenue - s.cogs)}</td>
+    </tr>`).join("");
+
+  const supplierRows = (data.supplier_spend ?? []).map((s, i) => `
+    <tr class="${i % 2 === 0 ? "row-even" : "row-odd"}">
+      <td>${s.supplier}</td>
+      <td class="num">${s.boxes}</td>
+      <td class="num red">${rmFmt(s.spend)}</td>
+    </tr>`).join("");
+
+  const marginColor = data.gross_margin_pct >= 20 ? "#166534" : data.gross_margin_pct >= 10 ? "#92400e" : "#991b1b";
+  const profitColor = data.net_company_profit >= 0 ? "#166534" : "#991b1b";
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>P&L Statement — ${period}</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 11pt; color: #1a1a1a; background: #fff; }
+  @page { size: A4; margin: 18mm 20mm; }
+
+  /* ── Header ── */
+  .header { border-bottom: 3px solid #0B1B2A; padding-bottom: 12px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: flex-end; }
+  .company-name { font-size: 18pt; font-weight: 700; color: #0B1B2A; letter-spacing: -0.3px; }
+  .company-reg  { font-size: 8.5pt; color: #6b7280; margin-top: 2px; }
+  .report-meta  { text-align: right; }
+  .report-title { font-size: 13pt; font-weight: 600; color: #0B1B2A; }
+  .report-period { font-size: 9pt; color: #6b7280; margin-top: 3px; }
+
+  /* ── Section titles ── */
+  .section-title { font-size: 9pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: #6b7280; margin: 22px 0 10px; border-bottom: 1px solid #e5e7eb; padding-bottom: 5px; }
+
+  /* ── KPI grid ── */
+  .kpi-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 6px; }
+  .kpi-card { border: 1px solid #e5e7eb; border-radius: 6px; padding: 10px 12px; background: #f9fafb; }
+  .kpi-label { font-size: 7.5pt; text-transform: uppercase; letter-spacing: 0.6px; color: #9ca3af; font-weight: 600; }
+  .kpi-value { font-size: 13pt; font-weight: 700; margin-top: 3px; }
+  .kpi-sub   { font-size: 7.5pt; color: #9ca3af; margin-top: 2px; }
+
+  /* ── Tables ── */
+  table { width: 100%; border-collapse: collapse; font-size: 9.5pt; }
+  th { background: #0B1B2A; color: #fff; font-size: 8pt; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; padding: 7px 10px; text-align: left; }
+  th.num, td.num { text-align: right; }
+  td { padding: 6px 10px; vertical-align: middle; }
+  .row-even { background: #fff; }
+  .row-odd  { background: #f8fafc; }
+  tr:last-child td { border-bottom: 1px solid #e5e7eb; }
+  .mono { font-family: 'Courier New', monospace; font-size: 8.5pt; color: #6b7280; }
+  .gp   { color: #166534; font-weight: 600; }
+  .red  { color: #991b1b; }
+
+  /* ── Divider line in KPI block ── */
+  .pl-summary-table { width: 100%; border-collapse: collapse; }
+  .pl-summary-table td { padding: 5px 14px; font-size: 10.5pt; }
+  .pl-summary-table .lbl { color: #4b5563; width: 55%; }
+  .pl-summary-table .val { text-align: right; font-weight: 600; width: 45%; }
+  .pl-summary-table tr.divider td { border-top: 1px solid #d1d5db; padding-top: 8px; margin-top: 4px; }
+  .pl-summary-table tr.total td { font-size: 12pt; font-weight: 700; border-top: 2px solid #0B1B2A; }
+
+  /* ── Footer ── */
+  .footer { margin-top: 28px; border-top: 1px solid #e5e7eb; padding-top: 10px; display: flex; justify-content: space-between; font-size: 8pt; color: #9ca3af; }
+  .confidential { font-weight: 700; color: #6b7280; letter-spacing: 0.5px; text-transform: uppercase; }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div>
+    <div class="company-name">Equimed Supply Enterprise</div>
+    <div class="company-reg">Registration No: AS0514499 · info@equimedsupply.com</div>
+  </div>
+  <div class="report-meta">
+    <div class="report-title">Profit &amp; Loss Statement</div>
+    <div class="report-period">Period: ${period} &nbsp;·&nbsp; Generated: ${genDate}</div>
+  </div>
+</div>
+
+<!-- Financial Summary -->
+<div class="section-title">Financial Summary</div>
+<table class="pl-summary-table">
+  <tr><td class="lbl">Gross Revenue</td>
+      <td class="val">${rmFmt(data.gross_revenue)}</td></tr>
+  <tr><td class="lbl">Total Cost of Goods Sold (COGS)</td>
+      <td class="val" style="color:#991b1b">${rmFmt(data.total_cogs)}</td></tr>
+  <tr class="divider">
+      <td class="lbl">Gross Profit</td>
+      <td class="val" style="color:${marginColor}">${rmFmt(data.gross_profit)} &nbsp;<span style="font-size:9pt;font-weight:400">(${data.gross_margin_pct}% margin)</span></td></tr>
+  <tr><td class="lbl">Staff Commission Payouts</td>
+      <td class="val" style="color:#92400e">${rmFmt(data.approx_payout)}</td></tr>
+  <tr class="total">
+      <td class="lbl">Net Company Profit</td>
+      <td class="val" style="color:${profitColor}">${rmFmt(data.net_company_profit)}</td></tr>
+</table>
+
+<!-- Top SKUs -->
+<div class="section-title">Top Products by Revenue</div>
+<table>
+  <thead>
+    <tr>
+      <th style="width:90px">SKU</th>
+      <th>Product Name</th>
+      <th class="num" style="width:60px">Qty</th>
+      <th class="num" style="width:110px">Revenue</th>
+      <th class="num" style="width:110px">COGS</th>
+      <th class="num" style="width:110px">Gross Profit</th>
+    </tr>
+  </thead>
+  <tbody>${skuRows || '<tr><td colspan="6" style="text-align:center;color:#9ca3af;padding:16px">No data for this period</td></tr>'}</tbody>
+</table>
+
+<!-- Supplier Spend -->
+<div class="section-title">Supplier Spend (COGS)</div>
+<table>
+  <thead>
+    <tr>
+      <th>Supplier</th>
+      <th class="num" style="width:80px">Boxes</th>
+      <th class="num" style="width:130px">Amount</th>
+    </tr>
+  </thead>
+  <tbody>${supplierRows || '<tr><td colspan="3" style="text-align:center;color:#9ca3af;padding:16px">No data for this period</td></tr>'}</tbody>
+</table>
+
+<!-- Footer -->
+<div class="footer">
+  <div>
+    Commission figures represent actual earned commissions from Paid invoices only (见款发佣原则).<br/>
+    This report is generated by MediGlove ERP. Figures are subject to final month-end reconciliation.
+  </div>
+  <div class="confidential">Confidential — Management Use Only</div>
+</div>
+
+<script>window.onload = () => { window.print(); };</script>
+</body>
+</html>`;
+
+  const win = window.open("", "_blank");
+  if (!win) {
+    alert("Pop-up blocked. Please allow pop-ups for this site and try again.");
+    return;
+  }
+  win.document.write(html);
+  win.document.close();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // P&L Tab
 // ─────────────────────────────────────────────────────────────────────────────
 function PLTab({ supabase }: { supabase: SupabaseClientType }) {
@@ -466,6 +638,20 @@ function PLTab({ supabase }: { supabase: SupabaseClientType }) {
         >
           {loading ? "Loading…" : "Refresh"}
         </button>
+        {data && (
+          <button
+            onClick={() => generatePLReport(data, year, month)}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white
+                       bg-gray-800 hover:bg-gray-900 rounded-lg transition-colors"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none"
+                 viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round"
+                    d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+            </svg>
+            Download Report
+          </button>
+        )}
       </div>
 
       {error && (
@@ -481,7 +667,7 @@ function PLTab({ supabase }: { supabase: SupabaseClientType }) {
             <PLCard label="Gross Profit"        value={rm(data.gross_profit)}  accent="text-emerald-700"
                     sub={`${data.gross_margin_pct}% margin`} />
             <PLCard label="Approx. Payouts"     value={rm(data.approx_payout)} accent="text-amber-700"
-                    sub="Base + KAM proxy" />
+                    sub="Actual commissions (paid invoices)" />
             <PLCard label="Net Company Profit"  value={rm(data.net_company_profit)}
                     accent={data.net_company_profit >= 0 ? "text-emerald-800" : "text-red-700"} />
           </div>
@@ -548,7 +734,8 @@ function PLTab({ supabase }: { supabase: SupabaseClientType }) {
           </div>
 
           <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 text-xs text-amber-800">
-            ⚠ Payout figure is an approximation (base rate proxy). For exact payouts, refer to the Monthly Payout Snapshot module.
+            ⚠ Staff commission is the live sum of Actual commission rows for this period (见款发佣 — paid invoices only).
+            Net Company Profit updates in real-time as invoices are marked Paid.
           </div>
         </>
       )}
