@@ -590,6 +590,7 @@ export function POShowPage() {
     phone:   settings?.phone           ?? "",
     email:   settings?.email           ?? "",
     website: settings?.website         ?? "",
+    logoUrl: settings?.logo_url        ?? undefined,
   };
 
   // M036: qty is in units, unit_cost is per unit → amount = qty × unit_cost
