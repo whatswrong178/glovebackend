@@ -176,16 +176,15 @@ describe("validatePromoRules", () => {
     expect(r.freeShippingApplied).toBe(false);
   });
 
-  it("B2 — 2 boxes: blocked", () => {
+  it("B2 — 2 boxes: valid (no min order)", () => {
     const r = validatePromoRules({ ...base, totalQty: 2 });
-    expect(r.valid).toBe(false);
-    expect(r.error).toContain("Minimum order is 3");
-    expect(r.finalDelivery).toBe(30);  // unchanged
+    expect(r.valid).toBe(true);
+    expect(r.finalDelivery).toBe(30);
   });
 
-  it("B3 — 0 boxes: blocked", () => {
+  it("B3 — 0 boxes: valid (no min order floor)", () => {
     const r = validatePromoRules({ ...base, totalQty: 0 });
-    expect(r.valid).toBe(false);
+    expect(r.valid).toBe(true);
   });
 
   it("B4 — West Malaysia, exactly 5 boxes: free shipping", () => {
@@ -214,15 +213,16 @@ describe("validatePromoRules", () => {
     expect(r.finalDelivery).toBe(0);
   });
 
-  it("B8 — custom params: minOrder=5, freeShipping=10", () => {
+  it("B8 — custom params: freeShipping=10, 4 boxes not free", () => {
     const r = validatePromoRules({
       totalQty:       4,
       region:         "West Malaysia",
       deliveryCharge: 50,
-      params: { minOrderBoxes: 5, freeShippingBoxes: 10 },
+      params: { freeShippingBoxes: 10 },
     });
-    expect(r.valid).toBe(false);
-    expect(r.error).toContain("Minimum order is 5");
+    expect(r.valid).toBe(true);
+    expect(r.freeShippingApplied).toBe(false);
+    expect(r.finalDelivery).toBe(50);
   });
 });
 

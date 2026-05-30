@@ -23,7 +23,7 @@ import type { StaffRole, Staff } from "../../types/staff";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 // M036: unit-based system. All qty and prices are per-unit (box).
-const MIN_ORDER_QTY = 30;  // units (≈ 3 cartons × 10 units/carton — adjust as needed)
+// Min order requirement removed
 const FREE_SHIP_QTY = 50;  // units (≈ 5 cartons × 10 units/carton — West Malaysia)
 
 interface ProductOption {
@@ -187,8 +187,6 @@ export function InvoiceCreatePage() {
     const newErrors: Record<string, string> = {};
     if (!clientId)              newErrors.clientId = "Client is required";
     if (lineItems.length === 0) newErrors.items    = "At least one product is required";
-    if (totalQty < MIN_ORDER_QTY)
-      newErrors.boxes = `Minimum ${MIN_ORDER_QTY} units required (currently ${totalQty})`;
     if (lineItems.some((li) => li._error))
       newErrors.priceErrors = "Fix price errors above";
     if (isJointOrder && !coCreatedBy)
@@ -378,9 +376,6 @@ export function InvoiceCreatePage() {
 
           {/* Promo notice */}
           <div className="flex gap-4 text-xs">
-            <span className="bg-amber-50 border border-amber-200 text-amber-700 rounded-lg px-3 py-1.5 font-medium">
-              📦 Min order: {MIN_ORDER_QTY} units
-            </span>
             <span className="bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-lg px-3 py-1.5 font-medium">
               🚚 Free shipping: West Malaysia ≥{FREE_SHIP_QTY} units
             </span>
@@ -530,12 +525,7 @@ export function InvoiceCreatePage() {
           {/* Qty progress toward promo thresholds */}
           {lineItems.length > 0 && (
             <div className="space-y-1.5">
-              {totalQty < MIN_ORDER_QTY && (
-                <div className="flex items-center gap-2 text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
-                  ⚠️ {MIN_ORDER_QTY - totalQty} more unit{MIN_ORDER_QTY - totalQty !== 1 ? "s" : ""} needed to meet minimum order.
-                </div>
-              )}
-              {totalQty >= MIN_ORDER_QTY && totalQty < FREE_SHIP_QTY && selectedClient?.region === "West Malaysia" && (
+              {totalQty < FREE_SHIP_QTY && selectedClient?.region === "West Malaysia" && (
                 <div className="flex items-center gap-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
                   🚚 Add {FREE_SHIP_QTY - totalQty} more unit{FREE_SHIP_QTY - totalQty !== 1 ? "s" : ""} to unlock free shipping (West Malaysia).
                 </div>
